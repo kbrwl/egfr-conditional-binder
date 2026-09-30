@@ -183,17 +183,58 @@ outcome is recorded in the current-state section below.
 See [docs/decisions-log.md](docs/decisions-log.md) for the authoritative and
 current version, split into Settled / Open / Unverified / Ruled out. In summary:
 
-**Settled and computed.** The numbering convention (guarded by a test); the
-human/mouse difference map; the candidate epitope and its eight anchors, verified
-against the official challenge sequences; the positional pairing rule and the
-failure mode it rejects; the marginal-affinity target.
+### The structure check passed. The epitope is real.
 
-**Structure check.** Results in `results/findings/`, files `02` through `06`.
-This section is updated from computed output rather than written in advance.
+Computed 30 September 2026 from PDB entries 6ARU and 1NQL.
 
-**Still open.** Which molecule size category to target; the design pipeline
-choice; the compute environment; and whether the assayed conformation of EGFR
-exposes the epitope at all.
+| Question | Answer |
+|---|---|
+| Does the PDB numbering match ours? | **No — off by 24.** Both structures number by the mature protein. Derived empirically, 100% consistent. |
+| Are the anchors on the surface? | **7 of 8** exposed or partially exposed. H418 buried in 6ARU. |
+| Do they cluster within one binder's reach? | **Yes — 4 anchors within 22.6 Å**, against a minimum of 3. |
+| What does cetuximab actually touch? | 24 residues; **10 of our 52**, and only **1 of our 8 anchors** (H433). |
+| Is the epitope covered when EGFR closes? | **No.** Slightly *more* accessible in the closed structure. |
+
+Four things worth drawing out, because they changed the plan rather than
+confirming it:
+
+1. **The numbering trap was real.** 6ARU numbers by the mature protein, so
+   UniProt = PDB + 24. Had that been assumed rather than measured, every result
+   here would have been computed on the wrong residues and nothing would have
+   errored.
+
+2. **A prior assumption was disproved.** The working explanation for why
+   cetuximab fails on mouse EGFR named four residue differences. Computation put
+   only one of them (K467R) in the contact set, and found two the assumption had
+   missed (R377K, S442G). Recorded as disproved rather than quietly corrected.
+
+3. **The method-novelty claim narrowed.** It depends on pairing acidic residues
+   against the target's *own* histidines. Of the two available, H418 is buried in
+   6ARU — so the claim rests on H433, which is also the single anchor cetuximab
+   touches. The mechanistically distinctive choice is therefore the one most
+   exposed to a "that's cetuximab's epitope" objection. That tension is real and
+   is documented rather than smoothed over.
+
+4. **Two new constraints emerged that no sequence analysis could have found.**
+   Position 442 is both the only human/mouse difference in the block and a
+   cetuximab contact, so the design must avoid it. And N444 — inside the block —
+   carries a covalently attached sugar chain, which means accessibility numbers
+   for nearby anchors are upper bounds rather than measurements.
+
+### Still open
+
+The highest-value question is **whether H418 is usable**: 6ARU says buried, 1NQL
+says partially exposed, with domain III in the same fold in both (RMSD 1.08 Å).
+It matters because if H418 is usable the best cluster grows to five anchors,
+carries a target histidine, and sits entirely outside cetuximab's footprint. Two
+experimental structures disagree, so this is recorded as ambiguous rather than
+resolved in whichever direction would be more convenient.
+
+Also open: which of the four qualifying anchor clusters to design against (a
+genuine trade-off, tabulated in the decisions log); which molecule size category
+to enter; the design pipeline and compute environment; and the proportion of open
+to closed receptor in the assay buffer, which two crystal structures cannot
+supply.
 
 ---
 

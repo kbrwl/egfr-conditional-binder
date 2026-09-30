@@ -1,0 +1,17 @@
+uniprot_pos,challenge_pos,human_aa,mouse_aa,label,inside_epitope
+313,289,A,P,A313P,False
+315,291,S,Y,S315Y,False
+318,294,M,V,M318V,False
+323,299,V,I,V323I,False
+330,306,E,D,E330D,False
+348,324,S,T,S348T,False
+361,337,N,Y,N361Y,False
+364,340,S,A,S364A,False
+377,353,R,K,R377K,False
+383,359,H,R,H383R,False
+390,366,Q,R,Q390R,False
+393,369,D,E,D393E,False
+412,388,E,D,E412D,False
+414,390,R,W,R414W,False
+442,418,S,G,S442G,True
+467,443,K,R,K467R,False

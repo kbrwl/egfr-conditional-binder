@@ -1,0 +1,9 @@
+uniprot_pos,expected_aa,pdb_resnum,observed_aa,match,status
+416,D,392,D,True,resolved
+418,H,394,H,True,resolved
+421,E,397,E,True,resolved
+424,E,400,E,True,resolved
+433,H,409,H,True,resolved
+455,E,431,E,True,resolved
+458,D,434,D,True,resolved
+460,D,436,D,True,resolved

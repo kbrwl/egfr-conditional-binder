@@ -31,6 +31,13 @@ FULL UniProt record. UniProt position = challenge position + 24.
   [PASS] UniProt 25-645 slice: T
   [PASS] challenge construct, index 390: T
 
+   CAVEAT: the mouse challenge construct is 623 aa, two longer than
+   mouse UniProt 25-645 (621 aa). Mouse carries a 2-residue insertion
+   near human-equivalent position 638. The +24 offset is therefore only
+   valid UPSTREAM of that insertion. Domain III (310-480) and our
+   epitope (415-466) sit well upstream, so the offset is safe here --
+   but do not reuse it for mouse positions past ~638 without rechecking.
+
 4. The eight pH anchors, read in both numbering systems
    (identity must also match between human and mouse -- these anchors
     are the ones we claim are cross-species conserved)

@@ -1,0 +1,9 @@
+uniprot_pos,aa,role,sasa_a2,rsa_theoretical,rsa_empirical,verdict,usable
+416,D,"acidic -> binder HIS",22.5,0.1166,0.1203,partial,True
+418,H,"target HIS -> binder D/E",7.2,0.0323,0.0335,buried,False
+421,E,"acidic -> binder HIS",46.8,0.2097,0.2185,partial,True
+424,E,"acidic -> binder HIS",95.7,0.4290,0.4470,exposed,True
+433,H,"target HIS -> binder D/E",145.1,0.6477,0.6717,exposed,True
+455,E,"acidic -> binder HIS",77.6,0.3479,0.3625,exposed,True
+458,D,"acidic -> binder HIS",47.8,0.2478,0.2557,partial,True
+460,D,"acidic -> binder HIS",35.9,0.1860,0.1920,partial,True
