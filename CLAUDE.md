@@ -90,17 +90,49 @@ understand it rather than take it on trust.
 
 ### How to write
 
-Plain sentences, ordinary words, the way a knowledgeable colleague explains
-something across a desk.
+These rules apply everywhere: prose documents, code comments, docstrings, the text
+scripts print to the terminal, and findings files. There is no separate register for
+code. The same person reads all of it.
 
-Avoid the contrast construction "X, not Y" unless it prevents a specific expensive
-mistake. It is doing real work in "a threshold rather than a ratio", above, because
-that distinction stops a particular error. Elsewhere it is only emphasis, and the
-repository had accumulated a great deal of it.
+**Plain language, with the technical term named alongside it.** Both, every time.
+Not the plain explanation on its own, because the reader is learning the vocabulary
+and will need it to read other people's work, ask a useful question, and recognise
+the term when a design tool prints it. And not the term on its own, because it
+carries no meaning yet. So: "how much of the residue's surface water can reach,
+called its solvent-accessible surface area", rather than either half alone. Add each
+new term to `docs/glossary.md` as you introduce it.
 
-Avoid dramatisation. Say what happened and what follows from it. Reserve bold and
-capitals for warnings a reader genuinely must not miss; if most paragraphs have
-emphasis, none of it registers. Lead with the result rather than building up to it.
+**Expand every abbreviation on first use in each file.** Once per file, not once per
+project, because files get read on their own.
+
+**Keep the rigour.** Every number, every caveat, every qualification stays. These
+rules are about wording. They are not licence to simplify the content, round a
+figure, drop a qualification, or leave out an inconvenient limit. If plain language
+seems to require dropping a caveat, the sentence needs restructuring, not trimming.
+
+**Avoid the "X, not Y" contrast construction** unless it prevents a specific
+expensive mistake. It earns its place in "a threshold rather than a ratio", because
+that distinction stops a particular error that would cost the submission. Almost
+everywhere else it is only emphasis dressed as precision.
+
+**Avoid dramatisation.** State what happened and what follows from it. In
+particular, make no claims about what other people usually do, what most teams skip,
+what standard practice overlooks, or how consequential something is. We have no
+basis for claims about other people's practice, and reaching for one is a reliable
+sign that the sentence is decoration rather than content. (The one exception already
+in this file is specific and checkable: design tools maximise affinity by default,
+which is a statement about a tool's objective function, not about the people using
+it.)
+
+**Bold and capitals only for warnings that genuinely must not be missed.** If most
+paragraphs carry emphasis, none of it registers.
+
+**Lead with the result.** State what was found, then explain it. No build-up.
+
+**Say what a technical decision's alternative was and why it was rejected.**
+
+**A number with no consequence attached is unfinished.** After a result, say what it
+changes about the design.
 
 ---
 
@@ -145,6 +177,47 @@ named `uniprot_of` and `pdb_of`, rather than as bare dictionaries. Handing that 
 the wrong kind of number gets nothing back. Handing a bare dictionary the wrong kind
 of number returned a plausible answer 48 positions away, which is how the
 disagreement above happened.
+
+---
+
+## `docs/explainers/` — plain-language walkthroughs
+
+`docs/explainers/` holds plain-language walkthroughs of completed work, one per
+phase, numbered in the order the work happened. They are written for the project
+owner, who has no biology background and is learning the field as the work proceeds.
+
+An explainer is written when a phase of work completes, before moving on. Each one
+names the files involved for every step, explains what was measured in ordinary
+words, gives the technical term for it in the same breath, reports the result, and
+says what it changed about the design. Naming the technical term is the point —
+knowing that a measurement is called relative solvent accessibility is what makes it
+possible to read other people's work later.
+
+Explainers quote numbers from `results/findings/`. Where the two disagree, the
+findings files are correct and the explainer needs updating. Update the relevant
+explainer whenever a finding it quotes changes.
+
+A number an explainer quotes should be traceable to a findings file. If a
+decision-relevant number exists only in the decisions log because it came from a
+one-off calculation, that is a gap in the scripts: make a script compute it rather
+than leaving the explainer to cite something unreproducible.
+
+---
+
+## What gets committed
+
+Documents whose form implies they are finished and public — a README, a methods
+write-up, anything an outside reader would take as complete — are not committed while
+the work behind them is unsettled. They are drafted on disk and written properly at
+the end, from settled conclusions.
+
+Working documents are committed as they go, because their form matches what they are:
+`CLAUDE.md`, `docs/decisions-log.md`, `docs/glossary.md`, `docs/rules-reference.md`,
+the explainers, and everything in `results/findings/` and `data/derived/`.
+
+Drafts of the not-yet-committed kind live on disk and are listed in `.gitignore`,
+which currently covers `README.draft.md` and `docs/competition-brief.md`. The tracked
+`README.md` stays minimal until the end.
 
 ---
 
