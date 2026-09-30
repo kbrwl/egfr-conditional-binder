@@ -1,0 +1,32 @@
+# Structures are large and re-downloadable from RCSB by analysis/02.
+data/structures/
+
+# Bulk design output. Only the final shortlist is committed, via the exception
+# below, so the repo records what we chose without carrying thousands of drafts.
+# NOTE: must be "dir/*", not "dir/". A directory-level ignore stops git looking
+# inside it at all, so the negations below would never take effect and the final
+# shortlist would be silently excluded.
+results/candidates/*
+!results/candidates/shortlist.csv
+!results/candidates/.gitkeep
+
+# Structure files anywhere, including the receptor-only files written by
+# analysis/02 and any design output. All are regenerable from committed code.
+*.pdb
+*.cif
+*.ent
+*.mmtf
+*.pdb.gz
+*.cif.gz
+
+# Environment
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# OS noise
+.DS_Store
+Thumbs.db

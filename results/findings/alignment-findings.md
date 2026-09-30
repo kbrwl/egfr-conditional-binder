@@ -1,0 +1,191 @@
+# Alignment findings: human vs mouse EGFR
+
+All numbers here were computed, not recalled. Method: global pairwise alignment
+of the two full sequences using the BLOSUM62 scoring table, gap open -11,
+gap extend -1. Source sequences: UniProt P00533 (human), UniProt Q01279 (mouse).
+Numbering throughout follows the **human** sequence.
+
+**Numbering convention.** Positions are in the full human UniProt record, where
+1–24 are the signal peptide and the mature extracellular region is 25–645. The
+official challenge constructs are that mature region, so UniProt position =
+challenge position + 24. Asserted by `analysis/00_numbering_check.py`.
+
+**Re-verified against the official challenge sequences, 30 September 2026.**
+The numbers below were first computed from the UniProt records. They were then
+recomputed against the official constructs from the challenge page: domain III
+still shows the same 16 differences, 415–466 still shows only S442G, and all
+eight anchors (D416, H418, E421, E424, H433, E455, D458, D460) are identical in
+both species in both numbering systems.
+
+Reproduce with the script at the end of this file, or run
+`analysis/01_alignment.py`, which is the maintained version and doubles as a
+regression test on the environment.
+
+---
+
+## Notation
+
+`Q390R` means: at position 390, human has glutamine (Q), mouse has arginine (R).
+Human letter, position number, mouse letter.
+
+---
+
+## Headline numbers
+
+| Region | Positions | Identical | Notes |
+|---|---|---|---|
+| Whole extracellular region | 25–645 | ~87% | 2 small gaps total |
+| Domain III | 310–480 | 90.6% | 16 differences in 171 positions |
+| Candidate epitope | 415–466 | 98.1% | 1 difference in 52 positions |
+
+Domain III is the sub-region that cetuximab and panitumumab bind, and the one the
+competition recommends targeting.
+
+## The 16 differences in domain III
+
+```
+A313P  S315Y  M318V  V323I  E330D  S348T  N361Y  S364A
+R377K  H383R  Q390R  D393E  E412D  R414W  S442G  K467R
+```
+
+They are not evenly distributed. Fourteen of the sixteen fall between positions
+310 and 414. Only two fall after position 415.
+
+## Identical runs of 10 or more residues in domain III
+
+| Positions | Length | Sequence |
+|---|---|---|
+| 415–441 | 27 | TDLHAFENLEIIRGRTKQHGQFSLAVV |
+| 443–466 | 24 | LNITSLGLRSLKEISDGDVIISGN |
+| 394–411 | 18 | ILKTVKEITGFLLIQAWP |
+| 331–347 | 17 | GPCRKVCNGIGIGEFKD |
+| 468–480 | 13 | NLCYANTINWKKL |
+| 349–360 | 12 | LSINATNIKHFK |
+| 365–376 | 12 | ISGDLHILPVAF |
+
+The top two runs are separated by a single difference at position 442
+(S442G, serine to glycine — both among the smallest amino acids, so the
+local shape barely changes). Treating them as one block gives **415–466**:
+52 residues with one conservative difference.
+
+## Charged and switchable residues inside 415–466
+
+```
+415  T D L H A F E N L E I I R G R T K Q H G Q F S L A V V
+442  S L N I T S L G L R S L K E I S D G D V I I S G N
+```
+
+Negatively charged, identical in both species — pair these with a **histidine**
+on the binder:
+
+    D416   E421   E424   E455   D458   D460
+
+Histidines on the target, identical in both species. These flip from neutral to
+positive as pH drops, so pair these with an **acidic residue (D or E)** on the
+binder:
+
+    H418   H433
+
+That gives **eight** candidate anchor points in the block, not six.
+
+Positively charged, identical in both species. Avoid placing basic residues
+opposite these; an acidic residue here gives grip at both pH values, which adds
+affinity but no selectivity:
+
+    R427   R429   K431   R451   K454
+
+## The pairing rule
+
+A protein interface is a patterned surface, not a uniformly charged one. Each
+position on the binder faces one specific position on the target, and
+electrostatic attraction falls off fast with distance, so each pair behaves
+independently. The rule is therefore per-position:
+
+| On the target | Put on the binder | Off at 7.4 | On at 6.5 |
+|---|---|---|---|
+| D or E (always negative) | histidine | neutral His, no pull | His turns +, attracts |
+| H (switches) | D or E (always negative) | neutral His, no pull | His turns +, attracts |
+
+Both arrangements switch on in the same direction. They reinforce.
+
+**Failure mode to avoid:** histidine on the binder placed opposite H418 or H433.
+That pair switches *off* as pH drops — both go positive and repel — and can
+cancel the gain from a correctly built pair elsewhere. Placement must be
+deliberate, not "sprinkle histidines across the interface".
+
+## Interpretation
+
+415–466 is the leading candidate epitope because it is long, effectively
+identical across species, and carries eight anchor points of two complementary
+kinds for pH-switchable contacts.
+
+Two refinements that matter for design:
+
+- **The switch is partial, not binary.** Histidine's flipping point sits around
+  pH 6.0–6.5, so at pH 6.5 it is roughly a third to a half protonated rather
+  than fully. Each pair contributes a fraction of a charge difference, which is
+  why three or four pairs are needed rather than one.
+- **The flipping point shifts with surroundings.** A histidine next to a
+  negative residue holds its positive charge more easily, pushing its flipping
+  point higher and making it more useful. Next to a positive residue, the
+  reverse. The same amino acid behaves differently depending on neighbours,
+  which is a large part of why pH selectivity resists computational prediction.
+
+## Open caveats
+
+- **Surface exposure is unknown.** This is sequence analysis only. Domain III
+  folds into a solenoid; adjacent residues in sequence can point in opposite
+  directions. Some of the six acidic anchors are certainly buried and unusable.
+  Requires 3D coordinates to resolve.
+- **Spatial clustering is unknown.** The usable anchors must sit within roughly
+  25 Å of each other for a single binder to reach them.
+- **Cetuximab's contact set is UNVERIFIED.** The suggestion that Q390R, E412D,
+  R414W and K467R explain cetuximab's failure on mouse EGFR came from memory,
+  not calculation. Must be computed from a published antibody-EGFR structure
+  before it informs any design decision. **Structure of record is 6ARU**, not
+  1YY9 as written in an earlier draft of this file: 6ARU is the entry the
+  competition page itself references, and it contains the full extracellular
+  region rather than domain III alone, which also lets us ask whether
+  neighbouring domains occlude our epitope. Computed in
+  `analysis/04_cetuximab_contacts.py`.
+
+---
+
+## Reproduction script
+
+```python
+from Bio import Align
+from Bio.Align import substitution_matrices
+
+def load(path, label):
+    seq, keep = [], False
+    for line in open(path):
+        if line.startswith('>'):
+            keep = label in line
+        elif keep:
+            seq.append(line.strip())
+    return ''.join(seq)
+
+FASTA = 'data/sequences/egfr-uniprot-full.fasta'   # renamed 30 Sep 2026
+h = load(FASTA, 'EGFR_HUMAN')
+m = load(FASTA, 'EGFR_MOUSE')
+
+a = Align.PairwiseAligner()
+a.mode = 'global'
+a.open_gap_score = -11
+a.extend_gap_score = -1
+a.substitution_matrix = substitution_matrices.load("BLOSUM62")
+aln = a.align(h, m)[0]
+
+hi, rows = 0, []
+for x, y in zip(aln[0], aln[1]):
+    if x != '-':
+        hi += 1
+        rows.append((hi, x, y, x == y))
+
+d3 = [r for r in rows if 310 <= r[0] <= 480]
+print("domain III identity: %.1f%%" % (100 * sum(r[3] for r in d3) / len(d3)))
+print("differences:", ', '.join("%s%d%s" % (r[1], r[0], r[2]) for r in d3 if not r[3]))
+```
+
+Requires `pip install biopython`.

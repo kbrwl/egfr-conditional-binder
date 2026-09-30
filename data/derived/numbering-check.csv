@@ -1,0 +1,9 @@
+uniprot_pos,challenge_pos,expected_aa,human_uniprot_aa,human_challenge_aa,mouse_challenge_aa,conserved,role
+416,392,D,D,D,D,True,"acidic (binder gets HIS)"
+418,394,H,H,H,H,True,"target HIS (binder gets D/E)"
+421,397,E,E,E,E,True,"acidic (binder gets HIS)"
+424,400,E,E,E,E,True,"acidic (binder gets HIS)"
+433,409,H,H,H,H,True,"target HIS (binder gets D/E)"
+455,431,E,E,E,E,True,"acidic (binder gets HIS)"
+458,434,D,D,D,D,True,"acidic (binder gets HIS)"
+460,436,D,D,D,D,True,"acidic (binder gets HIS)"

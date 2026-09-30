@@ -1,0 +1,15 @@
+# Python dependencies for the analysis pipeline (analysis/00 - analysis/06).
+# Versions are the ones the committed results were actually computed with, on
+# Python 3.13.2 / macOS. Pinned rather than floated so a rerun reproduces the
+# numbers rather than approximately reproducing them.
+#
+#   python3 -m venv .venv
+#   ./.venv/bin/pip install -r requirements.txt
+#   ./.venv/bin/python analysis/00_numbering_check.py
+#
+# None of this needs a GPU. The design stage will; nothing here does.
+
+biopython==1.88      # alignment, PDB parsing, SASA, NeighborSearch, superposition
+numpy==2.5.3         # distance matrices
+requests==2.34.2     # structure downloads from RCSB
+py3Dmol==2.5.5       # interactive structure rendering for the visual check

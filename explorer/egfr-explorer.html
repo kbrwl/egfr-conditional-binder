@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Human vs mouse EGFR — alignment explorer</title>
+<style>
+:root{
+  --bg:#fbfaf8; --card:#ffffff; --ink:#22211f; --ink2:#5f5e5a; --ink3:#8a8984;
+  --line:#e3e0d8; --line2:#c9c5ba;
+  --ok:#e9f2e2; --okInk:#3b6d11; --okLine:#bcd79a;
+  --bad:#fbe9e9; --badInk:#a32d2d; --badLine:#f0adad;
+  --acc:#e9eefb; --accInk:#2f4f9e; --accLine:#b7c6ee;
+  --warn:#fcf0dc; --warnInk:#8a5a0c; --warnLine:#f0cd8e;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+  --tile:22px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#191917; --card:#232321; --ink:#eceae4; --ink2:#a9a79f; --ink3:#7d7b74;
+    --line:#35342f; --line2:#4a4943;
+    --ok:#22331a; --okInk:#a8cf78; --okLine:#3d5a29;
+    --bad:#3a1e1e; --badInk:#f09595; --badLine:#6b3030;
+    --acc:#1e2740; --accInk:#a8bdf0; --accLine:#36456e;
+    --warn:#3a2d16; --warnInk:#e5b96a; --warnLine:#5f4a20;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#191917; --card:#232321; --ink:#eceae4; --ink2:#a9a79f; --ink3:#7d7b74;
+  --line:#35342f; --line2:#4a4943;
+  --ok:#22331a; --okInk:#a8cf78; --okLine:#3d5a29;
+  --bad:#3a1e1e; --badInk:#f09595; --badLine:#6b3030;
+  --acc:#1e2740; --accInk:#a8bdf0; --accLine:#36456e;
+  --warn:#3a2d16; --warnInk:#e5b96a; --warnLine:#5f4a20;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+     line-height:1.65;font-size:16px;-webkit-text-size-adjust:100%}
+.wrap{max-width:860px;margin:0 auto;padding:28px 18px 80px}
+h1{font-size:26px;line-height:1.25;margin:0 0 6px;font-weight:600}
+h2{font-size:20px;margin:40px 0 10px;font-weight:600}
+h3{font-size:16px;margin:22px 0 6px;font-weight:600}
+p{margin:0 0 14px;max-width:70ch}
+.sub{color:var(--ink2);margin-bottom:26px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+      padding:18px;margin:16px 0}
+code{font-family:var(--mono);background:var(--acc);color:var(--accInk);
+     padding:1px 5px;border-radius:4px;font-size:.9em}
+.small{font-size:14px;color:var(--ink2)}
+ul{padding-left:20px;margin:0 0 14px;max-width:70ch}
+li{margin-bottom:7px}
+
+/* notation decoder */
+.decode{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;
+        font-family:var(--mono);font-size:30px;margin:10px 0 4px}
+.dpart{text-align:center}
+.dpart b{display:block;font-weight:500}
+.dpart span{display:block;font-family:var(--sans);font-size:12px;
+            color:var(--ink2);margin-top:6px;max-width:110px;line-height:1.35}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0}
+button{font:inherit;font-size:14px;padding:7px 12px;border-radius:8px;
+       border:1px solid var(--line2);background:var(--card);color:var(--ink);
+       cursor:pointer}
+button[aria-pressed="true"]{background:var(--accInk);color:var(--card);
+       border-color:var(--accInk)}
+.zoom{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink2)}
+input[type=range]{width:130px}
+
+/* alignment grid */
+.gridwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;
+          background:var(--card);padding:14px}
+.grid{display:flex;flex-wrap:wrap;gap:2px}
+.col{width:var(--tile);flex:0 0 var(--tile);text-align:center;cursor:pointer;
+     border-radius:3px;border:1px solid transparent;font-family:var(--mono)}
+.col .num{font-size:9px;color:var(--ink3);height:12px;line-height:12px;
+          font-family:var(--sans)}
+.col .aa{font-size:calc(var(--tile) * .62);line-height:1.5}
+.col.match{background:var(--ok);color:var(--okInk)}
+.col.diff{background:var(--bad);color:var(--badInk);border-color:var(--badLine)}
+.col.dim{opacity:.32}
+.col.sel{outline:2px solid var(--accInk);outline-offset:1px}
+.col.epi{box-shadow:inset 0 -3px 0 var(--accInk)}
+.rowkey{display:flex;gap:16px;font-size:13px;color:var(--ink2);margin:10px 0 2px}
+.rowkey b{font-weight:600;color:var(--ink)}
+
+/* detail */
+.detail{margin-top:12px;border:1px solid var(--line);border-radius:10px;
+        padding:14px;background:var(--card);min-height:96px}
+.detail .hdr{font-family:var(--mono);font-size:19px;margin-bottom:8px}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:20px;
+     margin:0 6px 6px 0;border:1px solid}
+.t-ok{background:var(--ok);color:var(--okInk);border-color:var(--okLine)}
+.t-bad{background:var(--bad);color:var(--badInk);border-color:var(--badLine)}
+.t-acc{background:var(--acc);color:var(--accInk);border-color:var(--accLine)}
+.t-warn{background:var(--warn);color:var(--warnInk);border-color:var(--warnLine)}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--ink2);
+        margin:12px 0}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;
+    vertical-align:-2px;margin-right:6px;border:1px solid var(--line2)}
+
+table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--ink2);font-weight:600;font-size:13px}
+td.mono{font-family:var(--mono)}
+.tablewrap{overflow-x:auto}
+.note{border-left:3px solid var(--warnLine);background:var(--warn);
+      color:var(--warnInk);padding:12px 14px;border-radius:0 8px 8px 0;
+      margin:16px 0;font-size:14px}
+.steps{counter-reset:s}
+.step{position:relative;padding-left:40px;margin-bottom:18px}
+.step:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:1px;
+  width:26px;height:26px;border-radius:50%;background:var(--accInk);color:var(--card);
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.step h3{margin:0 0 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Human vs mouse EGFR: what matches, what doesn't, and where to aim</h1>
+<p class="sub">A working document for the conditional binder design. Everything below
+is computed from the two official sequence records, not recalled from memory.</p>
+
+<h2>First: how to read the shorthand</h2>
+<p>Protein people write a single difference as three things squashed together.
+Here is <code>Q390R</code> pulled apart:</p>
+
+<div class="card">
+  <div class="decode">
+    <div class="dpart"><b>Q</b><span>the letter in the <b>human</b> protein — Q means glutamine</span></div>
+    <div class="dpart"><b>390</b><span>the <b>position</b> — the 390th link in the chain, counting from one end</span></div>
+    <div class="dpart"><b>R</b><span>the letter in the <b>mouse</b> protein — R means arginine</span></div>
+  </div>
+  <p class="small" style="margin-top:14px">So <code>Q390R</code> reads:
+  <em>"at position 390, humans have glutamine where mice have arginine."</em>
+  Each of the 20 amino acids has an agreed single letter. They are not always the
+  first letter of the name (R for arginine, K for lysine, W for tryptophan), which
+  is why the notation looks arbitrary until you have the table. Click any residue in
+  the explorer below and it spells the names out for you.</p>
+</div>
+
+<h2>The alignment explorer</h2>
+<p>Each narrow column is one position. The top letter is human, the bottom letter is
+mouse. Green means the two species agree; red means they differ. Click any column for
+the full story of that position.</p>
+
+<div class="controls" role="group" aria-label="Region">
+  <button data-range="25,645" aria-pressed="false">Whole outside region</button>
+  <button data-range="310,480" aria-pressed="true">Domain III</button>
+  <button data-range="415,466" aria-pressed="false">Candidate epitope</button>
+  <div class="zoom">
+    <label for="z">Zoom</label>
+    <input type="range" id="z" min="14" max="46" value="24">
+  </div>
+</div>
+
+<div class="controls" role="group" aria-label="Highlight">
+  <button id="hlAcid" aria-pressed="false">Dim all but acidic residues</button>
+  <button id="hlHis" aria-pressed="false">Dim all but histidines</button>
+  <button id="hlDiff" aria-pressed="false">Dim all but differences</button>
+</div>
+
+<div class="rowkey"><span>Top row: <b>human</b></span><span>Bottom row: <b>mouse</b></span></div>
+<div class="gridwrap"><div class="grid" id="grid"></div></div>
+
+<div class="legend">
+  <span><span class="sw" style="background:var(--ok);border-color:var(--okLine)"></span>identical</span>
+  <span><span class="sw" style="background:var(--bad);border-color:var(--badLine)"></span>differs</span>
+  <span><span class="sw" style="background:transparent;box-shadow:inset 0 -3px 0 var(--accInk)"></span>inside candidate epitope 415–466</span>
+</div>
+
+<div class="detail" id="detail"><span class="small">Click a column above.</span></div>
+
+<h2>What the alignment shows</h2>
+<p id="summary" class="small"></p>
+<p>The two proteins are close relatives but not identical twins. Across the whole
+outside portion they agree at roughly 87 positions out of every 100. Inside domain III
+— the sub-region the existing cancer drugs grab — they agree at about 91 out of 100.</p>
+<p>The useful part isn't the percentage. It's that the disagreements are lumpy.
+Almost all of them sit in the first half of domain III. Past position 415 there are
+only two differences in the next fifty-two positions.</p>
+
+<h3>Every stretch of 10 or more identical positions in domain III</h3>
+<div class="tablewrap"><table id="runs">
+  <thead><tr><th>Positions</th><th>Length</th><th>Sequence (identical in both species)</th></tr></thead>
+  <tbody></tbody>
+</table></div>
+
+<h2>The candidate landing zone: 415 to 466</h2>
+<p>Fifty-two consecutive positions containing exactly one difference, at position 442,
+where human has serine and mouse has glycine. Both are among the smallest amino acids,
+so the shape barely changes. For practical purposes this whole block is the same
+protein surface in both species.</p>
+
+<p>Two features make it attractive beyond just being long:</p>
+
+<h3>It carries six negatively charged residues</h3>
+<p>D416, E421, E424, E455, D458 and D460. D is aspartic acid and E is glutamic acid;
+both carry a negative charge at the acidity levels we care about, and all six are
+identical in mouse.</p>
+<p>These are the anchors for the pH trick. Your binder puts a <strong>histidine</strong>
+across from one of them. Histidine is the one amino acid that changes charge in the
+window between healthy tissue and tumour tissue: neutral at pH 7.4, positive at around
+pH 6.5. Neutral histidine and a negative aspartic acid ignore each other. Positive
+histidine and a negative aspartic acid pull together. That is the entire on/off switch,
+and six anchor points is generous raw material.</p>
+
+<h3>The target already has two histidines here: H418 and H433</h3>
+<p>Both identical in mouse. They also turn positive in the tumour, and that cuts both
+ways. Put a positive residue on your binder facing them and the pair will shove apart
+exactly when you want them to grip. Put a negative residue there instead and you gain
+extra grip for free. So these two are not a problem — they are a second, opposite-facing
+lever, as long as you point them deliberately.</p>
+
+<div class="note"><strong>Limit of this analysis.</strong> Everything above comes from
+comparing letters. Letters tell you what each residue is, not which direction it
+points. Domain III folds into a spiral-staircase shape, so a residue can sit buried
+in the core with its neighbour sticking out into open water. Some of those six
+negatively charged residues are certainly buried and useless to us. Resolving that
+needs the three-dimensional coordinates, which is the next step below.</div>
+
+<h2>Why cetuximab fails on mouse EGFR</h2>
+<p><strong>Cetuximab</strong> (sold as Erbitux) is an approved antibody for colorectal
+and head-and-neck cancer. An antibody is a Y-shaped protein the immune system produces;
+the two tips of the Y are the gripping surfaces. Cetuximab's tips clamp onto domain III
+of human EGFR, covering the patch that the natural growth signal needs to land on.
+Signal blocked, tumour growth slowed. <strong>Panitumumab</strong> (Vectibix) is a second
+approved antibody that grabs an overlapping patch.</p>
+
+<p>Cetuximab does not bind mouse EGFR at all. The reason is structural and simple: the
+specific residues its tips touch are among the ones that differ between the species.
+The antibody was raised against the human surface and fits it like a cast. Change a few
+of the bumps and the cast no longer seats.</p>
+
+<p>This is a real practical problem, not a trivia point. When researchers want to test an
+EGFR drug in mice before going near humans, they cannot inject the human antibody — it
+would do nothing. They have to build a separate mouse-specific surrogate molecule, which
+costs time and money and means the mouse results are about a different molecule than the
+one heading to patients. The competition asks for one binder that works in both species
+precisely to remove that step.</p>
+
+<p>The region cetuximab covers sits in the second half of domain III, overlapping the
+growth-signal binding surface. Several of our computed differences fall in or near that
+window — including <code>Q390R</code>, <code>E412D</code>, <code>R414W</code> and
+<code>K467R</code> — which is consistent with the species failure.</p>
+
+<div class="note"><strong>Marked as unverified.</strong> The precise list of residues
+cetuximab touches should be computed from the published structure of the antibody bound
+to EGFR rather than taken from anyone's memory, including mine. That calculation is
+step 2 below. Until it runs, treat the four residues named above as a plausible
+explanation, not an established one.</div>
+
+<p>Note the useful consequence either way: our candidate block, 415 to 466, sits right
+next to the drug-binding region without being identical to it. Close enough that a
+binder landing there should block the growth signal the same way. Different enough that
+we are not simply rebuilding cetuximab, which the competition rules forbid.</p>
+
+<h2>Next steps</h2>
+<div class="steps">
+
+<div class="step">
+  <h3>Get the three-dimensional structure</h3>
+  <p class="small">Download the published coordinates of cetuximab gripping EGFR domain III
+  (archive entry 1YY9). A structure file is a plain text table listing the x, y and z
+  position of every atom, measured experimentally. This is free and public.</p>
+</div>
+
+<div class="step">
+  <h3>Work out which residues are actually reachable</h3>
+  <p class="small">For each position in 415–466, calculate how much of it is exposed to
+  the surrounding water. The standard method rolls a water-sized ball over the protein
+  and measures how much of each residue it can touch. High number means a binder can
+  reach it; near zero means it is buried and irrelevant to us. This prunes our six
+  negatively charged anchors down to the ones that exist on the surface.</p>
+</div>
+
+<div class="step">
+  <h3>Compute cetuximab's true footprint</h3>
+  <p class="small">List every EGFR residue with an atom sitting within about 4.5 ångströms
+  of an antibody atom — roughly the distance at which two atoms are considered in contact.
+  That gives the real contact set, and confirms or kills the explanation above.</p>
+</div>
+
+<div class="step">
+  <h3>Check the surviving residues form a cluster</h3>
+  <p class="small">A binder is a single small object and can only touch one patch. If the
+  exposed anchors turn out to be scattered across opposite faces of the fold, the epitope
+  is not real and we fall back to the next-longest conserved run. They need to sit within
+  roughly 25 ångströms of each other.</p>
+</div>
+
+<div class="step">
+  <h3>Generate binder candidates against that patch</h3>
+  <p class="small">Feed the confirmed patch into a binder-design pipeline, which proposes
+  candidate sequences shaped to fit it. Generate a few hundred, then filter on how
+  confidently a structure-prediction model places them against the target.</p>
+</div>
+
+<div class="step">
+  <h3>Engineer the pH switch</h3>
+  <p class="small">Take the surviving candidates and systematically swap contact residues
+  to histidine, keeping the versions where a histidine lands close to one of the confirmed
+  negatively charged anchors, and where the fold still holds together.</p>
+</div>
+
+<div class="step">
+  <h3>Novelty check, rank, submit</h3>
+  <p class="small">Confirm no sequence resembles a known binder closely enough to break the
+  de-novo rule, rank the survivors, and submit the top twenty with written reasoning.</p>
+</div>
+
+</div>
+
+<p class="small" style="margin-top:30px;color:var(--ink3)">Alignment computed with a
+standard global alignment using the BLOSUM62 scoring table. Human sequence: UniProt
+P00533. Mouse sequence: UniProt Q01279. Numbering follows the human sequence throughout.</p>
+
+</div>
+
+<script>
+const DATA = [{"h": "M", "m": "M", "hp": 1, "mp": 1, "ok": true}, {"h": "R", "m": "R", "hp": 2, "mp": 2, "ok": true}, {"h": "P", "m": "P", "hp": 3, "mp": 3, "ok": true}, {"h": "S", "m": "S", "hp": 4, "mp": 4, "ok": true}, {"h": "G", "m": "G", "hp": 5, "mp": 5, "ok": true}, {"h": "T", "m": "T", "hp": 6, "mp": 6, "ok": true}, {"h": "A", "m": "A", "hp": 7, "mp": 7, "ok": true}, {"h": "G", "m": "R", "hp": 8, "mp": 8, "ok": false}, {"h": "A", "m": "T", "hp": 9, "mp": 9, "ok": false}, {"h": "A", "m": "T", "hp": 10, "mp": 10, "ok": false}, {"h": "L", "m": "L", "hp": 11, "mp": 11, "ok": true}, {"h": "L", "m": "L", "hp": 12, "mp": 12, "ok": true}, {"h": "A", "m": "V", "hp": 13, "mp": 13, "ok": false}, {"h": "L", "m": "L", "hp": 14, "mp": 14, "ok": true}, {"h": "L", "m": "L", "hp": 15, "mp": 15, "ok": true}, {"h": "A", "m": "T", "hp": 16, "mp": 16, "ok": false}, {"h": "A", "m": "A", "hp": 17, "mp": 17, "ok": true}, {"h": "L", "m": "L", "hp": 18, "mp": 18, "ok": true}, {"h": "C", "m": "C", "hp": 19, "mp": 19, "ok": true}, {"h": "P", "m": "A", "hp": 20, "mp": 20, "ok": false}, {"h": "A", "m": "A", "hp": 21, "mp": 21, "ok": true}, {"h": "S", "m": "G", "hp": 22, "mp": 22, "ok": false}, {"h": "R", "m": "G", "hp": 23, "mp": 23, "ok": false}, {"h": "A", "m": "A", "hp": 24, "mp": 24, "ok": true}, {"h": "L", "m": "L", "hp": 25, "mp": 25, "ok": true}, {"h": "E", "m": "E", "hp": 26, "mp": 26, "ok": true}, {"h": "E", "m": "E", "hp": 27, "mp": 27, "ok": true}, {"h": "K", "m": "K", "hp": 28, "mp": 28, "ok": true}, {"h": "K", "m": "K", "hp": 29, "mp": 29, "ok": true}, {"h": "V", "m": "V", "hp": 30, "mp": 30, "ok": true}, {"h": "C", "m": "C", "hp": 31, "mp": 31, "ok": true}, {"h": "Q", "m": "Q", "hp": 32, "mp": 32, "ok": true}, {"h": "G", "m": "G", "hp": 33, "mp": 33, "ok": true}, {"h": "T", "m": "T", "hp": 34, "mp": 34, "ok": true}, {"h": "S", "m": "S", "hp": 35, "mp": 35, "ok": true}, {"h": "N", "m": "N", "hp": 36, "mp": 36, "ok": true}, {"h": "K", "m": "R", "hp": 37, "mp": 37, "ok": false}, {"h": "L", "m": "L", "hp": 38, "mp": 38, "ok": true}, {"h": "T", "m": "T", "hp": 39, "mp": 39, "ok": true}, {"h": "Q", "m": "Q", "hp": 40, "mp": 40, "ok": true}, {"h": "L", "m": "L", "hp": 41, "mp": 41, "ok": true}, {"h": "G", "m": "G", "hp": 42, "mp": 42, "ok": true}, {"h": "T", "m": "T", "hp": 43, "mp": 43, "ok": true}, {"h": "F", "m": "F", "hp": 44, "mp": 44, "ok": true}, {"h": "E", "m": "E", "hp": 45, "mp": 45, "ok": true}, {"h": "D", "m": "D", "hp": 46, "mp": 46, "ok": true}, {"h": "H", "m": "H", "hp": 47, "mp": 47, "ok": true}, {"h": "F", "m": "F", "hp": 48, "mp": 48, "ok": true}, {"h": "L", "m": "L", "hp": 49, "mp": 49, "ok": true}, {"h": "S", "m": "S", "hp": 50, "mp": 50, "ok": true}, {"h": "L", "m": "L", "hp": 51, "mp": 51, "ok": true}, {"h": "Q", "m": "Q", "hp": 52, "mp": 52, "ok": true}, {"h": "R", "m": "R", "hp": 53, "mp": 53, "ok": true}, {"h": "M", "m": "M", "hp": 54, "mp": 54, "ok": true}, {"h": "F", "m": "Y", "hp": 55, "mp": 55, "ok": false}, {"h": "N", "m": "N", "hp": 56, "mp": 56, "ok": true}, {"h": "N", "m": "N", "hp": 57, "mp": 57, "ok": true}, {"h": "C", "m": "C", "hp": 58, "mp": 58, "ok": true}, {"h": "E", "m": "E", "hp": 59, "mp": 59, "ok": true}, {"h": "V", "m": "V", "hp": 60, "mp": 60, "ok": true}, {"h": "V", "m": "V", "hp": 61, "mp": 61, "ok": true}, {"h": "L", "m": "L", "hp": 62, "mp": 62, "ok": true}, {"h": "G", "m": "G", "hp": 63, "mp": 63, "ok": true}, {"h": "N", "m": "N", "hp": 64, "mp": 64, "ok": true}, {"h": "L", "m": "L", "hp": 65, "mp": 65, "ok": true}, {"h": "E", "m": "E", "hp": 66, "mp": 66, "ok": true}, {"h": "I", "m": "I", "hp": 67, "mp": 67, "ok": true}, {"h": "T", "m": "T", "hp": 68, "mp": 68, "ok": true}, {"h": "Y", "m": "Y", "hp": 69, "mp": 69, "ok": true}, {"h": "V", "m": "V", "hp": 70, "mp": 70, "ok": true}, {"h": "Q", "m": "Q", "hp": 71, "mp": 71, "ok": true}, {"h": "R", "m": "R", "hp": 72, "mp": 72, "ok": true}, {"h": "N", "m": "N", "hp": 73, "mp": 73, "ok": true}, {"h": "Y", "m": "Y", "hp": 74, "mp": 74, "ok": true}, {"h": "D", "m": "D", "hp": 75, "mp": 75, "ok": true}, {"h": "L", "m": "L", "hp": 76, "mp": 76, "ok": true}, {"h": "S", "m": "S", "hp": 77, "mp": 77, "ok": true}, {"h": "F", "m": "F", "hp": 78, "mp": 78, "ok": true}, {"h": "L", "m": "L", "hp": 79, "mp": 79, "ok": true}, {"h": "K", "m": "K", "hp": 80, "mp": 80, "ok": true}, {"h": "T", "m": "T", "hp": 81, "mp": 81, "ok": true}, {"h": "I", "m": "I", "hp": 82, "mp": 82, "ok": true}, {"h": "Q", "m": "Q", "hp": 83, "mp": 83, "ok": true}, {"h": "E", "m": "E", "hp": 84, "mp": 84, "ok": true}, {"h": "V", "m": "V", "hp": 85, "mp": 85, "ok": true}, {"h": "A", "m": "A", "hp": 86, "mp": 86, "ok": true}, {"h": "G", "m": "G", "hp": 87, "mp": 87, "ok": true}, {"h": "Y", "m": "Y", "hp": 88, "mp": 88, "ok": true}, {"h": "V", "m": "V", "hp": 89, "mp": 89, "ok": true}, {"h": "L", "m": "L", "hp": 90, "mp": 90, "ok": true}, {"h": "I", "m": "I", "hp": 91, "mp": 91, "ok": true}, {"h": "A", "m": "A", "hp": 92, "mp": 92, "ok": true}, {"h": "L", "m": "L", "hp": 93, "mp": 93, "ok": true}, {"h": "N", "m": "N", "hp": 94, "mp": 94, "ok": true}, {"h": "T", "m": "T", "hp": 95, "mp": 95, "ok": true}, {"h": "V", "m": "V", "hp": 96, "mp": 96, "ok": true}, {"h": "E", "m": "E", "hp": 97, "mp": 97, "ok": true}, {"h": "R", "m": "R", "hp": 98, "mp": 98, "ok": true}, {"h": "I", "m": "I", "hp": 99, "mp": 99, "ok": true}, {"h": "P", "m": "P", "hp": 100, "mp": 100, "ok": true}, {"h": "L", "m": "L", "hp": 101, "mp": 101, "ok": true}, {"h": "E", "m": "E", "hp": 102, "mp": 102, "ok": true}, {"h": "N", "m": "N", "hp": 103, "mp": 103, "ok": true}, {"h": "L", "m": "L", "hp": 104, "mp": 104, "ok": true}, {"h": "Q", "m": "Q", "hp": 105, "mp": 105, "ok": true}, {"h": "I", "m": "I", "hp": 106, "mp": 106, "ok": true}, {"h": "I", "m": "I", "hp": 107, "mp": 107, "ok": true}, {"h": "R", "m": "R", "hp": 108, "mp": 108, "ok": true}, {"h": "G", "m": "G", "hp": 109, "mp": 109, "ok": true}, {"h": "N", "m": "N", "hp": 110, "mp": 110, "ok": true}, {"h": "M", "m": "A", "hp": 111, "mp": 111, "ok": false}, {"h": "Y", "m": "L", "hp": 112, "mp": 112, "ok": false}, {"h": "Y", "m": "Y", "hp": 113, "mp": 113, "ok": true}, {"h": "E", "m": "E", "hp": 114, "mp": 114, "ok": true}, {"h": "N", "m": "N", "hp": 115, "mp": 115, "ok": true}, {"h": "S", "m": "T", "hp": 116, "mp": 116, "ok": false}, {"h": "Y", "m": "Y", "hp": 117, "mp": 117, "ok": true}, {"h": "A", "m": "A", "hp": 118, "mp": 118, "ok": true}, {"h": "L", "m": "L", "hp": 119, "mp": 119, "ok": true}, {"h": "A", "m": "A", "hp": 120, "mp": 120, "ok": true}, {"h": "V", "m": "I", "hp": 121, "mp": 121, "ok": false}, {"h": "L", "m": "L", "hp": 122, "mp": 122, "ok": true}, {"h": "S", "m": "S", "hp": 123, "mp": 123, "ok": true}, {"h": "N", "m": "N", "hp": 124, "mp": 124, "ok": true}, {"h": "Y", "m": "Y", "hp": 125, "mp": 125, "ok": true}, {"h": "D", "m": "G", "hp": 126, "mp": 126, "ok": false}, {"h": "A", "m": "T", "hp": 127, "mp": 127, "ok": false}, {"h": "N", "m": "N", "hp": 128, "mp": 128, "ok": true}, {"h": "K", "m": "R", "hp": 129, "mp": 129, "ok": false}, {"h": "T", "m": "T", "hp": 130, "mp": 130, "ok": true}, {"h": "G", "m": "G", "hp": 131, "mp": 131, "ok": true}, {"h": "L", "m": "L", "hp": 132, "mp": 132, "ok": true}, {"h": "K", "m": "R", "hp": 133, "mp": 133, "ok": false}, {"h": "E", "m": "E", "hp": 134, "mp": 134, "ok": true}, {"h": "L", "m": "L", "hp": 135, "mp": 135, "ok": true}, {"h": "P", "m": "P", "hp": 136, "mp": 136, "ok": true}, {"h": "M", "m": "M", "hp": 137, "mp": 137, "ok": true}, {"h": "R", "m": "R", "hp": 138, "mp": 138, "ok": true}, {"h": "N", "m": "N", "hp": 139, "mp": 139, "ok": true}, {"h": "L", "m": "L", "hp": 140, "mp": 140, "ok": true}, {"h": "Q", "m": "Q", "hp": 141, "mp": 141, "ok": true}, {"h": "E", "m": "E", "hp": 142, "mp": 142, "ok": true}, {"h": "I", "m": "I", "hp": 143, "mp": 143, "ok": true}, {"h": "L", "m": "L", "hp": 144, "mp": 144, "ok": true}, {"h": "H", "m": "I", "hp": 145, "mp": 145, "ok": false}, {"h": "G", "m": "G", "hp": 146, "mp": 146, "ok": true}, {"h": "A", "m": "A", "hp": 147, "mp": 147, "ok": true}, {"h": "V", "m": "V", "hp": 148, "mp": 148, "ok": true}, {"h": "R", "m": "R", "hp": 149, "mp": 149, "ok": true}, {"h": "F", "m": "F", "hp": 150, "mp": 150, "ok": true}, {"h": "S", "m": "S", "hp": 151, "mp": 151, "ok": true}, {"h": "N", "m": "N", "hp": 152, "mp": 152, "ok": true}, {"h": "N", "m": "N", "hp": 153, "mp": 153, "ok": true}, {"h": "P", "m": "P", "hp": 154, "mp": 154, "ok": true}, {"h": "A", "m": "I", "hp": 155, "mp": 155, "ok": false}, {"h": "L", "m": "L", "hp": 156, "mp": 156, "ok": true}, {"h": "C", "m": "C", "hp": 157, "mp": 157, "ok": true}, {"h": "N", "m": "N", "hp": 158, "mp": 158, "ok": true}, {"h": "V", "m": "M", "hp": 159, "mp": 159, "ok": false}, {"h": "E", "m": "D", "hp": 160, "mp": 160, "ok": false}, {"h": "S", "m": "T", "hp": 161, "mp": 161, "ok": false}, {"h": "I", "m": "I", "hp": 162, "mp": 162, "ok": true}, {"h": "Q", "m": "Q", "hp": 163, "mp": 163, "ok": true}, {"h": "W", "m": "W", "hp": 164, "mp": 164, "ok": true}, {"h": "R", "m": "R", "hp": 165, "mp": 165, "ok": true}, {"h": "D", "m": "D", "hp": 166, "mp": 166, "ok": true}, {"h": "I", "m": "I", "hp": 167, "mp": 167, "ok": true}, {"h": "V", "m": "V", "hp": 168, "mp": 168, "ok": true}, {"h": "S", "m": "Q", "hp": 169, "mp": 169, "ok": false}, {"h": "S", "m": "N", "hp": 170, "mp": 170, "ok": false}, {"h": "D", "m": "V", "hp": 171, "mp": 171, "ok": false}, {"h": "F", "m": "F", "hp": 172, "mp": 172, "ok": true}, {"h": "L", "m": "M", "hp": 173, "mp": 173, "ok": false}, {"h": "S", "m": "S", "hp": 174, "mp": 174, "ok": true}, {"h": "N", "m": "N", "hp": 175, "mp": 175, "ok": true}, {"h": "M", "m": "M", "hp": 176, "mp": 176, "ok": true}, {"h": "S", "m": "S", "hp": 177, "mp": 177, "ok": true}, {"h": "M", "m": "M", "hp": 178, "mp": 178, "ok": true}, {"h": "D", "m": "D", "hp": 179, "mp": 179, "ok": true}, {"h": "F", "m": "L", "hp": 180, "mp": 180, "ok": false}, {"h": "Q", "m": "Q", "hp": 181, "mp": 181, "ok": true}, {"h": "N", "m": "S", "hp": 182, "mp": 182, "ok": false}, {"h": "H", "m": "H", "hp": 183, "mp": 183, "ok": true}, {"h": "L", "m": "P", "hp": 184, "mp": 184, "ok": false}, {"h": "G", "m": "S", "hp": 185, "mp": 185, "ok": false}, {"h": "S", "m": "S", "hp": 186, "mp": 186, "ok": true}, {"h": "C", "m": "C", "hp": 187, "mp": 187, "ok": true}, {"h": "Q", "m": "P", "hp": 188, "mp": 188, "ok": false}, {"h": "K", "m": "K", "hp": 189, "mp": 189, "ok": true}, {"h": "C", "m": "C", "hp": 190, "mp": 190, "ok": true}, {"h": "D", "m": "D", "hp": 191, "mp": 191, "ok": true}, {"h": "P", "m": "P", "hp": 192, "mp": 192, "ok": true}, {"h": "S", "m": "S", "hp": 193, "mp": 193, "ok": true}, {"h": "C", "m": "C", "hp": 194, "mp": 194, "ok": true}, {"h": "P", "m": "P", "hp": 195, "mp": 195, "ok": true}, {"h": "N", "m": "N", "hp": 196, "mp": 196, "ok": true}, {"h": "G", "m": "G", "hp": 197, "mp": 197, "ok": true}, {"h": "S", "m": "S", "hp": 198, "mp": 198, "ok": true}, {"h": "C", "m": "C", "hp": 199, "mp": 199, "ok": true}, {"h": "W", "m": "W", "hp": 200, "mp": 200, "ok": true}, {"h": "G", "m": "G", "hp": 201, "mp": 201, "ok": true}, {"h": "A", "m": "G", "hp": 202, "mp": 202, "ok": false}, {"h": "G", "m": "G", "hp": 203, "mp": 203, "ok": true}, {"h": "E", "m": "E", "hp": 204, "mp": 204, "ok": true}, {"h": "E", "m": "E", "hp": 205, "mp": 205, "ok": true}, {"h": "N", "m": "N", "hp": 206, "mp": 206, "ok": true}, {"h": "C", "m": "C", "hp": 207, "mp": 207, "ok": true}, {"h": "Q", "m": "Q", "hp": 208, "mp": 208, "ok": true}, {"h": "K", "m": "K", "hp": 209, "mp": 209, "ok": true}, {"h": "L", "m": "L", "hp": 210, "mp": 210, "ok": true}, {"h": "T", "m": "T", "hp": 211, "mp": 211, "ok": true}, {"h": "K", "m": "K", "hp": 212, "mp": 212, "ok": true}, {"h": "I", "m": "I", "hp": 213, "mp": 213, "ok": true}, {"h": "I", "m": "I", "hp": 214, "mp": 214, "ok": true}, {"h": "C", "m": "C", "hp": 215, "mp": 215, "ok": true}, {"h": "A", "m": "A", "hp": 216, "mp": 216, "ok": true}, {"h": "Q", "m": "Q", "hp": 217, "mp": 217, "ok": true}, {"h": "Q", "m": "Q", "hp": 218, "mp": 218, "ok": true}, {"h": "C", "m": "C", "hp": 219, "mp": 219, "ok": true}, {"h": "S", "m": "S", "hp": 220, "mp": 220, "ok": true}, {"h": "G", "m": "H", "hp": 221, "mp": 221, "ok": false}, {"h": "R", "m": "R", "hp": 222, "mp": 222, "ok": true}, {"h": "C", "m": "C", "hp": 223, "mp": 223, "ok": true}, {"h": "R", "m": "R", "hp": 224, "mp": 224, "ok": true}, {"h": "G", "m": "G", "hp": 225, "mp": 225, "ok": true}, {"h": "K", "m": "R", "hp": 226, "mp": 226, "ok": false}, {"h": "S", "m": "S", "hp": 227, "mp": 227, "ok": true}, {"h": "P", "m": "P", "hp": 228, "mp": 228, "ok": true}, {"h": "S", "m": "S", "hp": 229, "mp": 229, "ok": true}, {"h": "D", "m": "D", "hp": 230, "mp": 230, "ok": true}, {"h": "C", "m": "C", "hp": 231, "mp": 231, "ok": true}, {"h": "C", "m": "C", "hp": 232, "mp": 232, "ok": true}, {"h": "H", "m": "H", "hp": 233, "mp": 233, "ok": true}, {"h": "N", "m": "N", "hp": 234, "mp": 234, "ok": true}, {"h": "Q", "m": "Q", "hp": 235, "mp": 235, "ok": true}, {"h": "C", "m": "C", "hp": 236, "mp": 236, "ok": true}, {"h": "A", "m": "A", "hp": 237, "mp": 237, "ok": true}, {"h": "A", "m": "A", "hp": 238, "mp": 238, "ok": true}, {"h": "G", "m": "G", "hp": 239, "mp": 239, "ok": true}, {"h": "C", "m": "C", "hp": 240, "mp": 240, "ok": true}, {"h": "T", "m": "T", "hp": 241, "mp": 241, "ok": true}, {"h": "G", "m": "G", "hp": 242, "mp": 242, "ok": true}, {"h": "P", "m": "P", "hp": 243, "mp": 243, "ok": true}, {"h": "R", "m": "R", "hp": 244, "mp": 244, "ok": true}, {"h": "E", "m": "E", "hp": 245, "mp": 245, "ok": true}, {"h": "S", "m": "S", "hp": 246, "mp": 246, "ok": true}, {"h": "D", "m": "D", "hp": 247, "mp": 247, "ok": true}, {"h": "C", "m": "C", "hp": 248, "mp": 248, "ok": true}, {"h": "L", "m": "L", "hp": 249, "mp": 249, "ok": true}, {"h": "V", "m": "V", "hp": 250, "mp": 250, "ok": true}, {"h": "C", "m": "C", "hp": 251, "mp": 251, "ok": true}, {"h": "R", "m": "Q", "hp": 252, "mp": 252, "ok": false}, {"h": "K", "m": "K", "hp": 253, "mp": 253, "ok": true}, {"h": "F", "m": "F", "hp": 254, "mp": 254, "ok": true}, {"h": "R", "m": "Q", "hp": 255, "mp": 255, "ok": false}, {"h": "D", "m": "D", "hp": 256, "mp": 256, "ok": true}, {"h": "E", "m": "E", "hp": 257, "mp": 257, "ok": true}, {"h": "A", "m": "A", "hp": 258, "mp": 258, "ok": true}, {"h": "T", "m": "T", "hp": 259, "mp": 259, "ok": true}, {"h": "C", "m": "C", "hp": 260, "mp": 260, "ok": true}, {"h": "K", "m": "K", "hp": 261, "mp": 261, "ok": true}, {"h": "D", "m": "D", "hp": 262, "mp": 262, "ok": true}, {"h": "T", "m": "T", "hp": 263, "mp": 263, "ok": true}, {"h": "C", "m": "C", "hp": 264, "mp": 264, "ok": true}, {"h": "P", "m": "P", "hp": 265, "mp": 265, "ok": true}, {"h": "P", "m": "P", "hp": 266, "mp": 266, "ok": true}, {"h": "L", "m": "L", "hp": 267, "mp": 267, "ok": true}, {"h": "M", "m": "M", "hp": 268, "mp": 268, "ok": true}, {"h": "L", "m": "L", "hp": 269, "mp": 269, "ok": true}, {"h": "Y", "m": "Y", "hp": 270, "mp": 270, "ok": true}, {"h": "N", "m": "N", "hp": 271, "mp": 271, "ok": true}, {"h": "P", "m": "P", "hp": 272, "mp": 272, "ok": true}, {"h": "T", "m": "T", "hp": 273, "mp": 273, "ok": true}, {"h": "T", "m": "T", "hp": 274, "mp": 274, "ok": true}, {"h": "Y", "m": "Y", "hp": 275, "mp": 275, "ok": true}, {"h": "Q", "m": "Q", "hp": 276, "mp": 276, "ok": true}, {"h": "M", "m": "M", "hp": 277, "mp": 277, "ok": true}, {"h": "D", "m": "D", "hp": 278, "mp": 278, "ok": true}, {"h": "V", "m": "V", "hp": 279, "mp": 279, "ok": true}, {"h": "N", "m": "N", "hp": 280, "mp": 280, "ok": true}, {"h": "P", "m": "P", "hp": 281, "mp": 281, "ok": true}, {"h": "E", "m": "E", "hp": 282, "mp": 282, "ok": true}, {"h": "G", "m": "G", "hp": 283, "mp": 283, "ok": true}, {"h": "K", "m": "K", "hp": 284, "mp": 284, "ok": true}, {"h": "Y", "m": "Y", "hp": 285, "mp": 285, "ok": true}, {"h": "S", "m": "S", "hp": 286, "mp": 286, "ok": true}, {"h": "F", "m": "F", "hp": 287, "mp": 287, "ok": true}, {"h": "G", "m": "G", "hp": 288, "mp": 288, "ok": true}, {"h": "A", "m": "A", "hp": 289, "mp": 289, "ok": true}, {"h": "T", "m": "T", "hp": 290, "mp": 290, "ok": true}, {"h": "C", "m": "C", "hp": 291, "mp": 291, "ok": true}, {"h": "V", "m": "V", "hp": 292, "mp": 292, "ok": true}, {"h": "K", "m": "K", "hp": 293, "mp": 293, "ok": true}, {"h": "K", "m": "K", "hp": 294, "mp": 294, "ok": true}, {"h": "C", "m": "C", "hp": 295, "mp": 295, "ok": true}, {"h": "P", "m": "P", "hp": 296, "mp": 296, "ok": true}, {"h": "R", "m": "R", "hp": 297, "mp": 297, "ok": true}, {"h": "N", "m": "N", "hp": 298, "mp": 298, "ok": true}, {"h": "Y", "m": "Y", "hp": 299, "mp": 299, "ok": true}, {"h": "V", "m": "V", "hp": 300, "mp": 300, "ok": true}, {"h": "V", "m": "V", "hp": 301, "mp": 301, "ok": true}, {"h": "T", "m": "T", "hp": 302, "mp": 302, "ok": true}, {"h": "D", "m": "D", "hp": 303, "mp": 303, "ok": true}, {"h": "H", "m": "H", "hp": 304, "mp": 304, "ok": true}, {"h": "G", "m": "G", "hp": 305, "mp": 305, "ok": true}, {"h": "S", "m": "S", "hp": 306, "mp": 306, "ok": true}, {"h": "C", "m": "C", "hp": 307, "mp": 307, "ok": true}, {"h": "V", "m": "V", "hp": 308, "mp": 308, "ok": true}, {"h": "R", "m": "R", "hp": 309, "mp": 309, "ok": true}, {"h": "A", "m": "A", "hp": 310, "mp": 310, "ok": true}, {"h": "C", "m": "C", "hp": 311, "mp": 311, "ok": true}, {"h": "G", "m": "G", "hp": 312, "mp": 312, "ok": true}, {"h": "A", "m": "P", "hp": 313, "mp": 313, "ok": false}, {"h": "D", "m": "D", "hp": 314, "mp": 314, "ok": true}, {"h": "S", "m": "Y", "hp": 315, "mp": 315, "ok": false}, {"h": "Y", "m": "Y", "hp": 316, "mp": 316, "ok": true}, {"h": "E", "m": "E", "hp": 317, "mp": 317, "ok": true}, {"h": "M", "m": "V", "hp": 318, "mp": 318, "ok": false}, {"h": "E", "m": "E", "hp": 319, "mp": 319, "ok": true}, {"h": "E", "m": "E", "hp": 320, "mp": 320, "ok": true}, {"h": "D", "m": "D", "hp": 321, "mp": 321, "ok": true}, {"h": "G", "m": "G", "hp": 322, "mp": 322, "ok": true}, {"h": "V", "m": "I", "hp": 323, "mp": 323, "ok": false}, {"h": "R", "m": "R", "hp": 324, "mp": 324, "ok": true}, {"h": "K", "m": "K", "hp": 325, "mp": 325, "ok": true}, {"h": "C", "m": "C", "hp": 326, "mp": 326, "ok": true}, {"h": "K", "m": "K", "hp": 327, "mp": 327, "ok": true}, {"h": "K", "m": "K", "hp": 328, "mp": 328, "ok": true}, {"h": "C", "m": "C", "hp": 329, "mp": 329, "ok": true}, {"h": "E", "m": "D", "hp": 330, "mp": 330, "ok": false}, {"h": "G", "m": "G", "hp": 331, "mp": 331, "ok": true}, {"h": "P", "m": "P", "hp": 332, "mp": 332, "ok": true}, {"h": "C", "m": "C", "hp": 333, "mp": 333, "ok": true}, {"h": "R", "m": "R", "hp": 334, "mp": 334, "ok": true}, {"h": "K", "m": "K", "hp": 335, "mp": 335, "ok": true}, {"h": "V", "m": "V", "hp": 336, "mp": 336, "ok": true}, {"h": "C", "m": "C", "hp": 337, "mp": 337, "ok": true}, {"h": "N", "m": "N", "hp": 338, "mp": 338, "ok": true}, {"h": "G", "m": "G", "hp": 339, "mp": 339, "ok": true}, {"h": "I", "m": "I", "hp": 340, "mp": 340, "ok": true}, {"h": "G", "m": "G", "hp": 341, "mp": 341, "ok": true}, {"h": "I", "m": "I", "hp": 342, "mp": 342, "ok": true}, {"h": "G", "m": "G", "hp": 343, "mp": 343, "ok": true}, {"h": "E", "m": "E", "hp": 344, "mp": 344, "ok": true}, {"h": "F", "m": "F", "hp": 345, "mp": 345, "ok": true}, {"h": "K", "m": "K", "hp": 346, "mp": 346, "ok": true}, {"h": "D", "m": "D", "hp": 347, "mp": 347, "ok": true}, {"h": "S", "m": "T", "hp": 348, "mp": 348, "ok": false}, {"h": "L", "m": "L", "hp": 349, "mp": 349, "ok": true}, {"h": "S", "m": "S", "hp": 350, "mp": 350, "ok": true}, {"h": "I", "m": "I", "hp": 351, "mp": 351, "ok": true}, {"h": "N", "m": "N", "hp": 352, "mp": 352, "ok": true}, {"h": "A", "m": "A", "hp": 353, "mp": 353, "ok": true}, {"h": "T", "m": "T", "hp": 354, "mp": 354, "ok": true}, {"h": "N", "m": "N", "hp": 355, "mp": 355, "ok": true}, {"h": "I", "m": "I", "hp": 356, "mp": 356, "ok": true}, {"h": "K", "m": "K", "hp": 357, "mp": 357, "ok": true}, {"h": "H", "m": "H", "hp": 358, "mp": 358, "ok": true}, {"h": "F", "m": "F", "hp": 359, "mp": 359, "ok": true}, {"h": "K", "m": "K", "hp": 360, "mp": 360, "ok": true}, {"h": "N", "m": "Y", "hp": 361, "mp": 361, "ok": false}, {"h": "C", "m": "C", "hp": 362, "mp": 362, "ok": true}, {"h": "T", "m": "T", "hp": 363, "mp": 363, "ok": true}, {"h": "S", "m": "A", "hp": 364, "mp": 364, "ok": false}, {"h": "I", "m": "I", "hp": 365, "mp": 365, "ok": true}, {"h": "S", "m": "S", "hp": 366, "mp": 366, "ok": true}, {"h": "G", "m": "G", "hp": 367, "mp": 367, "ok": true}, {"h": "D", "m": "D", "hp": 368, "mp": 368, "ok": true}, {"h": "L", "m": "L", "hp": 369, "mp": 369, "ok": true}, {"h": "H", "m": "H", "hp": 370, "mp": 370, "ok": true}, {"h": "I", "m": "I", "hp": 371, "mp": 371, "ok": true}, {"h": "L", "m": "L", "hp": 372, "mp": 372, "ok": true}, {"h": "P", "m": "P", "hp": 373, "mp": 373, "ok": true}, {"h": "V", "m": "V", "hp": 374, "mp": 374, "ok": true}, {"h": "A", "m": "A", "hp": 375, "mp": 375, "ok": true}, {"h": "F", "m": "F", "hp": 376, "mp": 376, "ok": true}, {"h": "R", "m": "K", "hp": 377, "mp": 377, "ok": false}, {"h": "G", "m": "G", "hp": 378, "mp": 378, "ok": true}, {"h": "D", "m": "D", "hp": 379, "mp": 379, "ok": true}, {"h": "S", "m": "S", "hp": 380, "mp": 380, "ok": true}, {"h": "F", "m": "F", "hp": 381, "mp": 381, "ok": true}, {"h": "T", "m": "T", "hp": 382, "mp": 382, "ok": true}, {"h": "H", "m": "R", "hp": 383, "mp": 383, "ok": false}, {"h": "T", "m": "T", "hp": 384, "mp": 384, "ok": true}, {"h": "P", "m": "P", "hp": 385, "mp": 385, "ok": true}, {"h": "P", "m": "P", "hp": 386, "mp": 386, "ok": true}, {"h": "L", "m": "L", "hp": 387, "mp": 387, "ok": true}, {"h": "D", "m": "D", "hp": 388, "mp": 388, "ok": true}, {"h": "P", "m": "P", "hp": 389, "mp": 389, "ok": true}, {"h": "Q", "m": "R", "hp": 390, "mp": 390, "ok": false}, {"h": "E", "m": "E", "hp": 391, "mp": 391, "ok": true}, {"h": "L", "m": "L", "hp": 392, "mp": 392, "ok": true}, {"h": "D", "m": "E", "hp": 393, "mp": 393, "ok": false}, {"h": "I", "m": "I", "hp": 394, "mp": 394, "ok": true}, {"h": "L", "m": "L", "hp": 395, "mp": 395, "ok": true}, {"h": "K", "m": "K", "hp": 396, "mp": 396, "ok": true}, {"h": "T", "m": "T", "hp": 397, "mp": 397, "ok": true}, {"h": "V", "m": "V", "hp": 398, "mp": 398, "ok": true}, {"h": "K", "m": "K", "hp": 399, "mp": 399, "ok": true}, {"h": "E", "m": "E", "hp": 400, "mp": 400, "ok": true}, {"h": "I", "m": "I", "hp": 401, "mp": 401, "ok": true}, {"h": "T", "m": "T", "hp": 402, "mp": 402, "ok": true}, {"h": "G", "m": "G", "hp": 403, "mp": 403, "ok": true}, {"h": "F", "m": "F", "hp": 404, "mp": 404, "ok": true}, {"h": "L", "m": "L", "hp": 405, "mp": 405, "ok": true}, {"h": "L", "m": "L", "hp": 406, "mp": 406, "ok": true}, {"h": "I", "m": "I", "hp": 407, "mp": 407, "ok": true}, {"h": "Q", "m": "Q", "hp": 408, "mp": 408, "ok": true}, {"h": "A", "m": "A", "hp": 409, "mp": 409, "ok": true}, {"h": "W", "m": "W", "hp": 410, "mp": 410, "ok": true}, {"h": "P", "m": "P", "hp": 411, "mp": 411, "ok": true}, {"h": "E", "m": "D", "hp": 412, "mp": 412, "ok": false}, {"h": "N", "m": "N", "hp": 413, "mp": 413, "ok": true}, {"h": "R", "m": "W", "hp": 414, "mp": 414, "ok": false}, {"h": "T", "m": "T", "hp": 415, "mp": 415, "ok": true}, {"h": "D", "m": "D", "hp": 416, "mp": 416, "ok": true}, {"h": "L", "m": "L", "hp": 417, "mp": 417, "ok": true}, {"h": "H", "m": "H", "hp": 418, "mp": 418, "ok": true}, {"h": "A", "m": "A", "hp": 419, "mp": 419, "ok": true}, {"h": "F", "m": "F", "hp": 420, "mp": 420, "ok": true}, {"h": "E", "m": "E", "hp": 421, "mp": 421, "ok": true}, {"h": "N", "m": "N", "hp": 422, "mp": 422, "ok": true}, {"h": "L", "m": "L", "hp": 423, "mp": 423, "ok": true}, {"h": "E", "m": "E", "hp": 424, "mp": 424, "ok": true}, {"h": "I", "m": "I", "hp": 425, "mp": 425, "ok": true}, {"h": "I", "m": "I", "hp": 426, "mp": 426, "ok": true}, {"h": "R", "m": "R", "hp": 427, "mp": 427, "ok": true}, {"h": "G", "m": "G", "hp": 428, "mp": 428, "ok": true}, {"h": "R", "m": "R", "hp": 429, "mp": 429, "ok": true}, {"h": "T", "m": "T", "hp": 430, "mp": 430, "ok": true}, {"h": "K", "m": "K", "hp": 431, "mp": 431, "ok": true}, {"h": "Q", "m": "Q", "hp": 432, "mp": 432, "ok": true}, {"h": "H", "m": "H", "hp": 433, "mp": 433, "ok": true}, {"h": "G", "m": "G", "hp": 434, "mp": 434, "ok": true}, {"h": "Q", "m": "Q", "hp": 435, "mp": 435, "ok": true}, {"h": "F", "m": "F", "hp": 436, "mp": 436, "ok": true}, {"h": "S", "m": "S", "hp": 437, "mp": 437, "ok": true}, {"h": "L", "m": "L", "hp": 438, "mp": 438, "ok": true}, {"h": "A", "m": "A", "hp": 439, "mp": 439, "ok": true}, {"h": "V", "m": "V", "hp": 440, "mp": 440, "ok": true}, {"h": "V", "m": "V", "hp": 441, "mp": 441, "ok": true}, {"h": "S", "m": "G", "hp": 442, "mp": 442, "ok": false}, {"h": "L", "m": "L", "hp": 443, "mp": 443, "ok": true}, {"h": "N", "m": "N", "hp": 444, "mp": 444, "ok": true}, {"h": "I", "m": "I", "hp": 445, "mp": 445, "ok": true}, {"h": "T", "m": "T", "hp": 446, "mp": 446, "ok": true}, {"h": "S", "m": "S", "hp": 447, "mp": 447, "ok": true}, {"h": "L", "m": "L", "hp": 448, "mp": 448, "ok": true}, {"h": "G", "m": "G", "hp": 449, "mp": 449, "ok": true}, {"h": "L", "m": "L", "hp": 450, "mp": 450, "ok": true}, {"h": "R", "m": "R", "hp": 451, "mp": 451, "ok": true}, {"h": "S", "m": "S", "hp": 452, "mp": 452, "ok": true}, {"h": "L", "m": "L", "hp": 453, "mp": 453, "ok": true}, {"h": "K", "m": "K", "hp": 454, "mp": 454, "ok": true}, {"h": "E", "m": "E", "hp": 455, "mp": 455, "ok": true}, {"h": "I", "m": "I", "hp": 456, "mp": 456, "ok": true}, {"h": "S", "m": "S", "hp": 457, "mp": 457, "ok": true}, {"h": "D", "m": "D", "hp": 458, "mp": 458, "ok": true}, {"h": "G", "m": "G", "hp": 459, "mp": 459, "ok": true}, {"h": "D", "m": "D", "hp": 460, "mp": 460, "ok": true}, {"h": "V", "m": "V", "hp": 461, "mp": 461, "ok": true}, {"h": "I", "m": "I", "hp": 462, "mp": 462, "ok": true}, {"h": "I", "m": "I", "hp": 463, "mp": 463, "ok": true}, {"h": "S", "m": "S", "hp": 464, "mp": 464, "ok": true}, {"h": "G", "m": "G", "hp": 465, "mp": 465, "ok": true}, {"h": "N", "m": "N", "hp": 466, "mp": 466, "ok": true}, {"h": "K", "m": "R", "hp": 467, "mp": 467, "ok": false}, {"h": "N", "m": "N", "hp": 468, "mp": 468, "ok": true}, {"h": "L", "m": "L", "hp": 469, "mp": 469, "ok": true}, {"h": "C", "m": "C", "hp": 470, "mp": 470, "ok": true}, {"h": "Y", "m": "Y", "hp": 471, "mp": 471, "ok": true}, {"h": "A", "m": "A", "hp": 472, "mp": 472, "ok": true}, {"h": "N", "m": "N", "hp": 473, "mp": 473, "ok": true}, {"h": "T", "m": "T", "hp": 474, "mp": 474, "ok": true}, {"h": "I", "m": "I", "hp": 475, "mp": 475, "ok": true}, {"h": "N", "m": "N", "hp": 476, "mp": 476, "ok": true}, {"h": "W", "m": "W", "hp": 477, "mp": 477, "ok": true}, {"h": "K", "m": "K", "hp": 478, "mp": 478, "ok": true}, {"h": "K", "m": "K", "hp": 479, "mp": 479, "ok": true}, {"h": "L", "m": "L", "hp": 480, "mp": 480, "ok": true}, {"h": "F", "m": "F", "hp": 481, "mp": 481, "ok": true}, {"h": "G", "m": "G", "hp": 482, "mp": 482, "ok": true}, {"h": "T", "m": "T", "hp": 483, "mp": 483, "ok": true}, {"h": "S", "m": "P", "hp": 484, "mp": 484, "ok": false}, {"h": "G", "m": "N", "hp": 485, "mp": 485, "ok": false}, {"h": "Q", "m": "Q", "hp": 486, "mp": 486, "ok": true}, {"h": "K", "m": "K", "hp": 487, "mp": 487, "ok": true}, {"h": "T", "m": "T", "hp": 488, "mp": 488, "ok": true}, {"h": "K", "m": "K", "hp": 489, "mp": 489, "ok": true}, {"h": "I", "m": "I", "hp": 490, "mp": 490, "ok": true}, {"h": "I", "m": "M", "hp": 491, "mp": 491, "ok": false}, {"h": "S", "m": "N", "hp": 492, "mp": 492, "ok": false}, {"h": "N", "m": "N", "hp": 493, "mp": 493, "ok": true}, {"h": "R", "m": "R", "hp": 494, "mp": 494, "ok": true}, {"h": "G", "m": "A", "hp": 495, "mp": 495, "ok": false}, {"h": "E", "m": "E", "hp": 496, "mp": 496, "ok": true}, {"h": "N", "m": "K", "hp": 497, "mp": 497, "ok": false}, {"h": "S", "m": "D", "hp": 498, "mp": 498, "ok": false}, {"h": "C", "m": "C", "hp": 499, "mp": 499, "ok": true}, {"h": "K", "m": "K", "hp": 500, "mp": 500, "ok": true}, {"h": "A", "m": "A", "hp": 501, "mp": 501, "ok": true}, {"h": "T", "m": "V", "hp": 502, "mp": 502, "ok": false}, {"h": "G", "m": "N", "hp": 503, "mp": 503, "ok": false}, {"h": "Q", "m": "H", "hp": 504, "mp": 504, "ok": false}, {"h": "V", "m": "V", "hp": 505, "mp": 505, "ok": true}, {"h": "C", "m": "C", "hp": 506, "mp": 506, "ok": true}, {"h": "H", "m": "N", "hp": 507, "mp": 507, "ok": false}, {"h": "A", "m": "P", "hp": 508, "mp": 508, "ok": false}, {"h": "L", "m": "L", "hp": 509, "mp": 509, "ok": true}, {"h": "C", "m": "C", "hp": 510, "mp": 510, "ok": true}, {"h": "S", "m": "S", "hp": 511, "mp": 511, "ok": true}, {"h": "P", "m": "S", "hp": 512, "mp": 512, "ok": false}, {"h": "E", "m": "E", "hp": 513, "mp": 513, "ok": true}, {"h": "G", "m": "G", "hp": 514, "mp": 514, "ok": true}, {"h": "C", "m": "C", "hp": 515, "mp": 515, "ok": true}, {"h": "W", "m": "W", "hp": 516, "mp": 516, "ok": true}, {"h": "G", "m": "G", "hp": 517, "mp": 517, "ok": true}, {"h": "P", "m": "P", "hp": 518, "mp": 518, "ok": true}, {"h": "E", "m": "E", "hp": 519, "mp": 519, "ok": true}, {"h": "P", "m": "P", "hp": 520, "mp": 520, "ok": true}, {"h": "R", "m": "R", "hp": 521, "mp": 521, "ok": true}, {"h": "D", "m": "D", "hp": 522, "mp": 522, "ok": true}, {"h": "C", "m": "C", "hp": 523, "mp": 523, "ok": true}, {"h": "V", "m": "V", "hp": 524, "mp": 524, "ok": true}, {"h": "S", "m": "S", "hp": 525, "mp": 525, "ok": true}, {"h": "C", "m": "C", "hp": 526, "mp": 526, "ok": true}, {"h": "R", "m": "Q", "hp": 527, "mp": 527, "ok": false}, {"h": "N", "m": "N", "hp": 528, "mp": 528, "ok": true}, {"h": "V", "m": "V", "hp": 529, "mp": 529, "ok": true}, {"h": "S", "m": "S", "hp": 530, "mp": 530, "ok": true}, {"h": "R", "m": "R", "hp": 531, "mp": 531, "ok": true}, {"h": "G", "m": "G", "hp": 532, "mp": 532, "ok": true}, {"h": "R", "m": "R", "hp": 533, "mp": 533, "ok": true}, {"h": "E", "m": "E", "hp": 534, "mp": 534, "ok": true}, {"h": "C", "m": "C", "hp": 535, "mp": 535, "ok": true}, {"h": "V", "m": "V", "hp": 536, "mp": 536, "ok": true}, {"h": "D", "m": "E", "hp": 537, "mp": 537, "ok": false}, {"h": "K", "m": "K", "hp": 538, "mp": 538, "ok": true}, {"h": "C", "m": "C", "hp": 539, "mp": 539, "ok": true}, {"h": "N", "m": "N", "hp": 540, "mp": 540, "ok": true}, {"h": "L", "m": "I", "hp": 541, "mp": 541, "ok": false}, {"h": "L", "m": "L", "hp": 542, "mp": 542, "ok": true}, {"h": "E", "m": "E", "hp": 543, "mp": 543, "ok": true}, {"h": "G", "m": "G", "hp": 544, "mp": 544, "ok": true}, {"h": "E", "m": "E", "hp": 545, "mp": 545, "ok": true}, {"h": "P", "m": "P", "hp": 546, "mp": 546, "ok": true}, {"h": "R", "m": "R", "hp": 547, "mp": 547, "ok": true}, {"h": "E", "m": "E", "hp": 548, "mp": 548, "ok": true}, {"h": "F", "m": "F", "hp": 549, "mp": 549, "ok": true}, {"h": "V", "m": "V", "hp": 550, "mp": 550, "ok": true}, {"h": "E", "m": "E", "hp": 551, "mp": 551, "ok": true}, {"h": "N", "m": "N", "hp": 552, "mp": 552, "ok": true}, {"h": "S", "m": "S", "hp": 553, "mp": 553, "ok": true}, {"h": "E", "m": "E", "hp": 554, "mp": 554, "ok": true}, {"h": "C", "m": "C", "hp": 555, "mp": 555, "ok": true}, {"h": "I", "m": "I", "hp": 556, "mp": 556, "ok": true}, {"h": "Q", "m": "Q", "hp": 557, "mp": 557, "ok": true}, {"h": "C", "m": "C", "hp": 558, "mp": 558, "ok": true}, {"h": "H", "m": "H", "hp": 559, "mp": 559, "ok": true}, {"h": "P", "m": "P", "hp": 560, "mp": 560, "ok": true}, {"h": "E", "m": "E", "hp": 561, "mp": 561, "ok": true}, {"h": "C", "m": "C", "hp": 562, "mp": 562, "ok": true}, {"h": "L", "m": "L", "hp": 563, "mp": 563, "ok": true}, {"h": "P", "m": "P", "hp": 564, "mp": 564, "ok": true}, {"h": "Q", "m": "Q", "hp": 565, "mp": 565, "ok": true}, {"h": "A", "m": "A", "hp": 566, "mp": 566, "ok": true}, {"h": "M", "m": "M", "hp": 567, "mp": 567, "ok": true}, {"h": "N", "m": "N", "hp": 568, "mp": 568, "ok": true}, {"h": "I", "m": "I", "hp": 569, "mp": 569, "ok": true}, {"h": "T", "m": "T", "hp": 570, "mp": 570, "ok": true}, {"h": "C", "m": "C", "hp": 571, "mp": 571, "ok": true}, {"h": "T", "m": "T", "hp": 572, "mp": 572, "ok": true}, {"h": "G", "m": "G", "hp": 573, "mp": 573, "ok": true}, {"h": "R", "m": "R", "hp": 574, "mp": 574, "ok": true}, {"h": "G", "m": "G", "hp": 575, "mp": 575, "ok": true}, {"h": "P", "m": "P", "hp": 576, "mp": 576, "ok": true}, {"h": "D", "m": "D", "hp": 577, "mp": 577, "ok": true}, {"h": "N", "m": "N", "hp": 578, "mp": 578, "ok": true}, {"h": "C", "m": "C", "hp": 579, "mp": 579, "ok": true}, {"h": "I", "m": "I", "hp": 580, "mp": 580, "ok": true}, {"h": "Q", "m": "Q", "hp": 581, "mp": 581, "ok": true}, {"h": "C", "m": "C", "hp": 582, "mp": 582, "ok": true}, {"h": "A", "m": "A", "hp": 583, "mp": 583, "ok": true}, {"h": "H", "m": "H", "hp": 584, "mp": 584, "ok": true}, {"h": "Y", "m": "Y", "hp": 585, "mp": 585, "ok": true}, {"h": "I", "m": "I", "hp": 586, "mp": 586, "ok": true}, {"h": "D", "m": "D", "hp": 587, "mp": 587, "ok": true}, {"h": "G", "m": "G", "hp": 588, "mp": 588, "ok": true}, {"h": "P", "m": "P", "hp": 589, "mp": 589, "ok": true}, {"h": "H", "m": "H", "hp": 590, "mp": 590, "ok": true}, {"h": "C", "m": "C", "hp": 591, "mp": 591, "ok": true}, {"h": "V", "m": "V", "hp": 592, "mp": 592, "ok": true}, {"h": "K", "m": "K", "hp": 593, "mp": 593, "ok": true}, {"h": "T", "m": "T", "hp": 594, "mp": 594, "ok": true}, {"h": "C", "m": "C", "hp": 595, "mp": 595, "ok": true}, {"h": "P", "m": "P", "hp": 596, "mp": 596, "ok": true}, {"h": "A", "m": "A", "hp": 597, "mp": 597, "ok": true}, {"h": "G", "m": "G", "hp": 598, "mp": 598, "ok": true}, {"h": "V", "m": "I", "hp": 599, "mp": 599, "ok": false}, {"h": "M", "m": "M", "hp": 600, "mp": 600, "ok": true}, {"h": "G", "m": "G", "hp": 601, "mp": 601, "ok": true}, {"h": "E", "m": "E", "hp": 602, "mp": 602, "ok": true}, {"h": "N", "m": "N", "hp": 603, "mp": 603, "ok": true}, {"h": "N", "m": "N", "hp": 604, "mp": 604, "ok": true}, {"h": "T", "m": "T", "hp": 605, "mp": 605, "ok": true}, {"h": "L", "m": "L", "hp": 606, "mp": 606, "ok": true}, {"h": "V", "m": "V", "hp": 607, "mp": 607, "ok": true}, {"h": "W", "m": "W", "hp": 608, "mp": 608, "ok": true}, {"h": "K", "m": "K", "hp": 609, "mp": 609, "ok": true}, {"h": "Y", "m": "Y", "hp": 610, "mp": 610, "ok": true}, {"h": "A", "m": "A", "hp": 611, "mp": 611, "ok": true}, {"h": "D", "m": "D", "hp": 612, "mp": 612, "ok": true}, {"h": "A", "m": "A", "hp": 613, "mp": 613, "ok": true}, {"h": "G", "m": "N", "hp": 614, "mp": 614, "ok": false}, {"h": "H", "m": "N", "hp": 615, "mp": 615, "ok": false}, {"h": "V", "m": "V", "hp": 616, "mp": 616, "ok": true}, {"h": "C", "m": "C", "hp": 617, "mp": 617, "ok": true}, {"h": "H", "m": "H", "hp": 618, "mp": 618, "ok": true}, {"h": "L", "m": "L", "hp": 619, "mp": 619, "ok": true}, {"h": "C", "m": "C", "hp": 620, "mp": 620, "ok": true}, {"h": "H", "m": "H", "hp": 621, "mp": 621, "ok": true}, {"h": "P", "m": "A", "hp": 622, "mp": 622, "ok": false}, {"h": "N", "m": "N", "hp": 623, "mp": 623, "ok": true}, {"h": "C", "m": "C", "hp": 624, "mp": 624, "ok": true}, {"h": "T", "m": "T", "hp": 625, "mp": 625, "ok": true}, {"h": "Y", "m": "Y", "hp": 626, "mp": 626, "ok": true}, {"h": "G", "m": "G", "hp": 627, "mp": 627, "ok": true}, {"h": "C", "m": "C", "hp": 628, "mp": 628, "ok": true}, {"h": "T", "m": "A", "hp": 629, "mp": 629, "ok": false}, {"h": "G", "m": "G", "hp": 630, "mp": 630, "ok": true}, {"h": "P", "m": "P", "hp": 631, "mp": 631, "ok": true}, {"h": "G", "m": "G", "hp": 632, "mp": 632, "ok": true}, {"h": "L", "m": "L", "hp": 633, "mp": 633, "ok": true}, {"h": "E", "m": "Q", "hp": 634, "mp": 634, "ok": false}, {"h": "G", "m": "G", "hp": 635, "mp": 635, "ok": true}, {"h": "C", "m": "C", "hp": 636, "mp": 636, "ok": true}, {"h": "P", "m": "E", "hp": 637, "mp": 637, "ok": false}, {"h": "T", "m": "V", "hp": 638, "mp": 638, "ok": false}, {"h": "-", "m": "W", "hp": null, "mp": 639, "ok": false}, {"h": "-", "m": "P", "hp": null, "mp": 640, "ok": false}, {"h": "N", "m": "S", "hp": 639, "mp": 641, "ok": false}, {"h": "G", "m": "G", "hp": 640, "mp": 642, "ok": true}, {"h": "P", "m": "P", "hp": 641, "mp": 643, "ok": true}, {"h": "K", "m": "K", "hp": 642, "mp": 644, "ok": true}, {"h": "I", "m": "I", "hp": 643, "mp": 645, "ok": true}, {"h": "P", "m": "P", "hp": 644, "mp": 646, "ok": true}, {"h": "S", "m": "S", "hp": 645, "mp": 647, "ok": true}, {"h": "I", "m": "I", "hp": 646, "mp": 648, "ok": true}, {"h": "A", "m": "A", "hp": 647, "mp": 649, "ok": true}, {"h": "T", "m": "T", "hp": 648, "mp": 650, "ok": true}, {"h": "G", "m": "G", "hp": 649, "mp": 651, "ok": true}, {"h": "M", "m": "I", "hp": 650, "mp": 652, "ok": false}, {"h": "V", "m": "V", "hp": 651, "mp": 653, "ok": true}, {"h": "G", "m": "G", "hp": 652, "mp": 654, "ok": true}, {"h": "A", "m": "G", "hp": 653, "mp": 655, "ok": false}, {"h": "L", "m": "-", "hp": 654, "mp": null, "ok": false}, {"h": "L", "m": "-", "hp": 655, "mp": null, "ok": false}, {"h": "L", "m": "L", "hp": 656, "mp": 656, "ok": true}, {"h": "L", "m": "L", "hp": 657, "mp": 657, "ok": true}, {"h": "L", "m": "F", "hp": 658, "mp": 658, "ok": false}, {"h": "V", "m": "I", "hp": 659, "mp": 659, "ok": false}, {"h": "V", "m": "V", "hp": 660, "mp": 660, "ok": true}];
+const NAMES = {A:["Alanine","small, water-avoiding"],R:["Arginine","positively charged"],
+N:["Asparagine","neutral, water-liking"],D:["Aspartic acid","negatively charged"],
+C:["Cysteine","forms links to other cysteines"],Q:["Glutamine","neutral, water-liking"],
+E:["Glutamic acid","negatively charged"],G:["Glycine","smallest, very flexible"],
+H:["Histidine","switches to positive in acid"],I:["Isoleucine","water-avoiding"],
+L:["Leucine","water-avoiding"],K:["Lysine","positively charged"],
+M:["Methionine","water-avoiding"],F:["Phenylalanine","bulky, water-avoiding"],
+P:["Proline","puts a kink in the chain"],S:["Serine","small, water-liking"],
+T:["Threonine","small, water-liking"],W:["Tryptophan","largest, water-avoiding"],
+Y:["Tyrosine","bulky, partly water-liking"],V:["Valine","water-avoiding"]};
+
+const grid=document.getElementById('grid'), detail=document.getElementById('detail');
+let lo=310, hi=480, mode=null, sel=null;
+
+function inEpi(p){return p>=415&&p<=466}
+
+function render(){
+  grid.innerHTML='';
+  DATA.forEach((c,i)=>{
+    if(!c.hp||c.hp<lo||c.hp>hi) return;
+    const d=document.createElement('div');
+    d.className='col '+(c.ok?'match':'diff');
+    if(inEpi(c.hp)) d.classList.add('epi');
+    if(mode==='acid'&&!'DE'.includes(c.h)) d.classList.add('dim');
+    if(mode==='his'&&c.h!=='H') d.classList.add('dim');
+    if(mode==='diff'&&c.ok) d.classList.add('dim');
+    if(sel===i) d.classList.add('sel');
+    d.innerHTML='<div class="num">'+(c.hp%10===0?c.hp:'')+'</div>'+
+                '<div class="aa">'+c.h+'</div><div class="aa">'+c.m+'</div>';
+    d.title='Position '+c.hp;
+    d.onclick=()=>{sel=i;render();show(c)};
+    grid.appendChild(d);
+  });
+}
+
+function show(c){
+  const H=NAMES[c.h]||["gap","—"], M=NAMES[c.m]||["gap","—"];
+  let tags='';
+  tags += c.ok ? '<span class="tag t-ok">identical in mouse</span>'
+               : '<span class="tag t-bad">differs in mouse</span>';
+  if(inEpi(c.hp)) tags+='<span class="tag t-acc">inside candidate epitope</span>';
+  if('DE'.includes(c.h)) tags+='<span class="tag t-acc">negatively charged — histidine anchor</span>';
+  if(c.h==='H') tags+='<span class="tag t-warn">histidine — flips positive in acid</span>';
+  const code = c.ok ? c.h+c.hp : c.h+c.hp+c.m;
+  let body;
+  if(c.ok){
+    body='<p class="small">Both species have <strong>'+H[0]+'</strong> ('+H[1]+
+      ') at position '+c.hp+'. A binder touching this spot behaves the same in mouse and human.</p>';
+  } else {
+    body='<p class="small">Human has <strong>'+H[0]+'</strong> ('+H[1]+'). Mouse has <strong>'+
+      M[0]+'</strong> ('+M[1]+'). A binder relying on contact here would likely work in one species and not the other.</p>';
+  }
+  detail.innerHTML='<div class="hdr">'+code+'</div>'+tags+body;
+}
+
+document.querySelectorAll('[data-range]').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('[data-range]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    const r=b.dataset.range.split(',').map(Number); lo=r[0]; hi=r[1]; sel=null; render();
+  };
+});
+function toggle(id,m){
+  const b=document.getElementById(id);
+  b.onclick=()=>{
+    const on=b.getAttribute('aria-pressed')==='true';
+    ['hlAcid','hlHis','hlDiff'].forEach(x=>document.getElementById(x).setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed', on?'false':'true');
+    mode = on?null:m; render();
+  };
+}
+toggle('hlAcid','acid'); toggle('hlHis','his'); toggle('hlDiff','diff');
+document.getElementById('z').oninput=e=>
+  document.documentElement.style.setProperty('--tile',e.target.value+'px');
+
+// summary + runs table
+(function(){
+  const all=DATA.filter(c=>c.hp&&c.hp>=25&&c.hp<=645);
+  const d3=DATA.filter(c=>c.hp&&c.hp>=310&&c.hp<=480);
+  const pc=a=>(100*a.filter(c=>c.ok).length/a.length).toFixed(1);
+  document.getElementById('summary').textContent=
+    'Outside region (25–645): '+pc(all)+'% identical. Domain III (310–480): '+pc(d3)+
+    '% identical, with '+d3.filter(c=>!c.ok).length+' differences.';
+  const runs=[]; let cur=[];
+  d3.forEach(c=>{ if(c.ok){cur.push(c)} else {if(cur.length>=10)runs.push(cur); cur=[]} });
+  if(cur.length>=10) runs.push(cur);
+  runs.sort((a,b)=>b.length-a.length);
+  const tb=document.querySelector('#runs tbody');
+  runs.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="mono">'+r[0].hp+'–'+r[r.length-1].hp+'</td><td>'+r.length+
+      '</td><td class="mono">'+r.map(c=>c.h).join('')+'</td>';
+    tb.appendChild(tr);
+  });
+})();
+
+render();
+</script>
+</body>
+</html>
