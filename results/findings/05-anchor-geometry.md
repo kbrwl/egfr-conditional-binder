@@ -190,27 +190,46 @@ Excluded as buried/unresolved: H418 (buried)
    | H433, E455, D458, D460 | 23.6 | H433 | H433 | H433 |
    | D416, E424, E455, D460 | 24.6 | none | none | D416 |
 
-   The method-novelty claim survives, but we have to choose it: the
-   epitope allows it rather than guaranteeing it. The clusters that
-   deliver it are:
+   Clusters that include a target histidine, which is the half of
+   the pairing rule that needs an acidic residue on the binder:
 
      H433, E455, D458, D460 (span 23.6 A) contains H433
 
-   Pairing an acidic binder residue against a target histidine is
-   what forces us to reason about the protonation of the target
-   itself, not just of the binder, and that is the part
-   off-the-shelf pipelines do not do. Choosing a cluster without a
-   target histidine would give the claim up.
+   This arrangement is published, so it is not ours to claim. Liu X
+   et al. (2022), Molecular Therapy - Oncolytics 27:256-269,
+   doi:10.1016/j.omto.2022.11.001, mapped EGFR's own H370 and H433
+   as the determinants of pH-dependent antibody binding and then
+   put an acidic residue against H433 deliberately, on this target
+   and at pH 6.5 against 7.4. See the decisions log under Resolved.
 
-   The trade-off. The clusters containing a target histidine are
-   exactly the ones that overlap cetuximab's footprint, because
-   H433 is the single anchor cetuximab touches. So the
-   mechanistically distinctive choice is also the one most open to
-   a 'this is cetuximab's epitope' objection. The counter-argument
-   is that cetuximab contacts H433 with no pH dependence at all, so
-   sharing one residue with it is not sharing a mechanism. That
-   counter-argument is something to argue in the write-up; nothing
-   here computes it, and it should not be presented as a result.
+   That paper does support the rejection criterion this project
+   derived from first principles. Their histidine-on-the-binder
+   variant facing H433 changed neither pH-dependency nor affinity,
+   while the acidic variants improved pH-dependency substantially.
+
+   On tooling, what is checkable is narrower than what this file
+   used to assert. Verified 1 October 2026 from the repositories:
+   AlphaFold2 and AlphaFold-Multimer take sequences and database
+   paths only; RFdiffusion's inference configuration conditions on
+   backbone, contigs, hotspot residues and a closed set of
+   radius-of-gyration and contact potentials; ProteinMPNN's
+   arguments contain no pH, pKa or protonation option. BindCraft2
+   is the exception worth stating rather than hiding: its
+   filters.py carries a side-chain pKa table and reports Binder_pI
+   and Binder_Net_Charge at a hard-coded REPORTED_PH of 7.4. That
+   is the binder's own sequence charge, the pH is not a user
+   setting in its 235-setting catalogue, and both are reported
+   readouts rather than design objectives.
+
+   The trade-off on cetuximab overlap still stands. The clusters
+   containing a target histidine are the ones that overlap
+   cetuximab's footprint, because H433 is the single anchor
+   cetuximab touches. Step 07 confirmed that overlap holds for
+   unmodified cetuximab and not merely for the engineered variant
+   in 6ARU. The counter-argument, that cetuximab contacts H433 with
+   no pH dependence so sharing a residue is not sharing a
+   mechanism, is something to argue in the write-up; nothing here
+   computes it and it should not be presented as a result.
 
    For reference, the tightest cluster (D416, E421, E424, E455) has 4 of
    4 anchors outside cetuximab's footprint.

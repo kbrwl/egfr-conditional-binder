@@ -298,16 +298,20 @@ Four different groups of four qualify, and they are not equivalent:
 
 The last row is only available if H418 turns out to be usable. See step 06.
 
-**The bind.** With H418 excluded, H433 is the only remaining target histidine —
-the only place left to build the half of the mechanism that makes the method
-distinctive. It is also the single anchor cetuximab touches. So the
-mechanistically interesting choice is the one most open to a "that is just
-cetuximab's epitope" objection.
+**The bind.** With H418 excluded, H433 is the only remaining target histidine, so
+it is the only place left to use the half of the pairing rule that puts an acidic
+residue on the binder. It is also the single anchor cetuximab touches. So that
+choice is the one most open to a "that is just cetuximab's epitope" objection.
 
 There is a counter-argument: cetuximab grips H433 with no pH dependence at all,
 so sharing one residue with it is not sharing a mechanism. That is an argument to
 make in the write-up. Nothing computes it, and it must not be presented as a
 result.
+
+A separate point, found later and more important: **this arrangement is published,
+and on H433 specifically.** Liu et al. 2022 mapped EGFR's own H370 and H433 as the
+residues responsible for pH-dependent antibody binding, then deliberately put an
+acidic residue against H433. See "What the prior-art check found" below.
 
 **What this does not establish.** Geometric reachability is necessary and not
 sufficient. It does not show that a foldable binder exists which presents the
@@ -492,11 +496,9 @@ rule stands, and so do the overlap figures.
 
 **One thing worth noticing.** Heavy chain position 31 in 6ARU is an aspartic acid
 sitting 3.93 ångströms from H433 — an acidic residue on the binder positioned
-against a histidine on the target, which is structurally the arrangement this
-project treats as its distinctive idea. Whether it was put there for pH-dependent
-binding is unknown, since the structure is unpublished. It is a precedent for the
-arrangement regardless, and it is being weighed in the prior-art check on the
-novelty claim.
+against a histidine on the target. Whether it was put there for pH-dependent binding
+is unknown, since the structure is unpublished. Either way it is a precedent for the
+arrangement, and it turned out to be the first of several: see below.
 
 ---
 
@@ -536,6 +538,60 @@ corrupting the input on purpose and confirming it fails.
 
 ---
 
+## What the prior-art check found
+
+Before claiming the method was new, we searched for whether it already existed. It
+does. This is the most consequential thing in this document.
+
+**Putting histidines on a binder to make binding pH-dependent is about twenty years
+old.** It has a name in the literature — histidine switching, after Sarkar et al.
+2002 — a standard method for finding the right positions (histidine scanning,
+Schröter et al. 2015), clinical-stage molecules built on it, and review articles
+covering it. It is background to cite, not an idea to claim.
+
+**Putting an acidic residue on the binder against a histidine already on the target
+is also published**, and is described as a known strategy in a 2024 review (Wei &
+Sulea, *mAbs* 16:2404064). It has been done deliberately, with crystal structures, on
+CTLA-4 (Lee et al. 2022) and on VISTA (Johnston et al. 2019, taken to a clinical
+antibody by Thisted et al. 2024). Designing a de novo interface around a target
+histidine's two charge states was stated as a principle by the Baker lab in 2014
+(Strauch et al., *PNAS* 111:675–680).
+
+**And the closest paper is on our target, our histidine and our pH pair.** Liu et al.
+2022 (*Molecular Therapy – Oncolytics* 27:256–269) built a pH-dependent anti-EGFR
+antibody. They found EGFR's own H370 and H433 were responsible for the pH-dependence
+by mutating each histidine to alanine, then deliberately changed their antibody's
+Tyr32 to glutamate or aspartate to pair with H433. Binding at pH 6.5 against 7.4, and
+human/mouse cross-reactive as well. There is a patent family over it.
+
+So the novelty claim is withdrawn. It was a memory-based belief, exactly the kind
+this project's rules say must be checked, and checking it was worth more than
+keeping it.
+
+**One result in that paper helps us.** They also tried Tyr32**histidine** — a
+histidine on the binder facing the histidine on the target. It changed nothing, while
+the acidic versions worked well. That is published experimental evidence for the
+rejection criterion this project worked out from first principles: never put a
+histidine opposite H418 or H433. The rule now rests on a measurement rather than an
+argument.
+
+**And it pointed at two anchors we had missed.** Because that paper named H370, every
+histidine in domain III was listed from our own sequences: H358, H370, H383, H418,
+H433. H358 and H370 are identical in human and mouse and were never considered,
+because both fall outside 415–466. H383 differs between the species, so it is no use
+for cross-reactivity. Whether H358 or H370 deserves an epitope of its own is open,
+and H370 has experimental evidence behind it.
+
+**What is left that is defensible.** No published example was found of a **de novo
+designed miniprotein** that is pH-conditional against EGFR — the EGFR molecules in
+the literature are antibodies, and de novo pH-sensitive design has been published on
+other targets (Ahn et al. 2025). So the honest claim is about modality and
+combination, phrased as "we found no published example" rather than "this has never
+been done", and citing Liu et al. 2022 openly rather than leaving a reader to find
+it.
+
+---
+
 ## Where this leaves the project
 
 **Established.** Seven of eight anchors are reachable. Four groups of four sit
@@ -546,6 +602,10 @@ The tethering risk is reduced without being eliminated: the epitope is accessibl
 both published shapes, and the specific fear about domain II folding across it is
 not what the numbers show, but two crystal snapshots cannot give the balance of open
 to closed in the assay buffer, which is the number that would actually matter.
+
+**Withdrawn.** The claim that the method was novel. Both halves are published, and
+the closest paper is on EGFR and H433. What survives is a modality claim, stated as
+"we found no published example".
 
 **The open question that matters most.** Whether H418 is usable. It decides
 between a four-anchor group that carries at least one drawback whichever you

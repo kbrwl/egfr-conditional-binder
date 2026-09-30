@@ -138,13 +138,20 @@ mention of tracks. Best reading: Track 3's disadvantage is getting screened, not
 the judging afterwards, meaning a tested design competes with professional lab
 submissions. Not stated anywhere. Ask in the Proteinbase Slack channel.
 
-**Strategy: compete where no established method exists.**
-Affinity optimisation is a solved-ish problem that well-resourced labs will win.
-pH selectivity has no validated predictive tool — nobody can compute it, everyone
-is reasoning from first principles. Cross-species is a sequence-analysis problem
-with a definite answer. Concentrate effort on **pH selectivity and mouse
-cross-reactivity**, which are also the two the organisers rank highest. The
-organisers confirm this reading explicitly.
+**Strategy: concentrate on pH selectivity and mouse cross-reactivity**, the two
+the organisers rank highest. Cross-species is a sequence-analysis problem with a
+definite answer. pH selectivity is described by Anthropic, a co-organiser, as one of
+five problems "at the frontier of today's protein design capabilities, including
+challenges such as species cross-reactivity, pH-sensitivity, and peptide-MHC
+specificity" (anthropic.com/research/claude-uplifts-biomolecular-modeling, checked
+1 October 2026).
+
+Two earlier sentences here are deleted rather than re-sourced. "Affinity
+optimisation is a solved-ish problem that well-resourced labs will win" was a claim
+about other people's practice with nothing behind it. "Nobody can compute it" was
+the same, and could not be replaced by an organiser statement either: no organiser
+page we could reach says pH-sensitive design is harder than high-affinity design.
+The "frontier" quote above is what the organisers actually say.
 
 (This sentence previously said "objectives 2 and 3". It was written when the
 source numbered them affinity first, and it meant mouse and pH. Numbered the way
@@ -152,11 +159,36 @@ this repo numbers them — pH, mouse, affinity — it read as mouse and affinity
 which is the opposite of the intent. Objectives are named rather than numbered
 throughout for that reason.)
 
-**Target-side histidines are the likely method differentiator.** Off-the-shelf
-pipelines add histidines to the binder and score the result. Using the target's
-own H418 and H433 as anchors for acidic residues on our side requires reasoning
-about the target's protonation, which no standard pipeline does. This is worth
-pressing on and worth writing up in detail.
+**The novelty claim is withdrawn (1 October 2026).** This entry used to say that
+using the target's own H418 and H433 as anchors for acidic residues on our side was
+a method differentiator that no standard pipeline does. A prior-art search shows the
+idea is published, including on EGFR and on H433 specifically. Details under
+Resolved. What replaces it is in "How to describe the method honestly" below.
+
+**How to describe the method honestly (1 October 2026).** With the novelty claim
+withdrawn, what is left is still worth submitting, and is defensible without any
+claim to be first:
+
+- a target patch chosen by computed cross-species conservation, 52 positions with a
+  single difference, so mouse cross-reactivity follows from where we aim rather than
+  from later repair
+- a positional pairing rule with an explicit rejection criterion, which now has
+  published experimental support: Liu et al. 2022 found that a histidine on the
+  binder facing EGFR's H433 did nothing while an acidic residue there worked
+- a deliberately low affinity target, because the requirement is a threshold and not
+  a ratio
+- a structure check that reports what it cannot settle: H418 ambiguous between two
+  structures, the sugar chain at N444, two anchors in a groove against domain IV, and
+  no knowledge of the open-to-closed balance in the assay
+
+What is not yet published as far as we could find: a **de novo designed miniprotein**
+that is pH-conditional against EGFR. The pH-dependent EGFR molecules in the
+literature are antibodies. De novo pH-sensitive binder design exists on other targets
+(Ahn et al. 2025, bioRxiv doi:10.1101/2025.09.29.678932, using RFdiffusion with
+histidine-biased ProteinMPNN, switching in the opposite direction and not on EGFR).
+So any claim should be about **modality and combination**, stated as "we found no
+published example of X" rather than "X has never been done", and it should cite Liu
+et al. 2022 prominently rather than leaving a reader to find it.
 
 **Strategy: treat the methods write-up as part of the submission.**
 In Track 3 we hold no reserved testing slot, so the submission competes in a
@@ -387,6 +419,66 @@ RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
 ---
 
 ## Resolved — moved out of Unverified
+
+**The method is not novel. Both halves are published, and the closest paper is on
+EGFR and on H433 (1 October 2026).** Searched before claiming novelty, on the
+reasoning that a novelty claim in front of readers who know the field is worse than
+no claim. Three questions were asked; all three came back against us.
+
+*Histidine engineering for pH-dependent binding is established, roughly twenty
+years old.* Cite as background rather than presenting as ours:
+
+- Sarkar CA et al. (2002), "Rational cytokine design ... pH-activated 'histidine
+  switching'", Nat Biotechnol 20:908–913, doi:10.1038/nbt725 — origin of the term.
+- Igawa T et al. (2010), "Antibody recycling by engineered pH-dependent antigen
+  binding improves the duration of antigen neutralization", Nat Biotechnol
+  28:1203–1207, doi:10.1038/nbt.1691 — the recycling-antibody work.
+- Schröter C et al. (2015), "A generic approach to engineer antibody pH-switches
+  using combinatorial histidine scanning libraries and yeast display", mAbs
+  7:138–151, doi:10.4161/19420862.2014.985993 — the histidine-scanning method.
+- Sulea T et al. (2020), "Structure-based engineering of pH-dependent antibody
+  binding for selective targeting of solid-tumor microenvironment", mAbs 12:1682866,
+  doi:10.1080/19420862.2019.1682866 — computational histidine placement for tumour
+  pH, the closest methodological precedent.
+- Review for the histidine rationale: Smith FD et al. (2023), Antibodies 12:55,
+  doi:10.3390/antib12030055.
+
+*Pairing an acidic binder residue against a histidine already on the target is also
+published, and is stated as a known strategy in a review:* Wei W & Sulea T (2024),
+mAbs 16:2404064, doi:10.1080/19420862.2024.2404064. Executed deliberately with
+structural validation in at least: Lee PS et al. (2022), "Improved therapeutic index
+of an acidic pH-selective antibody", mAbs 14:2024642,
+doi:10.1080/19420862.2021.2024642 (engineered Asp/Glu against the single histidine of
+CTLA-4); the VISTA programme, Johnston RJ et al. (2019), Nature 574:565–570,
+doi:10.1038/s41586-019-1674-5 and Thisted T et al. (2024), Nat Commun 15,
+doi:10.1038/s41467-024-47256-x; and, as a design principle for de novo interfaces,
+Strauch E-M, Fleishman SJ & Baker D (2014), PNAS 111:675–680,
+doi:10.1073/pnas.1313605111.
+
+*The closest paper is on our target and our histidine.* **Liu X et al. (2022), "A
+cross-reactive pH-dependent EGFR antibody with improved tumor selectivity and
+penetration obtained by structure-guided engineering", Molecular Therapy –
+Oncolytics 27:256–269, doi:10.1016/j.omto.2022.11.001, PMC9703009.** They mapped
+EGFR's own H370 and H433 in domain III as the determinants of pH-dependent binding by
+histidine-to-alanine mutagenesis, then deliberately mutated their antibody's LCDR1
+Tyr32 to Glu or Asp to form a new acidic-to-histidine pair with H433. Same target,
+same pH pair of 6.5 against 7.4, same mechanism, and human/mouse cross-reactive as
+well. Patent family WO2024109709A1 (Huahui Health; Sui, Liu, Tian) covers it.
+
+**One finding from that paper helps us rather than hurting us.** Their Tyr32His
+variant — a histidine on the binder facing a histidine on the target — changed
+neither pH-dependency nor affinity, while Tyr32Glu and Tyr32Asp improved
+pH-dependency substantially. That is published experimental support for the rejection
+criterion this project derived from first principles: do not put a histidine on the
+binder opposite H418 or H433. The rule can now cite evidence instead of an argument.
+
+**Two conserved histidines in domain III we had not considered.** Prompted by that
+paper naming H370, every histidine in domain III was enumerated from our own
+sequences: H358, H370, H383, H418, H433. H358 and H370 are identical in human and
+mouse and were never in our anchor set because they fall outside 415–466. H383 differs
+between species (H383R) and is unusable for cross-reactivity. Whether H358 or H370 is
+worth an epitope of its own is open; the literature implicating H370 experimentally
+is a reason to look.
 
 **The antibody in 6ARU is a modified cetuximab, and it does not change our
 conclusions (1 October 2026).** 6ARU's title calls it a cetuximab Fab mutant, and
