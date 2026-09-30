@@ -64,8 +64,8 @@ numbering: full human UniProt positions throughout
 
    Fourteen of the sixteen domain III differences fall before 415.
    That is the whole argument for aiming here rather than elsewhere in
-   domain III: a binder confined to this block satisfies objective 2
-   (mouse cross-reactivity) by construction.
+   domain III: a binder confined to this block satisfies mouse
+   cross-reactivity by construction.
 
    LIMIT OF THIS RESULT, stated plainly: this is sequence analysis. It
    says what each residue IS, not which direction it POINTS. Domain III

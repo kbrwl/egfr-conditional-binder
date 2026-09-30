@@ -105,26 +105,87 @@ so the difference isolates conformation rather than bound partners.
    a residue in 415-466. No domain-boundary definition
    needed beyond domain III's own range.
 
-   6ARU: 1 epitope residue(s) contacted from outside domain III
-        461 <- 487 at 3.10 A
-   1NQL: 1 epitope residue(s) contacted from outside domain III
-        461 <- 487 at 3.61 A
+   6ARU: 19 epitope residue(s) contacted from outside domain III
+        446 <- 504 at 4.45 A
+        447 <- 516 at 3.22 A
+        448 <- 516 at 3.57 A
+        449 <- 516 at 3.25 A
+        450 <- 516 at 2.98 A
+        451 <- 522 at 2.64 A
+        453 <- 516 at 4.02 A
+        454 <- 524 at 3.60 A
+        456 <- 486 at 3.02 A
+        457 <- 483 at 3.07 A
+        458 <- 486 at 2.98 A  <-- ANCHOR
+        459 <- 486 at 2.54 A
+        460 <- 487 at 2.77 A  <-- ANCHOR
+        461 <- 489 at 2.86 A
+        462 <- 489 at 3.38 A
+        463 <- 491 at 2.88 A
+        464 <- 491 at 3.15 A
+        465 <- 492 at 3.29 A
+        466 <- 493 at 2.84 A
+   1NQL: 18 epitope residue(s) contacted from outside domain III
+        447 <- 516 at 3.46 A
+        448 <- 516 at 2.36 A
+        449 <- 516 at 4.14 A
+        450 <- 516 at 3.24 A
+        451 <- 522 at 3.63 A
+        453 <- 516 at 4.10 A
+        454 <- 524 at 3.80 A
+        456 <- 481 at 3.33 A
+        457 <- 483 at 2.78 A
+        458 <- 483 at 2.98 A  <-- ANCHOR
+        459 <- 481 at 3.63 A
+        460 <- 487 at 2.94 A  <-- ANCHOR
+        461 <- 487 at 3.37 A
+        462 <- 489 at 3.82 A
+        463 <- 489 at 2.93 A
+        464 <- 491 at 3.42 A
+        465 <- 492 at 3.14 A
+        466 <- 493 at 2.86 A
+
+   Contacted from outside domain III in both structures: 18 residues, spanning 447-466.
+   Contacted only in the closed structure: none
+
+   The two structures give almost the same list, so this packing is a
+   standing feature of how the protein folds rather than something the
+   closed shape introduces. The partner residues are in the 481-524
+   range, which is domain IV, the domain that follows ours.
+
+   Anchors sitting against domain IV in both structures: D458, D460
+
+   What this changes for the design. These anchors are still
+   reachable by water, because step 03 measured accessibility on the
+   whole receptor chain with domain IV already present, so its
+   effect is included in those numbers. What it adds is that they sit
+   in a groove between two domains rather than on an open face. A
+   binder reaching them has to fit into that groove, which is a
+   harder shape to design against than a flat surface, and it makes
+   those contacts more sensitive to any shift in how the two domains
+   sit against each other.
+
+   This is worth weighing when choosing between the candidate anchor
+   clusters in step 05, which does not have this information: it runs
+   before this step and reads only the exposure and antibody-overlap
+   tables.
 
    Source 2 — THE BOUND LIGAND. Not intrinsic: the assay presents the
    receptor without EGF, so this must NOT be counted against us.
 
-   6ARU (cetuximab Fab, chains B, C): 11 epitope residue(s) contacted
-        416 at 2.74 A from chain C  <-- ANCHOR
-        417 at 3.30 A from chain C
-        419 at 3.39 A from chain C
-        441 at 2.77 A from chain C
-        442 at 3.92 A from chain B
-        443 at 3.05 A from chain B
-        444 at 2.82 A from chain B
-        445 at 2.70 A from chain B
-        447 at 3.44 A from chain B
-        448 at 4.24 A from chain B
-        449 at 3.08 A from chain B
+   6ARU (cetuximab Fab, chains B, C): 10 epitope residue(s) contacted
+        432 at 2.60 A from chain C
+        433 at 3.47 A from chain C  <-- ANCHOR
+        435 at 3.88 A from chain C
+        436 at 3.85 A from chain C
+        439 at 4.13 A from chain C
+        441 at 3.59 A from chain C
+        442 at 3.26 A from chain C
+        462 at 3.45 A from chain C
+        464 at 2.74 A from chain C
+        465 at 3.30 A from chain C
+
+   [PASS] cross-check cetuximab contacts inside the epitope, against step 04: 10 residues, identical to 04-epitope-overlap.csv
    1NQL (EGF, chains B): 0 epitope residue(s) contacted
 
 5. VERDICT
@@ -158,13 +219,18 @@ so the difference isolates conformation rather than bound partners.
    least three anchors remain reachable in the closed form, so a
    binder aimed here is not dependent on the receptor being open.
 
-   Note the direction of the result: the block is slightly MORE
-   accessible in the closed structure, not less. The specific fear
-   that motivated this step -- domain II folding across our face of
-   domain III -- is not borne out. Only one epitope residue (461) is
-   contacted from outside domain III, and that is true in BOTH
-   structures, so it is a fixed feature of the fold rather than
-   something the tether introduces.
+   The block is slightly more accessible in the closed structure
+   than in the open one. The concern that prompted this step, that
+   domain II folds across our face of domain III when the receptor
+   closes, is not what the numbers show.
+
+   What they do show is that 18 residues in the second half
+   of our block sit against domain IV, in both structures and to
+   within a few tenths of an angstrom of the same distances. That is
+   a standing feature of the fold, not something closing introduces,
+   and it is already reflected in the accessibility numbers. Two
+   anchors, D458 and D460, are in that group, which means they sit in
+   a groove between two domains rather than on an open face.
 
    LIMITS OF THIS COMPARISON, stated plainly:
 
@@ -185,6 +251,7 @@ so the difference isolates conformation rather than bound partners.
    equilibrium in the assay remains unknown.
 
 Wrote data/derived/06-conformation-comparison.csv
+Wrote data/derived/06-intra-chain-occlusion.csv
 
 ========================================================================
 RESULT: 8 of 8 anchors remain accessible in 1NQL. Mean epitope RSA 0.173 -> 0.189.

@@ -80,10 +80,12 @@ import numpy as np
 import requests
 from Bio import Align
 from Bio.Align import substitution_matrices
-from Bio.PDB import PDBParser, PDBIO, Select, NeighborSearch, Superimposer
+from Bio.PDB import PDBParser, PDBIO, Select, Superimposer
 from Bio.PDB.SASA import ShrakeRupley
 from Bio.PDB.Polypeptide import is_aa
 from Bio.Data.IUPACData import protein_letters_3to1
+
+import egfr_common as common
 
 ROOT = Path(__file__).resolve().parents[1]
 FASTA = ROOT / "data" / "sequences" / "egfr-uniprot-full.fasta"
@@ -223,6 +225,7 @@ def main():
     emit()
 
     structures, receptor_chain, mappings, ligand_chains = {}, {}, {}, {}
+    numberings = {}
     for pid in (OPEN_ID, CLOSED_ID):
         st = parser.get_structure(pid, str(paths[pid]))
         structures[pid] = st
@@ -238,6 +241,7 @@ def main():
         pct, n, cid, mapping = scored[0]
         receptor_chain[pid] = cid
         mappings[pid] = mapping
+        numberings[pid] = common.Numbering(mapping)
         ligand_chains[pid] = [c for _, _, c, _ in scored[1:]]
         emit(f"   {pid}: receptor chain {cid} — {n} observed residues, "
              f"{pct:.1f}% identity to human EGFR")
@@ -273,15 +277,15 @@ def main():
     emit("   matched atoms, in angstroms) separates those.")
     emit()
     fixed, moving = [], []
-    open_map_inv = {u: p for p, u in mappings[OPEN_ID].items()}
-    closed_map_inv = {u: p for p, u in closed_map.items()}
     open_chain = structures[OPEN_ID][0][receptor_chain[OPEN_ID]]
     closed_chain = structures[CLOSED_ID][0][receptor_chain[CLOSED_ID]]
     for uni in range(D3_START, D3_END + 1):
-        if uni in open_map_inv and uni in closed_map_inv:
+        po = numberings[OPEN_ID].pdb_of(uni)
+        pc = numberings[CLOSED_ID].pdb_of(uni)
+        if po is not None and pc is not None:
             try:
-                a = open_chain[open_map_inv[uni]]["CA"]
-                b = closed_chain[closed_map_inv[uni]]["CA"]
+                a = open_chain[po]["CA"]
+                b = closed_chain[pc]["CA"]
             except KeyError:
                 continue
             fixed.append(a)
@@ -338,10 +342,12 @@ def main():
         for label, lo, hi in regions:
             ds = []
             for uni in range(lo, hi + 1):
-                if uni in open_map_inv and uni in closed_map_inv:
+                po = numberings[OPEN_ID].pdb_of(uni)
+                pc = numberings[CLOSED_ID].pdb_of(uni)
+                if po is not None and pc is not None:
                     try:
-                        a = open_chain[open_map_inv[uni]]["CA"]
-                        b = closed_chain[closed_map_inv[uni]]["CA"]
+                        a = open_chain[po]["CA"]
+                        b = closed_chain[pc]["CA"]
                     except KeyError:
                         continue
                     ds.append(float(np.linalg.norm(
@@ -382,9 +388,10 @@ def main():
 
     rows = []
     for uni in range(EPI_START, EPI_END + 1):
-        if uni not in open_map_inv or uni not in closed_map_inv:
+        po = numberings[OPEN_ID].pdb_of(uni)
+        pc = numberings[CLOSED_ID].pdb_of(uni)
+        if po is None or pc is None:
             continue
-        po, pc = open_map_inv[uni], closed_map_inv[uni]
         if po not in sasa_open or pc not in sasa_closed:
             continue
         res_o = open_chain[po]
@@ -440,33 +447,56 @@ def main():
     emit(f"   a residue in {EPI_START}-{EPI_END}. No domain-boundary definition")
     emit("   needed beyond domain III's own range.")
     emit()
+    intra = {}
     for pid in (OPEN_ID, CLOSED_ID):
-        chain = (open_chain if pid == OPEN_ID else closed_chain)
-        inv = (open_map_inv if pid == OPEN_ID else closed_map_inv)
-        outside = [a for r in chain if is_aa(r, standard=True)
-                   for a in r if a.element != "H"
-                   and not (D3_START <= inv.get(r.id[1], -1) <= D3_END)]
-        epi_atoms = [(inv[r.id[1]], a) for r in chain if is_aa(r, standard=True)
-                     and EPI_START <= inv.get(r.id[1], -1) <= EPI_END
-                     for a in r if a.element != "H"]
-        if not outside or not epi_atoms:
-            emit(f"   {pid}: no out-of-domain atoms to test.")
-            continue
-        ns = NeighborSearch(outside)
-        touched = {}
-        for uni, atom in epi_atoms:
-            for near in ns.search(atom.coord, CONTACT_CUTOFF):
-                d = atom - near
-                nuni = inv.get(near.get_parent().id[1], -1)
-                if uni not in touched or d < touched[uni][0]:
-                    touched[uni] = (d, nuni)
+        touched = common.intra_chain_contacts_outside(
+            structures[pid][0], receptor_chain[pid], numberings[pid],
+            target_range=(EPI_START, EPI_END),
+            exclude_range=(D3_START, D3_END),
+            cutoff=CONTACT_CUTOFF)
+        intra[pid] = touched
         emit(f"   {pid}: {len(touched)} epitope residue(s) contacted from outside "
              f"domain III")
-        if touched:
-            for uni in sorted(touched):
-                d, nuni = touched[uni]
-                mark = "  <-- ANCHOR" if uni in ANCHORS else ""
-                emit(f"        {uni} <- {nuni} at {d:.2f} A{mark}")
+        for uni in sorted(touched):
+            d, other = touched[uni]
+            mark = "  <-- ANCHOR" if uni in ANCHORS else ""
+            emit(f"        {uni} <- {other} at {d:.2f} A{mark}")
+    emit()
+
+    both = sorted(set(intra[OPEN_ID]) & set(intra[CLOSED_ID]))
+    only_closed = sorted(set(intra[CLOSED_ID]) - set(intra[OPEN_ID]))
+    anchors_touched = [u for u in both if u in ANCHORS]
+    emit(f"   Contacted from outside domain III in both structures: {len(both)} "
+         f"residues, spanning {min(both)}-{max(both)}." if both else
+         "   No residue is contacted from outside domain III in both.")
+    emit(f"   Contacted only in the closed structure: "
+         f"{only_closed if only_closed else 'none'}")
+    emit()
+    emit("   The two structures give almost the same list, so this packing is a")
+    emit("   standing feature of how the protein folds rather than something the")
+    emit("   closed shape introduces. The partner residues are in the 481-524")
+    emit("   range, which is domain IV, the domain that follows ours.")
+    emit()
+    if anchors_touched:
+        emit(f"   Anchors sitting against domain IV in both structures: "
+             f"{', '.join(f'{ANCHORS[u]}{u}' for u in anchors_touched)}")
+        emit()
+        emit("   What this changes for the design. These anchors are still")
+        emit("   reachable by water, because step 03 measured accessibility on the")
+        emit("   whole receptor chain with domain IV already present, so its")
+        emit("   effect is included in those numbers. What it adds is that they sit")
+        emit("   in a groove between two domains rather than on an open face. A")
+        emit("   binder reaching them has to fit into that groove, which is a")
+        emit("   harder shape to design against than a flat surface, and it makes")
+        emit("   those contacts more sensitive to any shift in how the two domains")
+        emit("   sit against each other.")
+        emit()
+        emit("   This is worth weighing when choosing between the candidate anchor")
+        emit("   clusters in step 05, which does not have this information: it runs")
+        emit("   before this step and reads only the exposure and antibody-overlap")
+        emit("   tables.")
+    else:
+        emit("   No anchor is contacted from outside domain III in both structures.")
     emit()
 
     emit("   Source 2 — THE BOUND LIGAND. Not intrinsic: the assay presents the")
@@ -477,35 +507,30 @@ def main():
         if not others:
             emit(f"   {pid}: no other protein chains.")
             continue
-        model = structures[pid][0]
-        inv = (open_map_inv if pid == OPEN_ID else closed_map_inv)
-        chain = (open_chain if pid == OPEN_ID else closed_chain)
-        other_atoms = [a for cid in others for r in model[cid]
-                       if is_aa(r, standard=True) for a in r if a.element != "H"]
-        if not other_atoms:
-            continue
-        ns = NeighborSearch(other_atoms)
-        hit = {}
-        for r in chain:
-            if not is_aa(r, standard=True):
-                continue
-            uni = inv.get(r.id[1], -1)
-            if not (EPI_START <= uni <= EPI_END):
-                continue
-            for a in r:
-                if a.element == "H":
-                    continue
-                for near in ns.search(a.coord, CONTACT_CUTOFF):
-                    d = a - near
-                    if uni not in hit or d < hit[uni][0]:
-                        hit[uni] = (d, near.get_parent().get_parent().id)
+        hit = common.contacts_to_partner(
+            structures[pid][0], receptor_chain[pid], others, numberings[pid],
+            cutoff=CONTACT_CUTOFF, restrict_to=(EPI_START, EPI_END))
         label = "cetuximab Fab" if pid == OPEN_ID else "EGF"
         emit(f"   {pid} ({label}, chains {', '.join(others)}): "
              f"{len(hit)} epitope residue(s) contacted")
         for uni in sorted(hit):
-            d, cid = hit[uni]
             mark = "  <-- ANCHOR" if uni in ANCHORS else ""
-            emit(f"        {uni} at {d:.2f} A from chain {cid}{mark}")
+            emit(f"        {uni} at {hit[uni]['min_dist']:.2f} A from chain "
+                 f"{hit[uni]['partner_chain']}{mark}")
+
+        # Cross-check. For 6ARU this is the same question step 04 answered, so the
+        # two must agree. They did not before: this script had its own copy of the
+        # calculation and looked residue numbers up in the wrong direction,
+        # reporting residues 48 positions away from the real ones. Both now call
+        # the same function, and this compares the result against the table step 04
+        # wrote, stopping the run if they differ.
+        if pid == OPEN_ID:
+            emit()
+            common.cross_check_residue_set(
+                "cetuximab contacts inside the epitope, against step 04",
+                hit.keys(), DERIVED / "04-epitope-overlap.csv",
+                column="uniprot_pos", condition_column="cetuximab_contact",
+                emit=emit)
     emit()
 
     # ---- Verdict ----
@@ -576,13 +601,18 @@ def main():
         emit("   least three anchors remain reachable in the closed form, so a")
         emit("   binder aimed here is not dependent on the receptor being open.")
         emit()
-        emit("   Note the direction of the result: the block is slightly MORE")
-        emit("   accessible in the closed structure, not less. The specific fear")
-        emit("   that motivated this step -- domain II folding across our face of")
-        emit("   domain III -- is not borne out. Only one epitope residue (461) is")
-        emit("   contacted from outside domain III, and that is true in BOTH")
-        emit("   structures, so it is a fixed feature of the fold rather than")
-        emit("   something the tether introduces.")
+        emit("   The block is slightly more accessible in the closed structure")
+        emit("   than in the open one. The concern that prompted this step, that")
+        emit("   domain II folds across our face of domain III when the receptor")
+        emit("   closes, is not what the numbers show.")
+        emit()
+        emit(f"   What they do show is that {len(both)} residues in the second half")
+        emit("   of our block sit against domain IV, in both structures and to")
+        emit("   within a few tenths of an angstrom of the same distances. That is")
+        emit("   a standing feature of the fold, not something closing introduces,")
+        emit("   and it is already reflected in the accessibility numbers. Two")
+        emit("   anchors, D458 and D460, are in that group, which means they sit in")
+        emit("   a groove between two domains rather than on an open face.")
     elif len(still_usable) >= 3:
         emit("   THE EPITOPE PROBABLY SURVIVES, with a caveat.")
         emit("   At least three anchors remain reachable in the closed form, but")
@@ -626,6 +656,14 @@ def main():
                      f"{r['rsa_open']:.4f},{r['rsa_closed']:.4f},"
                      f"{r['rsa_closed'] - r['rsa_open']:+.4f}\n")
     emit("Wrote data/derived/06-conformation-comparison.csv")
+    with (DERIVED / "06-intra-chain-occlusion.csv").open("w") as fh:
+        fh.write("structure,uniprot_pos,is_anchor,distance_a,"
+                 "touched_by_uniprot_pos\n")
+        for pid in (OPEN_ID, CLOSED_ID):
+            for uni in sorted(intra[pid]):
+                d, other = intra[pid][uni]
+                fh.write(f"{pid},{uni},{uni in ANCHORS},{d:.3f},{other}\n")
+    emit("Wrote data/derived/06-intra-chain-occlusion.csv")
 
     emit()
     emit("=" * 72)

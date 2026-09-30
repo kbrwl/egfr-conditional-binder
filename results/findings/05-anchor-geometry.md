@@ -102,12 +102,29 @@ Excluded as buried/unresolved: H418 (buried)
    three is the point at which a binder becomes too small to carry the
    stacked switch at all.
 
-5. Distance from the glycosylation site N444
+5. Distance from the sugar attachment point N444
 
-   Step 03 found a sugar chain covalently attached at N444, inside our
-   block. Crystal structures resolve only the innermost sugars, but a
-   real glycan extends well beyond and moves. Anchors close to N444 are
-   therefore at greater risk of being shadowed in the real molecule.
+   Step 03 found a sugar chain attached at N444, inside our block.
+
+   WHAT IS MEASURED HERE, AND HOW IT DIFFERS FROM STEP 03. The two steps
+   measure different things, and read together without this note they
+   look like they disagree:
+
+     step 03 measures the distance from each anchor to the sugar atoms
+     that are actually present in the structure file, with a 5 A cutoff.
+     It found no anchor within 5 A, so no anchor touches the sugars we
+     can see.
+
+     this step measures the distance from each anchor to the point where
+     the chain is attached, N444, with the 15 A and 25 A bands below.
+     The chain itself is longer than the part the structure shows.
+
+   Both are correct. Step 03 answers 'does an anchor touch a sugar atom
+   we have coordinates for', and the answer is no. This step answers
+   'could the full chain reach an anchor', and the answer is that three
+   of them are close enough that it might. The second question matters
+   because a structure only shows the first few sugars of a chain that
+   continues past them, so step 03's answer does not settle it.
 
    A complex N-linked glycan is a branched chain that can sweep
    20-30 A from where it attaches, so the bands below are cautious:
@@ -125,6 +142,9 @@ Excluded as buried/unresolved: H418 (buried)
    | D458 | 29.7 A | probably clear |
    | D460 | 25.1 A | probably clear |
 
+   'Flagged' below means flagged by the attachment-point measure used
+   here, at 15 A or 25 A. It does not contradict step 03, which found
+   no anchor within 5 A of a sugar atom present in the file.
    Anchors flagged: D416, E421, H433
 
    This is a flagged risk, not a resolved question, and it cuts both
@@ -145,7 +165,10 @@ Excluded as buried/unresolved: H418 (buried)
    design is not forced to one contact set. Comparing them on the
    three things that matter:
 
-   | cluster | span A | target His? | cetuximab overlap | glycan-risk anchors |
+   'within 25 A of N444' below is the attachment-point measure from
+   section 5, not step 03's 5 A sugar-atom check.
+
+   | cluster | span A | target His? | cetuximab overlap | within 25 A of N444 |
    |---|---|---|---|---|
    | D416, E421, E424, E455 | 22.6 | none | none | D416, E421 |
    | E424, E455, D458, D460 | 22.8 | none | none | none |

@@ -144,6 +144,15 @@ Computed SASA for 609 residues in the receptor chain.
      N444: 1.44 A from NAG (chain E)
      T446: 3.25 A from NAG (chain E)
 
+   Note on what this 5 A test does and does not settle. It asks
+   whether an anchor touches a sugar atom that is present in the
+   file. A structure shows only the first few sugars of a chain
+   that continues past them, so a 'no' here does not mean the full
+   chain cannot reach. Step 05 asks the wider question, measuring
+   each anchor's distance to the attachment point N444 with 15 A
+   and 25 A bands, and flags three anchors on that basis. The two
+   results are answers to different questions, not a disagreement.
+
    No anchor is within 5 A of a sugar. Glycan occlusion is
    not a concern for the anchors specifically.
 

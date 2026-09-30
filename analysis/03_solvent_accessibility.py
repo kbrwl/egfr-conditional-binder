@@ -359,6 +359,15 @@ def main():
                 mark = " <-- ANCHOR" if pos in ANCHORS else ""
                 emit(f"     {records[pos]['aa']}{pos}: {d:.2f} A from "
                      f"{name} (chain {ch}){mark}")
+            emit()
+            emit("   Note on what this 5 A test does and does not settle. It asks")
+            emit("   whether an anchor touches a sugar atom that is present in the")
+            emit("   file. A structure shows only the first few sugars of a chain")
+            emit("   that continues past them, so a 'no' here does not mean the full")
+            emit("   chain cannot reach. Step 05 asks the wider question, measuring")
+            emit("   each anchor's distance to the attachment point N444 with 15 A")
+            emit("   and 25 A bands, and flags three anchors on that basis. The two")
+            emit("   results are answers to different questions, not a disagreement.")
             hit_anchors = [p for p in close if p in ANCHORS]
             if hit_anchors:
                 emit()

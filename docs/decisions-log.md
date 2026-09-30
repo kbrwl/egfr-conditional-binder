@@ -136,8 +136,15 @@ submissions. Not stated anywhere. **Ask in the Proteinbase Slack channel.**
 Affinity optimisation is a solved-ish problem that well-resourced labs will win.
 pH selectivity has no validated predictive tool — nobody can compute it, everyone
 is reasoning from first principles. Cross-species is a sequence-analysis problem
-with a definite answer. Concentrate effort on objectives 2 and 3, which are also
-the higher-weighted ones. The organisers confirm this reading explicitly.
+with a definite answer. Concentrate effort on **pH selectivity and mouse
+cross-reactivity**, which are also the two the organisers rank highest. The
+organisers confirm this reading explicitly.
+
+(This sentence previously said "objectives 2 and 3". It was written when the
+source numbered them affinity first, and it meant mouse and pH. Numbered the way
+this repo numbers them — pH, mouse, affinity — it read as mouse and affinity,
+which is the opposite of the intent. Objectives are named rather than numbered
+throughout for that reason.)
 
 **Target-side histidines are the likely method differentiator.** Off-the-shelf
 pipelines add histidines to the binder and score the result. Using the target's
@@ -163,7 +170,8 @@ constructs, domain III still shows the same 16 differences, 415-466 still shows
 only S442G, and all eight anchors (D416, H418, E421, E424, H433, E455, D458,
 D460) are identical in both. Checked 30 September 2026.
 
-**Affinity target is deliberately marginal, not maximal.** Objective 3 requires
+**Affinity target is deliberately marginal, not maximal.** The pH-selectivity
+requirement demands
 *no detectable binding* at pH 7.4 — a threshold, not a ratio. A design binding
 at 10 nM / 200 nM (20-fold selective) fails, because 200 nM is plainly
 detectable. A design binding at 2 uM / undetectable passes. Organisers confirm a
@@ -209,16 +217,34 @@ reproducing it — the position we wanted for the novelty requirement.
 conformations**, and slightly *more* accessible in the closed one (mean RSA 0.173
 in 6ARU, 0.189 in 1NQL). The comparison is not vacuous: with domain III
 superposed (RMSD 1.08 Å, same fold), domains I–II sit 23.4 Å apart between the
-two structures, so these genuinely are different global arrangements. Only one
-epitope residue (461) is contacted from outside domain III, and that is true in
-both, making it a fixed feature of the fold rather than something the tether
-introduces. EGF contacts none of our block.
+two structures, so these genuinely are different global arrangements. EGF contacts
+none of our block.
+
+*The second half of the epitope rests against domain IV (step 06, corrected
+1 October 2026).* 19 residues in 6ARU and 18 in 1NQL, spanning roughly 446–466,
+are within 4.5 Å of residues outside domain III, and the partners are in the
+481–524 range, which is domain IV. The two structures give nearly the same list at
+nearly the same distances, so this is a standing feature of how the protein folds
+rather than something the closed shape introduces — the original concern about the
+tether is still answered. Two anchors, **D458 and D460**, are in that group.
+
+This does not change their accessibility numbers: step 03 measured those on the
+whole receptor chain with domain IV already present, so its effect is included.
+What it adds is that those two anchors sit in a groove between two domains instead
+of on an open face, which is a harder shape for a designed binder to fit and makes
+those contacts more sensitive to any shift in how the two domains sit together.
+Weighed in the cluster comparison under Open.
+
+An earlier version of this entry claimed only one residue (461) was contacted from
+outside domain III. That came from a defect in step 06, which looked residue
+numbers up in the wrong direction and reported positions 48 away from the real
+ones. Corrected and recorded under Resolved.
 
 **New design constraint: avoid contacting position 442.** S442G is the single
 human/mouse difference inside our block, and step 04 shows it is in cetuximab's
 contact set — a real, used surface. A binder touching 442 risks species-specific
 behaviour at the one position where the species differ, which would undermine
-objective 2. Computed, not assumed.
+mouse cross-reactivity. Computed, not assumed.
 
 **New risk: the epitope carries a sugar chain.** N444 is an N-glycosylation site
 *inside* 415–466 — step 03 measured 1.44 Å from N444 to a NAG, which is a
@@ -255,18 +281,38 @@ not by picking the more convenient of the two readings.
 a real trade-off rather than an optimisation, and it should be made deliberately
 and recorded:
 
-| cluster | span | target His? | cetuximab overlap | glycan risk |
-|---|---|---|---|---|
-| D416, E421, E424, E455 | 22.6 Å | none | none | D416, E421 |
-| E424, E455, D458, D460 | 22.8 Å | none | none | **none** |
-| H433, E455, D458, D460 | 23.6 Å | **H433** | H433 | H433 |
-| D416, E424, E455, D460 | 24.6 Å | none | none | D416 |
-| *D416, H418, E421, E424, E455* | *24.0 Å* | *H418* | *none* | *D416, E421* |
+| cluster | span | target His? | cetuximab overlap | within 25 Å of N444 | in the domain IV groove |
+|---|---|---|---|---|---|
+| D416, E421, E424, E455 | 22.6 Å | none | none | D416, E421 | **none** |
+| E424, E455, D458, D460 | 22.8 Å | none | none | none | D458, D460 |
+| H433, E455, D458, D460 | 23.6 Å | **H433** | H433 | H433 | D458, D460 |
+| D416, E424, E455, D460 | 24.6 Å | none | none | D416 | D460 |
+| *D416, H418, E421, E424, E455* | *24.0 Å* | *H418* | *none* | *D416, E421* | *none* |
 
-The last row is conditional on the H418 question above. `E424, E455, D458, D460`
-is the cleanest conventional option — no cetuximab overlap, no glycan risk — but
-it gives up the method-novelty claim entirely. Clusters 2 and 3 differ by a single
-residue (E424 vs H433) around a shared core of E455/D458/D460.
+"Within 25 Å of N444" is distance to the point where the sugar chain attaches, not
+to the sugars visible in the structure; step 03 found no anchor within 5 Å of a
+visible sugar atom. The two measure different things and both are in the findings.
+
+**Recommendation, revised 1 October 2026.** There is no longer a clean winner among
+the four-anchor options. `E424, E455, D458, D460` was previously called the
+cleanest, on the grounds that it had neither cetuximab overlap nor a sugar-chain
+flag. The domain IV finding above removes that standing: both D458 and D460 sit in
+the interdomain groove, so it trades one difficulty for another. Every four-anchor
+option now carries at least one of three drawbacks — a sugar chain that might
+reach, an anchor in a groove, or no target histidine.
+
+The five-anchor option in the last row avoids the groove, carries a target
+histidine, and stays clear of cetuximab, which makes it preferable to any of the
+four-anchor options on three of the five columns. It depends entirely on whether
+H418 is usable. **Resolving H418 is therefore the most valuable thing
+outstanding**, more so than before the domain IV finding. Do not pick a four-anchor
+cluster until it is settled. If H418 proves unusable, `D416, E421, E424, E455` is
+the best remaining option, on the reasoning that a sugar chain that may sometimes
+reach is a softer problem than an anchor sitting in a groove — that comparison is a
+judgement, not a computed result.
+
+Clusters 2 and 3 differ by a single residue, E424 against H433, around a shared
+core of E455/D458/D460.
 
 **Whether a target histidine is worth its cost.** Pairing an acidic binder residue
 against the target's own histidine is the method differentiator, but every cluster
@@ -297,7 +343,7 @@ equilibrium in the assay, which is the number that would actually matter, and
 which two crystal snapshots cannot supply. Reduced from a potential blocker to an
 unquantified source of variance.
 
-**Do objectives 2 and 3 compete for the same surface?** Both pH selectivity and
+**Do pH selectivity and mouse cross-reactivity compete for the same surface?** Both
 mouse cross-reactivity constrain the same interface residues. Partly answered: all
 eight anchors are species-identical, so the pairing positions themselves are
 conserved, and the only conflict found is position 442 — the single species
@@ -323,6 +369,36 @@ RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
 ---
 
 ## Resolved — moved out of Unverified
+
+**A defect in step 06, found because two scripts disagreed (1 October 2026).**
+Steps 04 and 06 both worked out which epitope residues the cetuximab Fab touches,
+from the same file with the same 4.5 Å cutoff, and produced different lists. Step
+04 was right; step 06 was wrong.
+
+Cause: step 06 held the numbering as two plain dictionaries, one each way round,
+and its contact section indexed the UniProt-to-structure dictionary with a
+structure residue number. Because the two ranges overlap, that lookup succeeded
+and returned a position 48 away from the correct one, raising no error. Verified by
+recomputing both directions and checking against step 04: with the correct
+direction the two agree exactly.
+
+What it affected, and what it did not:
+
+- **Wrong:** step 06's contact lists. It reported the Fab touching D416 at 2.74 Å;
+  the residue at that distance is S464. It reported one residue contacted from
+  outside domain III; the real number is 19 in 6ARU and 18 in 1NQL.
+- **Unaffected:** every accessibility number, the domain III superposition (1.08 Å),
+  the global conformation comparison (23.4 Å), the H418 ambiguity, and all of step
+  04 and step 05. Those parts used the numbering the right way round.
+- **D416 is not touched by cetuximab.** Step 04's conclusion stands, and the
+  cluster comparison that rests on it is unchanged.
+
+Fixed by moving the calculation into `analysis/egfr_common.py`, which both scripts
+now call, and by replacing the two dictionaries with a small class whose methods
+are named `uniprot_of` and `pdb_of`, so passing the wrong kind of number returns
+nothing rather than a plausible wrong answer. Step 06 now also compares its result
+against step 04's table and stops the run if they differ; that check was tested by
+corrupting the table on purpose and confirming it fails.
 
 **Cetuximab contact residues — RESOLVED 30 September 2026, and the prior claim is
 mostly DISPROVED.** Computed in `analysis/04_cetuximab_contacts.py`: any EGFR

@@ -89,7 +89,7 @@ amino acids; **minibinder** 40–100; **large binder** over 100; plus
 10–250.
 
 **Detection floor** — the weakest binding an assay can still see. Anything
-weaker is reported as nothing at all. This is what makes objective 1 a
+weaker is reported as nothing at all. This is what makes the pH-selectivity requirement a
 **threshold rather than a ratio**: "no detectable binding at pH 7.4" is a claim
 about landing underneath the floor, not about the gap between two numbers. A
 binder at 10 nM / 200 nM has a 20-fold ratio and still fails, because 200 nM is

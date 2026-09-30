@@ -51,9 +51,10 @@ Run standalone:  python analysis/04_cetuximab_contacts.py
 import sys
 from pathlib import Path
 
-from Bio.PDB import PDBParser, NeighborSearch
+from Bio.PDB import PDBParser
 from Bio.PDB.Polypeptide import is_aa
-from Bio.Data.IUPACData import protein_letters_3to1
+
+import egfr_common as common
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPLEX_PDB = ROOT / "data" / "structures" / "6aru.pdb"
@@ -70,19 +71,6 @@ ANCHORS = {416: "D", 418: "H", 421: "E", 424: "E",
 
 # The four differences the earlier speculation named.
 SPECULATED = ["Q390R", "E412D", "R414W", "K467R"]
-
-THREE_TO_ONE = {k.upper(): v for k, v in protein_letters_3to1.items()}
-
-
-def load_offset():
-    if not OFFSET_CSV.exists():
-        raise SystemExit("Run analysis/02_structure_prep.py first.")
-    pdb_to_uni = {}
-    for line in OFFSET_CSV.read_text().splitlines()[1:]:
-        uni, pdb, _ = line.split(",")
-        pdb_to_uni[int(pdb)] = int(uni)
-    return pdb_to_uni
-
 
 def load_differences():
     if not DIFFS_CSV.exists():
@@ -101,14 +89,13 @@ def main():
         print(text)
         out.append(text)
 
-    pdb_to_uni = load_offset()
+    numbering = common.load_numbering()
     differences = load_differences()
 
     parser = PDBParser(QUIET=True)
     structure = parser.get_structure("complex", str(COMPLEX_PDB))
     model = structure[0]
 
-    receptor = model[RECEPTOR_CHAIN]
     fab_chains = [c for c in model
                   if c.id != RECEPTOR_CHAIN
                   and any(is_aa(r, standard=True) for r in c)]
@@ -125,34 +112,12 @@ def main():
     emit("Numbering: UniProt = PDB + 24, established empirically by step 02.")
     emit()
 
-    # Build the search index over Fab heavy atoms.
-    fab_atoms = [a for c in fab_chains for r in c if is_aa(r, standard=True)
-                 for a in r if a.element != "H"]
-    emit(f"Fab heavy atoms indexed: {len(fab_atoms)}")
-    ns = NeighborSearch(fab_atoms)
-
-    # For each receptor residue, find the closest Fab atom within the cutoff.
-    contacts = {}
-    for res in receptor:
-        if not is_aa(res, standard=True):
-            continue
-        uni = pdb_to_uni.get(res.id[1])
-        if uni is None:
-            continue
-        best = None
-        for atom in res:
-            if atom.element == "H":
-                continue
-            for near in ns.search(atom.coord, CUTOFF):
-                d = atom - near
-                if best is None or d < best[0]:
-                    best = (d, near.get_parent().get_parent().id,
-                            atom.get_id(), near.get_id())
-        if best is not None:
-            contacts[uni] = dict(
-                aa=THREE_TO_ONE.get(res.get_resname(), "X"),
-                pdb_num=res.id[1], min_dist=best[0], fab_chain=best[1],
-                egfr_atom=best[2], fab_atom=best[3])
+    # The calculation itself lives in egfr_common.contacts_to_partner, so that
+    # step 06 asking the same question gets the same answer. It previously had its
+    # own copy and reported a different contact set.
+    contacts = common.contacts_to_partner(
+        model, RECEPTOR_CHAIN, [c.id for c in fab_chains], numbering,
+        cutoff=CUTOFF)
 
     emit(f"EGFR residues in contact with the Fab: {len(contacts)}")
     emit()
@@ -164,14 +129,14 @@ def main():
     emit("   |---|---|---|---|---|---|---|")
     for uni in sorted(contacts):
         c = contacts[uni]
-        emit(f"   | {uni} | {c['aa']} | {c['pdb_num']} | {c['min_dist']:.2f} | "
-             f"{c['fab_chain']} | {c['egfr_atom']} | {c['fab_atom']} |")
+        emit(f"   | {uni} | {c['aa']} | {c['pdb_resnum']} | {c['min_dist']:.2f} | "
+             f"{c['partner_chain']} | {c['receptor_atom']} | {c['partner_atom']} |")
     emit()
     lo, hi = min(contacts), max(contacts)
     emit(f"   Footprint spans UniProt {lo}-{hi}.")
     by_chain = {}
     for c in contacts.values():
-        by_chain[c["fab_chain"]] = by_chain.get(c["fab_chain"], 0) + 1
+        by_chain[c["partner_chain"]] = by_chain.get(c["partner_chain"], 0) + 1
     emit("   Residues by nearest Fab chain: "
          + ", ".join(f"chain {k}: {v}" for k, v in sorted(by_chain.items())))
     emit()
@@ -190,7 +155,7 @@ def main():
         for pos, h, m, label in in_contact:
             c = contacts[pos]
             emit(f"     {label}  —  {c['min_dist']:.2f} A from Fab chain "
-                 f"{c['fab_chain']}")
+                 f"{c['partner_chain']}")
     else:
         emit("     none")
     emit()
@@ -207,7 +172,7 @@ def main():
         if hit:
             c = contacts[pos]
             emit(f"     {label}: IN CONTACT — {c['min_dist']:.2f} A from chain "
-                 f"{c['fab_chain']}")
+                 f"{c['partner_chain']}")
         else:
             emit(f"     {label}: NOT in contact"
                  + (f" (nearest contact residue is "
@@ -262,7 +227,7 @@ def main():
             c = contacts[p]
             mark = "  <-- ANCHOR" if p in ANCHORS else ""
             emit(f"     {c['aa']}{p}: {c['min_dist']:.2f} A from chain "
-                 f"{c['fab_chain']}{mark}")
+                 f"{c['partner_chain']}{mark}")
     else:
         emit("   None.")
     emit()
@@ -319,8 +284,8 @@ def main():
         diff_pos = {p for p, _, _, _ in differences}
         for uni in sorted(contacts):
             c = contacts[uni]
-            fh.write(f"{uni},{c['pdb_num']},{c['aa']},{c['min_dist']:.3f},"
-                     f"{c['fab_chain']},{c['egfr_atom']},{c['fab_atom']},"
+            fh.write(f"{uni},{c['pdb_resnum']},{c['aa']},{c['min_dist']:.3f},"
+                     f"{c['partner_chain']},{c['receptor_atom']},{c['partner_atom']},"
                      f"{EPI_START <= uni <= EPI_END},{uni in ANCHORS},"
                      f"{uni in diff_pos}\n")
     with (DERIVED / "04-epitope-overlap.csv").open("w") as fh:

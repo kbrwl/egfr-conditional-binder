@@ -29,7 +29,7 @@ ruin the submission.** It contradicts the default behaviour of every standard
 tool, so it has to be reasserted at each stage rather than assumed to be
 remembered.
 
-Objective 1 is a **threshold, not a ratio**. "No detectable binding at pH 7.4"
+The pH-selectivity requirement is a threshold, not a ratio. "No detectable binding at pH 7.4"
 means the pH 7.4 state must fall *below the assay's detection floor*.
 
 - A design binding at **10 nM / 200 nM** is 20-fold selective and **FAILS**.

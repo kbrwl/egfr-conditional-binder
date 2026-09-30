@@ -17,7 +17,6 @@ Definition: an EGFR residue is in contact if any heavy atom is within
 Method: Bio.PDB.NeighborSearch spatial index (not a double loop).
 Numbering: UniProt = PDB + 24, established empirically by step 02.
 
-Fab heavy atoms indexed: 3237
 EGFR residues in contact with the Fab: 24
 
 1. Full contact list

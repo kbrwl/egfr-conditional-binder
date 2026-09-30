@@ -4,7 +4,8 @@
 
 WHAT THIS MEASURES AND WHY IT MATTERS
 -------------------------------------
-Objective 2 of the competition is that one sequence must bind BOTH human and
+One of the competition's objectives, mouse cross-reactivity, is that a single
+sequence must bind both human and
 mouse EGFR. The cheapest way to satisfy that is not to design for it afterwards,
 but to aim at a patch of the target where the two species are already identical:
 if the binder never touches a residue that differs, cross-reactivity follows by
@@ -230,8 +231,8 @@ def main():
     emit()
     emit("   Fourteen of the sixteen domain III differences fall before 415.")
     emit("   That is the whole argument for aiming here rather than elsewhere in")
-    emit("   domain III: a binder confined to this block satisfies objective 2")
-    emit("   (mouse cross-reactivity) by construction.")
+    emit("   domain III: a binder confined to this block satisfies mouse")
+    emit("   cross-reactivity by construction.")
     emit()
     emit("   LIMIT OF THIS RESULT, stated plainly: this is sequence analysis. It")
     emit("   says what each residue IS, not which direction it POINTS. Domain III")
