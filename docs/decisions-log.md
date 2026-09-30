@@ -98,7 +98,8 @@ This is where cetuximab and panitumumab bind, and what the organisers recommend.
 
 **Candidate epitope: residues 415–466.**
 52 consecutive positions, one conservative difference (S442G). Six acidic anchor
-residues for histidine pairing. Details in `alignment-findings.md`.
+residues for histidine pairing. Details in `alignment-findings.md` in this
+directory; the computed equivalent is `results/findings/01-alignment.md`.
 Status: leading candidate, conditional on the structure check passing.
 
 **pH mechanism: charge pairing, decided per position.**
@@ -387,6 +388,45 @@ RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
 
 ## Resolved — moved out of Unverified
 
+**The antibody in 6ARU is a modified cetuximab, and it does not change our
+conclusions (1 October 2026).** 6ARU's title calls it a cetuximab Fab mutant, and
+step 04 measured the antibody footprint from that file. Computed in
+`analysis/07_fab_mutant_check.py` by comparison against 1YY9, the reference
+cetuximab structure (Li S. et al., 2005, Cancer Cell 7:301–311).
+
+Five differences, four of which replace a serine or asparagine with aspartic acid:
+light chain S52D and S56D, heavy chain S28D, N31D and R216K. **One is in the
+interface: heavy chain N31D, 3.93 Å from H433.** The purpose is unrecorded — the
+structure is unpublished (Christie M., Christ D., citation "To Be Published"), the
+entry lists no substitutions, and the file's SEQADV records cover only the receptor
+chain.
+
+Because a modified residue touches one of our anchors, the footprint was recomputed
+on 1YY9. It gives **exactly the same ten residues inside 415–466**, H433 included,
+at 3.36 Å against 3.47 Å in the mutant. So step 04's contact set describes cetuximab
+and not only this variant, and three results that rest on it stand unchanged: the
+disproof of the earlier species-failure claim, the rule not to contact position 442,
+and the overlap figures in the cluster comparison.
+
+Worth carrying forward for the novelty question: heavy chain position 31 in 6ARU is
+an aspartic acid positioned 3.93 Å from H433, which is structurally an acidic binder
+residue paired against a target histidine — the arrangement this project treats as
+its distinctive contribution. Whether it was placed there for pH-dependent binding
+is unknown. It is a precedent for the arrangement either way.
+
+Also recorded from 6ARU's SEQADV records, which we had not read before: the receptor
+chain itself differs from UniProt P00533 at two positions (540 asparagine to lysine,
+634 glutamate to arginine) and carries a six-histidine purification tag at the
+C-terminus. All three lie outside domain III and outside our epitope.
+
+**The H418 cluster numbers are now computed (1 October 2026).** The 24.0 Å
+five-anchor span and the 25.2 Å H418–H433 distance previously existed only in this
+log, from a calculation run by hand. Step 05 now runs the clustering under both
+assumptions — H418 excluded, following step 03, and H418 included, following step
+06 — and writes both to `data/derived/`. Section 7 of
+`results/findings/05-anchor-geometry.md` carries the conditional set, labelled as
+conditional. The numbers are unchanged; they are now reproducible.
+
 **A defect in step 06, found because two scripts disagreed (1 October 2026).**
 Steps 04 and 06 both worked out which epitope residues the cetuximab Fab touches,
 from the same file with the same 4.5 Å cutoff, and produced different lists. Step
@@ -441,7 +481,10 @@ abolishes binding depends on how much that contact contributes energetically,
 which a distance calculation does not measure.
 
 **6ARU is the structure of record** — the EGFR extracellular region bound to a
-cetuximab Fab mutant, and the entry the competition page references. Preferred
+cetuximab Fab **mutant**, and the entry the competition page references. The mutant
+qualification matters and is resolved above: five residues differ from the reference
+cetuximab structure, one of them in the interface, and the footprint was rechecked
+against unmodified cetuximab as a result. Preferred
 over 1YY9 (still cited in the glossary and in `alignment-findings.md` as the older
 pointer) because 6ARU contains the whole extracellular region, which is what the
 assay uses, rather than domain III alone.

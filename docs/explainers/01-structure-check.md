@@ -1,6 +1,6 @@
 # Explainer 01 — the structure check
 
-What `analysis/00` through `analysis/06` did, why, and what came back.
+What `analysis/00` through `analysis/07` did, why, and what came back.
 Written for a reader with no biology background who intends to understand the
 work rather than trust it.
 
@@ -88,8 +88,13 @@ well before it.
 ## Step 01 — where human and mouse differ
 
 **Files**
-`analysis/01_alignment.py` → `data/derived/01-domain3-differences.csv`,
-`results/findings/alignment-findings.md`
+`analysis/01_alignment.py` → `results/findings/01-alignment.md`,
+`data/derived/01-domain3-differences.csv`,
+`data/derived/01-identical-runs.csv`
+
+The hand-written interpretation of these numbers is `docs/alignment-findings.md`.
+It was written before the scripts existed and lives in `docs/` rather than
+`results/findings/`, because that directory holds computed output only.
 
 **What it does.** Lines the two sequences up position by position and lists the
 differences. Lining two sequences up is called an **alignment**, and it has to be
@@ -119,8 +124,11 @@ trusted.
 **What a structure file is.** The **Protein Data Bank (PDB)** is a public archive
 of experimentally measured protein structures. A structure file is a plain text
 table listing the x, y and z coordinates of every atom. Our structure of record
-is entry **6ARU**: the EGFR extracellular region with a cetuximab **Fab** stuck to
-it. A Fab is the gripping end of an antibody, cut away from the rest.
+is entry **6ARU**: the EGFR extracellular region with a cetuximab **Fab mutant**
+stuck to it. A Fab is the gripping end of an antibody, cut away from the rest. The
+antibody in this file is a modified cetuximab rather than the approved drug — its
+own title says "Fab mutant" — and step 07 works out which residues differ and
+whether any of them touches EGFR.
 
 A structure file has **chains** — separate molecules in the same file, each given
 a letter. Here, one chain is EGFR and two are the antibody's halves.
@@ -158,8 +166,11 @@ can reach. The result is an area in square ångströms, called **solvent-accessi
 surface area (SASA)**. The specific published algorithm used is
 **Shrake–Rupley**; the implementation is `Bio.PDB.SASA.ShrakeRupley`.
 
-An **ångström** is a ten-billionth of a metre. A carbon atom is about 1.5
-ångströms across.
+An **ångström** is a ten-billionth of a metre. For a sense of scale measured from
+our own structure: the distance between two bonded carbon atoms in 6ARU averages
+1.53 ångströms, across 559 such pairs. That is a bond length — the gap between two
+atoms' centres — rather than the width of an atom, which is roughly twice as
+much.
 
 **Why raw area is not enough.** Amino acids differ hugely in size. 50 square
 ångströms of exposed tryptophan is mostly buried; 50 of exposed glycine is wide
@@ -258,9 +269,13 @@ partly share it, without reproducing it.
 `explorer/anchor-viewer.html`, `explorer/anchor-view.pml`
 
 **The question.** A binder is one object presenting one face. Everything it grips
-has to fit on that face. A protein of 40 to 100 amino acids has a contact face
-roughly 25 to 30 ångströms across. So: do the surviving anchors sit within about
-that span of each other?
+has to fit on that face. So: do the surviving anchors sit close enough together for
+one face to reach them all?
+
+The threshold used is 25 ångströms, fixed before the measurement as a working
+estimate of how far one small binder can reach. It is a convention chosen in
+advance so it could not be tuned to whatever answer came out, not a measured
+property of binders. A cluster that only just fits should be read as borderline.
 
 **How distance is measured.** Between the parts of each side chain that actually
 form the charge pair — the carboxylate carbon for aspartic acid and glutamic
@@ -340,8 +355,11 @@ has, which traces the backbone.
 
 The leftover gap is reported as **RMSD (root-mean-square deviation)**: take the
 gap between each matched pair, square them, average, take the square root. 171
-alpha carbons matched, RMSD **1.08 ångströms** — about a tenth of the width of a
-small amino acid. Same fold.
+alpha carbons matched, RMSD **1.08 ångströms**. For scale, measured from 6ARU: a
+glycine spans about 3.0 ångströms at its widest, an alanine about 3.4, and
+consecutive alpha carbons sit about 3.8 apart. So the leftover gap is roughly a
+third of the width of a small amino acid — comfortably less than one residue, which
+is what "same fold" means here.
 
 **Three — are the two structures actually in different overall shapes?** If both
 happened to be open, the comparison would say nothing about the closed form and a
@@ -403,6 +421,13 @@ avoids cetuximab's footprint, and carries a target histidine. No four-anchor
 option manages all three. H418 and H433 are 25.2 ångströms apart, just over the
 reach cutoff, so it is one histidine or the other and never both.
 
+Those two figures are computed in section 7 of `results/findings/05-anchor-geometry.md`,
+which runs the clustering twice: once with H418 excluded, as step 03 has it, and
+once with H418 included, as step 06 suggests it might be. Both sets are written to
+`data/derived/05-anchor-clusters.csv` and
+`data/derived/05-anchor-clusters-with-h418.csv`. The second set is conditional on
+the unresolved question and labelled that way.
+
 D458 also disagrees between the structures: 0.248 open against 0.446 closed.
 
 ### Limits
@@ -419,10 +444,68 @@ D458 also disagrees between the structures: 0.248 open against 0.446 closed.
 
 ---
 
+## Step 07 — the antibody in our structure is not quite cetuximab
+
+**Files**
+`analysis/07_fab_mutant_check.py` → `results/findings/07-fab-mutant-check.md`,
+`data/derived/07-fab-differences.csv`
+
+**The problem.** 6ARU's own title calls the antibody a cetuximab Fab **mutant**.
+Step 04 measured "cetuximab's" contacts using that file, and three results rest on
+those contacts: the disproof of the earlier species-failure claim, the rule not to
+contact position 442, and the overlap figures in step 05's cluster table. If a
+modified residue sits in the interface, those describe a modified antibody rather
+than the drug.
+
+**Why it had to be computed.** There was nothing to look it up in. The file's
+`SEQADV` records — the place a depositor lists differences from a reference
+sequence — exist only for the receptor chain, and show two conflicts at UniProt 540
+and 634 plus a six-histidine purification tag, all outside domain III. There are
+none for either antibody chain. The Protein Data Bank entry names the mutant
+without listing substitutions. And the primary citation is "To Be Published"
+(Christie M., Christ D., deposited 2017, released 2018), so there is no paper.
+
+So the mutations were found by comparison against **1YY9**, the reference structure
+of cetuximab (Li S. et al., 2005, *Cancer Cell* 7:301–311).
+
+**Result: five differences, one of them in the interface.**
+
+| Chain | Position | 1YY9 | 6ARU | In the interface? |
+|---|---|---|---|---|
+| Light | 52 | S | D | no |
+| Light | 56 | S | D | no |
+| Heavy | 28 | S | D | no |
+| Heavy | 31 | N | D | **yes — 3.93 Å from H433** |
+| Heavy | 216 | R | K | no |
+
+Four of the five replace a serine or asparagine with **aspartic acid**, adding
+negative charge across the gripping region. The purpose is unrecorded, because the
+structure is unpublished.
+
+**The follow-up that settled it.** Since heavy chain 31 touches H433, and H433 is
+one of our anchors, the question became whether unmodified cetuximab touches the
+same place. Recomputing the footprint on 1YY9 gives **exactly the same ten residues
+inside 415–466**, H433 included, at 3.36 ångströms against 3.47 in the mutant.
+
+So step 04's footprint describes cetuximab and not merely this variant. The 442
+rule stands, and so do the overlap figures.
+
+**One thing worth noticing.** Heavy chain position 31 in 6ARU is an aspartic acid
+sitting 3.93 ångströms from H433 — an acidic residue on the binder positioned
+against a histidine on the target, which is structurally the arrangement this
+project treats as its distinctive idea. Whether it was put there for pH-dependent
+binding is unknown, since the structure is unpublished. It is a precedent for the
+arrangement regardless, and it is being weighed in the prior-art check on the
+novelty claim.
+
+---
+
 ## The defect found on 1 October, and what it changed
 
 **Files**
-`analysis/egfr_common.py` (new), plus corrections in `06_tethered_occlusion.py`
+`analysis/egfr_common.py` (new), plus corrections in `06_tethered_occlusion.py` and
+a refactor of `04_cetuximab_contacts.py` onto the shared helper, so both callers now
+run the same contact calculation
 
 Steps 04 and 06 both computed which residues the antibody touches, from the same
 file with the same 4.5 ångström cutoff, and produced different answers.
@@ -456,8 +539,13 @@ corrupting the input on purpose and confirming it fails.
 ## Where this leaves the project
 
 **Established.** Seven of eight anchors are reachable. Four groups of four sit
-close enough for one binder. A hard rule not to contact position 442. The
-conformational worry is retired. Cetuximab's real footprint is known.
+close enough for one binder. A hard rule not to contact position 442. Cetuximab's
+real footprint is known, and checked against the unmodified antibody.
+
+The tethering risk is reduced without being eliminated: the epitope is accessible in
+both published shapes, and the specific fear about domain II folding across it is
+not what the numbers show, but two crystal snapshots cannot give the balance of open
+to closed in the assay buffer, which is the number that would actually matter.
 
 **The open question that matters most.** Whether H418 is usable. It decides
 between a four-anchor group that carries at least one drawback whichever you
@@ -477,3 +565,5 @@ BLOSUM62, chain, conformation, epitope, extended, Fab, glycoprotein, heavy atom,
 imidazole ring, N-glycosylation, PDB, receptor-only, relative solvent
 accessibility, RMSD, rotamer, signal peptide, solenoid, solvent-accessible
 surface area, Shrake–Rupley, superposition, tethered, Tien et al. 2013, UniProt.
+
+Checked against the glossary on 1 October 2026: all present.

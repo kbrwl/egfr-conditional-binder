@@ -222,6 +222,62 @@ Excluded as buried/unresolved: H418 (buried)
    the assay's detection floor at pH 7.4. Those are design and
    prediction questions, and both are still open.
 
+7. Second scenario: the same question with H418 included
+
+   Everything above excludes H418, following step 03, which measured it
+   as buried in 6ARU. Step 06 measured it as partially exposed in 1NQL,
+   and domain III has the same fold in both structures, so the two
+   measurements disagree and the question is open. Because 6ARU has the
+   antibody clamped on, the burial there may be the antibody holding that
+   side chain rather than a property of the receptor alone.
+
+   This section answers what the clusters would be if H418 is usable. It
+   is conditional on that unresolved question and is labelled as such
+   wherever the numbers are used.
+
+   Anchors against domain IV, read from step 06's table: D458, D460
+
+   Anchors considered: D416, H418, E421, E424, H433, E455, D458, D460
+
+   Distances from H418 to the others:
+     H418 to D416: 6.4 A
+     H418 to E421: 7.5 A
+     H418 to E424: 18.0 A
+     H418 to H433: 25.2 A
+     H418 to E455: 24.0 A
+     H418 to D458: 27.4 A
+     H418 to D460: 26.2 A
+
+   H418 to H433 is 25.2 A, against a reach cutoff of
+   25 A. The two target histidines cannot both be
+   reached by one binder, so a design uses one or the other.
+
+   Largest cluster with H418 available: 5 anchors
+   D416, H418, E421, E424, E455
+   Maximum internal distance 24.0 A
+
+   Compared with 4 anchors at 22.6 A when H418
+   is excluded.
+
+   All clusters of that size, with the same columns as section 6:
+
+   | cluster | span A | target His? | cetuximab overlap | within 25 A of N444 | domain IV groove |
+   |---|---|---|---|---|---|
+   | D416, H418, E421, E424, E455 | 24.0 | H418 | none | D416, E421 | none |
+
+   Clusters here that carry a target histidine, avoid the
+   antibody footprint and avoid the domain IV groove:
+     D416, H418, E421, E424, E455 (span 24.0 A)
+
+   No cluster in section 6, where H418 is excluded, manages all
+   three at once. That is what makes settling H418 worth doing
+   before choosing a contact set.
+
+   These numbers hold only if H418 is usable. Until that is settled they
+   describe an option, not a decision.
+
+Wrote data/derived/05-anchor-distance-matrix-with-h418.csv
+Wrote data/derived/05-anchor-clusters-with-h418.csv
 Wrote data/derived/05-anchor-distance-matrix.csv
 Wrote data/derived/05-anchor-clusters.csv
 Wrote explorer/anchor-viewer.html  (open in a browser)

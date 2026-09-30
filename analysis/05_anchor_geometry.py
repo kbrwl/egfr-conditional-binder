@@ -92,6 +92,7 @@ EXPLORER = ROOT / "explorer"
 VERDICTS_CSV = DERIVED / "03-anchor-verdicts.csv"
 OFFSET_CSV = DERIVED / "02-numbering-offset.csv"
 OVERLAP_CSV = DERIVED / "04-epitope-overlap.csv"
+GROOVE_CSV = DERIVED / "06-intra-chain-occlusion.csv"
 
 REACH_CUTOFF = 25.0      # angstroms; approximate span of one small binder face
 MIN_CLUSTER = 3          # fewer anchors than this in one patch and the epitope fails
@@ -144,6 +145,31 @@ def load_survivors():
     return sorted(survivors), verdicts
 
 
+def load_domain_iv_groove():
+    """Anchors that sit against domain IV, read from step 06's output.
+
+    Step 06 found that the second half of our block is packed against domain IV,
+    the domain that follows ours, in both structures it compared. An anchor in
+    that packing sits in a groove between two domains rather than on an open face,
+    which is harder for a designed binder to fit.
+
+    Step 06 runs after this one, so on a first run from scratch its table does not
+    exist yet. That is reported rather than guessed at, and the second run of this
+    script picks it up. Hardcoding the residues here would let the two scripts
+    drift apart, which is the failure this project has already had once.
+    """
+    if not GROOVE_CSV.exists():
+        return set(), False
+    groove = set()
+    for line in GROOVE_CSV.read_text().splitlines()[1:]:
+        if not line.strip():
+            continue
+        _structure, pos, is_anchor, _dist, _other = line.split(",")
+        if is_anchor.strip() == "True":
+            groove.add(int(pos))
+    return groove, True
+
+
 def load_cetuximab_contacts():
     if not OVERLAP_CSV.exists():
         return set()
@@ -184,6 +210,7 @@ def main():
     uni_to_pdb = load_offset()
     survivors, verdicts = load_survivors()
     cetux = load_cetuximab_contacts()
+    DOMAIN_IV_GROOVE, groove_available = load_domain_iv_groove()
 
     parser = PDBParser(QUIET=True)
     structure = parser.get_structure("receptor", str(RECEPTOR_PDB))
@@ -532,8 +559,159 @@ def main():
         emit("   prediction questions, and both are still open.")
     emit()
 
+    # ---- Second scenario: H418 included ----
+    # Step 03 marked H418 buried, reading the 6ARU structure, so everything above
+    # leaves it out. Step 06 then found it partially exposed in 1NQL, with domain
+    # III folded the same way in both, so whether it is usable is unresolved. The
+    # clusters differ between the two answers, and the difference decides which
+    # contact set the design should aim at, so both are computed here rather than
+    # left to a calculation someone once ran by hand.
+    emit("7. Second scenario: the same question with H418 included")
+    emit()
+    emit("   Everything above excludes H418, following step 03, which measured it")
+    emit("   as buried in 6ARU. Step 06 measured it as partially exposed in 1NQL,")
+    emit("   and domain III has the same fold in both structures, so the two")
+    emit("   measurements disagree and the question is open. Because 6ARU has the")
+    emit("   antibody clamped on, the burial there may be the antibody holding that")
+    emit("   side chain rather than a property of the receptor alone.")
+    emit()
+    emit("   This section answers what the clusters would be if H418 is usable. It")
+    emit("   is conditional on that unresolved question and is labelled as such")
+    emit("   wherever the numbers are used.")
+    emit()
+
+    if groove_available:
+        emit(f"   Anchors against domain IV, read from step 06's table: "
+             f"{', '.join(f'{ANCHORS[p]}{p}' for p in sorted(DOMAIN_IV_GROOVE))}")
+    else:
+        emit("   Step 06 has not run yet, so the domain IV column below is empty.")
+        emit("   Run step 06 and then this script again to fill it in.")
+    emit()
+
+    conditional = sorted(set(ordered) | {418})
+    cpoints = {}
+    for pos in conditional:
+        pdb_num = uni_to_pdb.get(pos)
+        res = by_pdb.get(pdb_num)
+        if res is None:
+            continue
+        aa = THREE_TO_ONE.get(res.get_resname(), "X")
+        coord, _label, _fb = functional_point(res, aa)
+        cpoints[pos] = np.asarray(coord, dtype=float)
+
+    cdist = {}
+    for a in cpoints:
+        for b in cpoints:
+            cdist[(a, b)] = float(np.linalg.norm(cpoints[a] - cpoints[b]))
+
+    emit(f"   Anchors considered: "
+         f"{', '.join(f'{ANCHORS[p]}{p}' for p in sorted(cpoints))}")
+    emit()
+    emit("   Distances from H418 to the others:")
+    for pos in sorted(cpoints):
+        if pos == 418:
+            continue
+        emit(f"     H418 to {ANCHORS[pos]}{pos}: {cdist[(418, pos)]:.1f} A")
+    emit()
+    pair_418_433 = cdist.get((418, 433))
+    if pair_418_433 is not None:
+        emit(f"   H418 to H433 is {pair_418_433:.1f} A, against a reach cutoff of")
+        emit(f"   {REACH_CUTOFF:.0f} A. The two target histidines cannot both be")
+        emit("   reached by one binder, so a design uses one or the other.")
+    emit()
+
+    cvalid, cbest = [], []
+    for size in range(len(cpoints), 1, -1):
+        for combo in itertools.combinations(sorted(cpoints), size):
+            sp = max(cdist[(a, b)] for a, b in itertools.combinations(combo, 2))
+            if sp < REACH_CUTOFF:
+                cvalid.append((combo, sp))
+                if len(combo) > len(cbest):
+                    cbest = list(combo)
+        if cbest:
+            break
+
+    if cbest:
+        cspan = max(cdist[(a, b)] for a, b in itertools.combinations(cbest, 2))
+        emit(f"   Largest cluster with H418 available: {len(cbest)} anchors")
+        emit(f"   {', '.join(f'{ANCHORS[p]}{p}' for p in cbest)}")
+        emit(f"   Maximum internal distance {cspan:.1f} A")
+        emit()
+        excluded_span = max(dist[(a, b)]
+                            for a, b in itertools.combinations(best, 2))
+        emit(f"   Compared with {n_best} anchors at {excluded_span:.1f} A when H418")
+        emit("   is excluded.")
+        emit()
+        cmaximal = [c for c, s in cvalid if len(c) == len(cbest)]
+        emit("   All clusters of that size, with the same columns as section 6:")
+        emit()
+        emit("   | cluster | span A | target His? | cetuximab overlap "
+             "| within 25 A of N444 | domain IV groove |")
+        emit("   |---|---|---|---|---|---|")
+        for c in sorted(cmaximal, key=lambda c: max(
+                cdist[(a, b)] for a, b in itertools.combinations(c, 2))):
+            s = max(cdist[(a, b)] for a, b in itertools.combinations(c, 2))
+            his = [p for p in c if ANCHORS[p] == "H"]
+            ov = [p for p in c if p in cetux]
+            risky = [p for p in c if p in GLYCAN_RISK]
+            groove = [p for p in c if p in DOMAIN_IV_GROOVE]
+            emit(f"   | {', '.join(f'{ANCHORS[p]}{p}' for p in c)} | {s:.1f} | "
+                 f"{', '.join(f'H{p}' for p in his) if his else 'none'} | "
+                 f"{', '.join(f'{ANCHORS[p]}{p}' for p in ov) if ov else 'none'} | "
+                 f"{', '.join(f'{ANCHORS[p]}{p}' for p in risky) if risky else 'none'} | "
+                 f"{', '.join(f'{ANCHORS[p]}{p}' for p in groove) if groove else 'none'} |")
+        emit()
+        with_his = [c for c in cmaximal if any(ANCHORS[p] == "H" for p in c)]
+        clean = [c for c in cmaximal
+                 if any(ANCHORS[p] == "H" for p in c)
+                 and not any(p in cetux for p in c)
+                 and not any(p in DOMAIN_IV_GROOVE for p in c)]
+        if clean:
+            emit("   Clusters here that carry a target histidine, avoid the")
+            emit("   antibody footprint and avoid the domain IV groove:")
+            for c in clean:
+                s = max(cdist[(a, b)] for a, b in itertools.combinations(c, 2))
+                emit(f"     {', '.join(f'{ANCHORS[p]}{p}' for p in c)} "
+                     f"(span {s:.1f} A)")
+            emit()
+            emit("   No cluster in section 6, where H418 is excluded, manages all")
+            emit("   three at once. That is what makes settling H418 worth doing")
+            emit("   before choosing a contact set.")
+        elif with_his:
+            emit("   Clusters here carry a target histidine but none avoids both the")
+            emit("   antibody footprint and the domain IV groove.")
+        else:
+            emit("   No cluster of this size carries a target histidine, so")
+            emit("   including H418 does not by itself make the pairing against a")
+            emit("   target histidine available at full cluster size.")
+    else:
+        emit("   No cluster of two or more anchors falls within the cutoff.")
+    emit()
+    emit("   These numbers hold only if H418 is usable. Until that is settled they")
+    emit("   describe an option, not a decision.")
+    emit()
+
     # ---- CSVs ----
     DERIVED.mkdir(parents=True, exist_ok=True)
+    with (DERIVED / "05-anchor-distance-matrix-with-h418.csv").open("w") as fh:
+        fh.write("anchor_a,anchor_b,distance_a,scenario\n")
+        for a, b in itertools.combinations(sorted(cpoints), 2):
+            fh.write(f"{ANCHORS[a]}{a},{ANCHORS[b]}{b},{cdist[(a, b)]:.3f},"
+                     f"h418_included_conditional\n")
+    with (DERIVED / "05-anchor-clusters-with-h418.csv").open("w") as fh:
+        fh.write("cluster_size,max_internal_span_a,anchors,contains_target_his,"
+                 "cetuximab_overlap,near_n444,domain_iv_groove,scenario\n")
+        for combo, s in sorted(cvalid, key=lambda t: (-len(t[0]), t[1])):
+            his = any(ANCHORS[p] == "H" for p in combo)
+            ov = any(p in cetux for p in combo)
+            near = any(p in GLYCAN_RISK for p in combo)
+            groove = any(p in DOMAIN_IV_GROOVE for p in combo)
+            fh.write(f"{len(combo)},{s:.3f},"
+                     f"\"{' '.join(f'{ANCHORS[p]}{p}' for p in combo)}\","
+                     f"{his},{ov},{near},{groove},h418_included_conditional\n")
+    emit("Wrote data/derived/05-anchor-distance-matrix-with-h418.csv")
+    emit("Wrote data/derived/05-anchor-clusters-with-h418.csv")
+
     with (DERIVED / "05-anchor-distance-matrix.csv").open("w") as fh:
         fh.write("anchor_a,anchor_b,distance_a\n")
         for a, b, d in pair_list:

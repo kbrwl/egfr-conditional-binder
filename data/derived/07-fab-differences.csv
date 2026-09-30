@@ -1,0 +1,6 @@
+mutant_chain,mutant_resnum,mutant_aa,reference_chain,reference_resnum,reference_aa,at_interface,distance_a,contacts_egfr_uniprot_pos
+B,52,D,C,52,S,False,,
+B,56,D,C,56,S,False,,
+C,28,D,D,28,S,False,,
+C,31,D,D,31,N,True,3.931,433
+C,216,K,D,216,R,False,,

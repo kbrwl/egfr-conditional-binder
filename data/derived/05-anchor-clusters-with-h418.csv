@@ -1,0 +1,2 @@
+cluster_size,max_internal_span_a,anchors,contains_target_his,cetuximab_overlap,near_n444,domain_iv_groove,scenario
+5,24.011,"D416 H418 E421 E424 E455",True,False,True,False,h418_included_conditional

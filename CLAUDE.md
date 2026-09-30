@@ -202,6 +202,10 @@ decision-relevant number exists only in the decisions log because it came from a
 one-off calculation, that is a gap in the scripts: make a script compute it rather
 than leaving the explainer to cite something unreproducible.
 
+A term used in an explainer gets a glossary entry in the same commit. An explainer
+that names a term without defining it anywhere leaves the reader with vocabulary
+they cannot look up, which defeats the purpose of naming it.
+
 ---
 
 ## What gets committed

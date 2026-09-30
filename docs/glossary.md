@@ -43,6 +43,19 @@ drastic (glycine to tryptophan), and scores accordingly.
 **FASTA** — the standard plain-text file format for sequences. A header line
 starting with `>`, then the letters.
 
+**UniProt** — the main public archive of protein sequences. Each protein has an
+accession, a short identifier: human EGFR is P00533, mouse EGFR is Q01279. Every
+residue number in this project is a position in a UniProt record, counted from the
+very first residue of the chain as the cell builds it. Saying "UniProt numbering"
+is how you specify which of the two possible counting systems you mean.
+
+**Solenoid** — a fold shape: the chain wraps round and round in a repeating spiral,
+like a staircase or a coiled spring, rather than packing into a compact ball.
+Domain III of EGFR is one. The consequence that matters for design is that going
+one step along the sequence moves you one step around the spiral, so residues that
+are neighbours in the sequence can point in opposite directions, and a stretch that
+looks like a single patch on paper can be spread across several faces in reality.
+
 **Signal peptide** — a short leader sequence at the very start of a protein whose
 only job is to direct the cell where to send it. It is cut off and discarded once
 delivery is done, so it is absent from the finished protein. For human EGFR it is
@@ -74,6 +87,14 @@ measured as a concentration, where a lower number means a tighter grip.
 Micromolar (µM) is
 a weak grip. Nanomolar (nM) is drug-grade, a thousand times tighter.
 Picomolar (pM) is a vise.
+
+**Anchor** — our own term for a residue on the target that the pH switch is built
+against. Not standard vocabulary; if you use it with someone outside the project
+you would need to explain it. There are two kinds here: an acidic residue on EGFR,
+which gets a histidine opposite it on the binder, and a histidine already on EGFR,
+which gets an acidic residue opposite it. Eight were identified from sequence
+(D416, E421, E424, E455, D458, D460, H418, H433) before any check of whether they
+are reachable.
 
 **Epitope** — the specific patch on the target that a binder touches. Choosing
 the epitope is choosing where to aim.
@@ -135,6 +156,19 @@ stuck on, so the divide signal never stops. Blocking it slows the tumour.
 **Extracellular region** — the part of EGFR outside the cell, roughly residues
 25 to 645. Folds into four sub-blobs labelled domain I, II, III and IV.
 
+**Glycoprotein** — a protein with sugar chains attached to it. Most proteins on the
+outside of a cell are glycoproteins, EGFR included. The sugars are large, flexible
+and branched, and they matter here for a practical reason: a structure file usually
+shows only the first one or two sugars of a chain that continues well past them, so
+a surface can look more open in the file than it is in reality.
+
+**N-glycosylation** — the specific way those sugar chains are attached: through the
+nitrogen atom of an asparagine side chain, which is why it is "N". It happens only
+at asparagines in particular sequence contexts, so the attachment points are fixed
+and identifiable. N444, inside our epitope, is one of them. The 1.44 ångström
+distance measured from N444 to the neighbouring sugar is a chemical bond, which is
+how we know the chain is attached there rather than passing nearby.
+
 **Tethered and extended conformations** — EGFR's extracellular region does not
 hold one fixed shape. It folds shut on itself (**tethered**, also called closed
 or autoinhibited) or opens out (**extended**). In the tethered form, domain II
@@ -174,6 +208,13 @@ acne-like rash, bad enough that patients sometimes stop treatment.
 window between healthy tissue and tumour: neutral above about pH 6.5, positive
 below it. No other standard amino acid switches in that range. This makes it the
 only practical building block for a pH switch.
+
+**Imidazole ring** — the five-membered ring at the end of a histidine side chain,
+containing two nitrogen atoms. It is the part that picks up or loses a positive
+charge as pH changes, so it is the actual working component of the pH switch. The
+charge sits across the whole ring rather than on one atom, which is why distances
+involving a histidine are measured from the ring's centre point rather than from a
+single chosen atom.
 
 **Acidic residues — aspartic acid (D) and glutamic acid (E)** — carry a negative
 charge at both pH values we care about. Place a histidine across from one of
@@ -267,6 +308,21 @@ constants — nothing changes
 in the molecule at 0.25. A residue at 0.24 and one at 0.26 are essentially the
 same thing, so values near a boundary should be read as ambiguous rather than
 rounded into a verdict.
+
+**Receptor-only structure** — our term for a copy of a structure file with
+everything except the target protein deleted: no antibody, no growth factor, no
+water, no sugars. Made because accessibility has to be measured on the target as it
+would be in the assay. Measuring on the file as deposited would report the patch
+under the bound antibody as covered, when it is only covered by something that will
+not be present. Written by `analysis/02_structure_prep.py`.
+
+**Rotamer** — one of the specific orientations a side chain can adopt by rotating
+about its own single bonds. The backbone holds still; the side chain can swing to
+point in noticeably different directions. Only some orientations are comfortable,
+so a side chain tends to sit in one of a handful of preferred rotamers. This matters
+for H418: a side chain caught in one rotamer can look buried while the same residue
+in another rotamer is exposed, which is one explanation for two structures
+disagreeing about how accessible it is.
 
 **Superposition** — rotating and sliding one structure until it sits on top of
 another as closely as possible, so the two can be compared. Necessary because

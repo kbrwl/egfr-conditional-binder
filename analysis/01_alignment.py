@@ -278,8 +278,9 @@ def main():
         "This is a regression test: the expected answer was known before the script\n"
         "was written, and the script checks itself against it. If it ever disagrees,\n"
         "the environment or the input data has changed and nothing computed after it\n"
-        "should be trusted until that is sorted out. See `alignment-findings.md` in\n"
-        "this directory for what the numbers mean for the design.\n\n"
+        "should be trusted until that is sorted out. For what the numbers mean for\n"
+        "the design, see `docs/alignment-findings.md`, which is hand-written\n"
+        "interpretation rather than script output.\n\n"
         "```\n" + "\n".join(out) + "\n```\n"
     )
     return 1 if failures else 0

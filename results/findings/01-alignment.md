@@ -5,8 +5,9 @@ Computed output of `analysis/01_alignment.py`. Do not hand-edit.
 This is a regression test: the expected answer was known before the script
 was written, and the script checks itself against it. If it ever disagrees,
 the environment or the input data has changed and nothing computed after it
-should be trusted until that is sorted out. See `alignment-findings.md` in
-this directory for what the numbers mean for the design.
+should be trusted until that is sorted out. For what the numbers mean for
+the design, see `docs/alignment-findings.md`, which is hand-written
+interpretation rather than script output.
 
 ```
 ========================================================================
