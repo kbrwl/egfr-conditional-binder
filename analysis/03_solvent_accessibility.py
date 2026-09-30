@@ -6,39 +6,41 @@ WHAT THIS MEASURES AND WHY IT MATTERS
 -------------------------------------
 Solvent accessibility is how much of a residue is exposed to the surrounding
 water. It is computed by rolling a water-sized probe ball over the protein's
-surface and measuring the area that probe can touch for each residue. A residue
-with a large accessible area sticks out and a binder can reach it. A residue with
-an area near zero is buried inside the protein's core: it exists, it is
-conserved, and it is completely useless to us, because nothing can touch it.
+surface and measuring the area that probe can touch for each residue -- the
+solvent-accessible surface area, or SASA, reported in square angstroms. A residue
+with a large accessible area sticks out, and a binder can reach it. A residue
+with an area near zero is buried inside the protein's core: it exists and it is
+conserved, and it is still useless to us, because nothing can touch it.
 
-This is the step that decides how much material we actually have. Our eight
-anchors were chosen by sequence analysis, which cannot see direction. Domain III
-is a solenoid -- a spiral staircase -- so some of those eight point outward and
-some point into the core. Only the outward ones are real.
+This step decides how much material we actually have. Our eight anchors were
+chosen by sequence analysis, which cannot see direction. Domain III is a solenoid
+-- a spiral staircase -- so some of those eight point outward and some point into
+the core. Only the outward ones are real candidates.
 
-WHY THE RECEPTOR ALONE, NOT THE COMPLEX
----------------------------------------
+WHY THE RECEPTOR ALONE RATHER THAN THE COMPLEX
+------------------------------------------------
 This runs on the receptor-only structure written by step 02, with the cetuximab
-Fab removed. That is essential, not tidiness. Cetuximab is sitting directly on
-the surface we care about. Computing on the complex would measure our epitope as
-buried -- but it is not buried, it is merely covered by an antibody that will not
-be anywhere near our assay. We would reject a perfectly good epitope for the
-wrong reason.
+Fab removed. A Fab is the gripping arm of an antibody, cut free of the rest. The
+alternative, running on the complex as deposited, was rejected because cetuximab
+sits directly on the surface we care about: the complex would measure our epitope
+as buried, when it is only covered by an antibody that will be nowhere near our
+assay, and we would drop a workable epitope on the strength of that.
 
-RAW AREA IS NOT COMPARABLE BETWEEN RESIDUES
--------------------------------------------
-Amino acids differ enormously in size: tryptophan is far larger than glycine. So
-50 square angstroms of exposed tryptophan is mostly buried, while 50 square
-angstroms of exposed glycine is wide open. The raw number therefore cannot be
-compared across residue types.
+RAW AREA CANNOT BE COMPARED BETWEEN RESIDUE TYPES
+-------------------------------------------------
+Amino acids (aa) differ enormously in size: tryptophan is far larger than
+glycine. So 50 square angstroms of exposed tryptophan is mostly buried, while 50
+square angstroms of exposed glycine is wide open. The raw area therefore says
+nothing on its own about how exposed a residue is for its own size.
 
-The fix is RELATIVE solvent accessibility (RSA): divide the measured area by the
-largest area that amino acid type could possibly expose. The result runs roughly
-0 to 1 and IS comparable. RSA is the number to read; raw area is not.
+The fix is relative solvent accessibility (RSA): the measured area divided by the
+largest area that amino acid type could possibly expose. That puts every residue
+type on one scale, running roughly 0 to 1, and RSA is the number to read in the
+tables below.
 
 REFERENCE MAXIMA — SOURCE AND STATUS
 ------------------------------------
-Maxima are from Table 1 of:
+The largest-possible areas used for that division are from Table 1 of:
 
   Tien MZ, Meyer AG, Sydykova DK, Spielman SJ, Wilke CO (2013)
   "Maximum Allowed Solvent Accessibilites of Residues in Proteins."
@@ -46,25 +48,25 @@ Maxima are from Table 1 of:
 
 Both published columns are transcribed below, fetched from the journal's
 manuscript XML on 30 September 2026 rather than recalled from memory. The
-THEORETICAL column is used for the headline numbers. The EMPIRICAL column is then
-used as a sensitivity check: if a residue's classification changes depending on
-which column you normalise by, that residue's verdict is not robust and the
-script says so rather than presenting one of the two as the answer.
+theoretical column gives the headline numbers. The empirical column is then used
+as a sensitivity check: if a residue's classification changes depending on which
+column you divide by, that residue's verdict is not robust, and the script says
+so rather than presenting one of the two columns as the answer.
 
 Several such tables exist in the literature and they disagree by up to 20%, so
 which one was used has to be stated for any RSA number to be reproducible.
 
-CLASSIFICATION CUTOFFS ARE CONVENTIONS, NOT PHYSICS
----------------------------------------------------
+WHERE THE CLASSIFICATION CUTOFFS COME FROM
+------------------------------------------
   RSA >= 0.25  exposed
   RSA <= 0.05  buried
   in between   partially exposed
 
-Nothing physical changes in the molecule at 0.25. These are conventional
-thresholds that the field has settled on for convenience. A residue at 0.24 and
-one at 0.26 are essentially the same thing. This script therefore flags any
-residue within 0.05 of a cutoff as BORDERLINE instead of letting the label imply
-more precision than exists.
+These are conventional thresholds that the field has settled on for convenience,
+and nothing physical changes in the molecule at 0.25. A residue at 0.24 and one
+at 0.26 are essentially the same thing. This script therefore flags any residue
+within 0.05 of a cutoff as BORDERLINE, so the label is not read as more precise
+than it is.
 
 Outputs:
   results/findings/03-solvent-accessibility.md
@@ -89,8 +91,10 @@ COMPLEX_PDB = STRUCT_DIR / "6aru.pdb"
 DERIVED = ROOT / "data" / "derived"
 FINDINGS = ROOT / "results" / "findings"
 
-# Offset established empirically by step 02: UniProt = PDB residue number + 24.
-# Not assumed -- read back from step 02's output so the two cannot drift apart.
+# Numbering offset measured by step 02: a position in UniProt, the public protein
+# sequence archive, equals the residue number in the Protein Data Bank (PDB) file --
+# the public archive of measured 3D structures -- plus 24. Read back from step 02's
+# output here rather than typed in again, so the two scripts cannot drift apart.
 OFFSET_CSV = DERIVED / "02-numbering-offset.csv"
 
 EPI_START, EPI_END = 415, 466
@@ -117,7 +121,9 @@ MAX_ASA_EMPIRICAL = {
     "S": 143.0, "T": 163.0, "W": 264.0, "Y": 255.0, "V": 165.0,
 }
 
-# Sugar residue names to look for when checking glycan occlusion.
+# Sugar residue names to look for when checking whether an attached sugar chain
+# covers the epitope. NAG is N-acetylglucosamine, the first sugar of such a chain;
+# the others are further sugars that appear in these chains.
 GLYCANS = {"NAG", "NDG", "BMA", "MAN", "FUC", "GAL", "SIA", "BGC", "GLC"}
 
 
@@ -135,7 +141,10 @@ def is_borderline(rsa):
 
 
 def load_offset():
-    """Read the offset from step 02's computed output rather than hardcoding it."""
+    """Read the offset from step 02's computed output instead of hardcoding it here.
+
+    Hardcoding would let this script and step 02 drift apart without any error.
+    """
     if not OFFSET_CSV.exists():
         raise SystemExit("Run analysis/02_structure_prep.py first — "
                          f"{OFFSET_CSV.relative_to(ROOT)} is missing.")
@@ -163,16 +172,17 @@ def main():
     emit("SOLVENT ACCESSIBILITY OF THE CANDIDATE EPITOPE")
     emit("=" * 72)
     emit()
-    emit("Input:  data/structures/6aru_receptor_only.pdb  (Fab REMOVED)")
+    emit("Input:  data/structures/6aru_receptor_only.pdb  (Fab removed)")
     emit("Method: Shrake-Rupley probe rolling, Bio.PDB.SASA.ShrakeRupley")
     emit("Norm:   Tien et al. 2013, PLOS ONE 8(11):e80635, Table 1")
     emit("        theoretical column for headline values,")
     emit("        empirical column as a sensitivity check")
-    emit(f"Numbering: UniProt = PDB + 24 (established empirically by step 02)")
+    emit(f"Numbering: UniProt = PDB + 24 (measured by step 02, not assumed)")
     emit()
-    emit("The Fab is removed deliberately. Cetuximab sits on the surface we are")
-    emit("measuring, so computing on the complex would report our epitope as")
-    emit("buried when it is only covered by an antibody absent from our assay.")
+    emit("The Fab -- the gripping arm of the cetuximab antibody -- was removed on")
+    emit("purpose. It sits on the surface we are measuring, so running this on the")
+    emit("whole complex would report our epitope as buried when it is only covered")
+    emit("by an antibody that will not be present in our assay.")
     emit()
 
     parser = PDBParser(QUIET=True)
@@ -203,9 +213,11 @@ def main():
     # ---- Full table for the epitope ----
     emit(f"1. Every residue in {EPI_START}-{EPI_END}")
     emit()
-    emit("   RSA is the number to read. 'anchor' marks our eight candidates.")
-    emit("   'BORDERLINE' means within 0.05 of a classification cutoff, so the")
-    emit("   label should not be read as precise.")
+    emit("   'aa' is the amino acid at that position, 'SASA A^2' its accessible area")
+    emit("   in square angstroms, and RSA that area corrected for residue size, which")
+    emit("   is the number to read. 'ANCHOR' marks our eight candidates. 'BORDERLINE'")
+    emit("   means the value sits within 0.05 of a classification cutoff, so the label")
+    emit("   on that row is less precise than it looks.")
     emit()
     emit("   | UniProt | aa | PDB# | SASA A^2 | RSA | class | flags |")
     emit("   |---|---|---|---|---|---|---|")
@@ -229,7 +241,8 @@ def main():
 
     if missing:
         emit(f"   {len(missing)} residue(s) unresolved: {missing}")
-        emit("   No coordinates means no answer. Not 'buried' -- unknown.")
+        emit("   No coordinates means no answer for those positions: unknown, and not")
+        emit("   the same thing as buried.")
         emit()
 
     # Epitope-level summary
@@ -244,9 +257,9 @@ def main():
     emit()
 
     # ---- Anchor verdicts ----
-    emit("2. VERDICT ON EACH OF THE EIGHT ANCHORS")
+    emit("2. Verdict on each of the eight anchors")
     emit()
-    emit("   This determines how much material we have left to work with.")
+    emit("   This is what decides how much material the design has left to work with.")
     emit()
     emit("   | anchor | role | SASA A^2 | RSA (theor.) | RSA (emp.) | VERDICT | usable? |")
     emit("   |---|---|---|---|---|---|---|")
@@ -267,7 +280,8 @@ def main():
             note.append("BORDERLINE")
         if r["cls_t"] != r["cls_e"]:
             note.append("NORM-SENSITIVE")
-        # Usable = exposed or partial. Buried anchors are dead.
+        # Usable means exposed or partially exposed. A buried anchor cannot be
+        # reached by a binder, so it drops out of the design here.
         ok = r["cls_t"] in ("exposed", "partial")
         if ok:
             usable.append(pos)
@@ -295,37 +309,38 @@ def main():
                   if p in records and is_borderline(records[p]["rsa_t"])]
     emit("3. How solid are these verdicts?")
     emit()
-    emit("   Two ways a verdict could be an artefact of an arbitrary choice:")
+    emit("   Two ways a verdict could be an artefact of a choice we made arbitrarily:")
     emit()
-    emit(f"   a) Which reference table we normalise by.")
+    emit(f"   a) Which column of maximum areas we divide by.")
     if norm_sensitive:
         emit(f"      {len(norm_sensitive)} anchor(s) change class between the")
         emit(f"      theoretical and empirical columns: "
              f"{', '.join(f'{ANCHORS[p]}{p}' for p in norm_sensitive)}")
-        emit("      Their verdicts are NOT robust and should be treated as")
+        emit("      Their verdicts are not robust, so treat those anchors as")
         emit("      ambiguous rather than settled.")
     else:
         emit("      No anchor changes class between the two columns. Verdicts are")
         emit("      robust to this choice.")
     emit()
-    emit(f"   b) Where the cutoffs sit (0.25 / 0.05 are conventions, not physics).")
+    emit(f"   b) Where the cutoffs sit. 0.25 and 0.05 are conventions the field uses.")
     if borderline:
         emit(f"      {len(borderline)} anchor(s) sit within {BORDERLINE_MARGIN} of a")
         emit(f"      cutoff: {', '.join(f'{ANCHORS[p]}{p}' for p in borderline)}")
-        emit("      Read these as 'somewhere near the boundary', not as the label.")
+        emit("      Read these as sitting near the boundary rather than as whatever")
+        emit("      label the row happens to carry.")
     else:
         emit(f"      No anchor sits within {BORDERLINE_MARGIN} of a cutoff.")
     emit()
 
-    # ---- Glycan caveat: a real occlusion risk the sequence analysis cannot see ----
-    emit("4. CAVEAT NOT IN THE ORIGINAL PLAN: glycan occlusion")
+    # ---- Glycans: a way the surface can be blocked that sequence analysis misses ----
+    emit("4. A caveat not in the original plan: sugar chains in the way")
     emit()
-    emit("   EGFR is a glycoprotein -- sugar chains are attached to it at specific")
-    emit("   points. Those chains are large, and the receptor-only file used above")
-    emit("   contains protein atoms ONLY, because step 02 stripped everything that")
-    emit("   was not a standard amino acid. So the surface measured above is the")
-    emit("   BARE protein. If a sugar chain sits over our epitope, the real")
-    emit("   accessible surface is smaller than computed here.")
+    emit("   EGFR is a glycoprotein: sugar chains, called glycans, are attached to it")
+    emit("   at specific points, and those chains are large. The receptor-only file")
+    emit("   used above holds protein atoms only, because step 02 dropped everything")
+    emit("   that was not a standard amino acid, so the areas above describe the bare")
+    emit("   protein. If a sugar chain sits over our epitope, the surface a binder")
+    emit("   could really reach is smaller than the numbers above.")
     emit()
     emit("   Checking the original complex for sugar atoms near the epitope:")
     complex_struct = parser.get_structure("complex", str(COMPLEX_PDB))
@@ -360,22 +375,23 @@ def main():
                 emit(f"     {records[pos]['aa']}{pos}: {d:.2f} A from "
                      f"{name} (chain {ch}){mark}")
             emit()
-            emit("   Note on what this 5 A test does and does not settle. It asks")
-            emit("   whether an anchor touches a sugar atom that is present in the")
-            emit("   file. A structure shows only the first few sugars of a chain")
-            emit("   that continues past them, so a 'no' here does not mean the full")
-            emit("   chain cannot reach. Step 05 asks the wider question, measuring")
-            emit("   each anchor's distance to the attachment point N444 with 15 A")
-            emit("   and 25 A bands, and flags three anchors on that basis. The two")
-            emit("   results are answers to different questions, not a disagreement.")
+            emit("   What this 5 A test settles, and what it does not. It asks whether")
+            emit("   an anchor touches a sugar atom that is actually present in the")
+            emit("   file. A structure shows only the first few sugars of a chain that")
+            emit("   continues past them, so a 'no' here does not mean the full chain")
+            emit("   cannot reach that far. Step 05 asks the wider question, measuring")
+            emit("   each anchor's distance to the attachment point N444 -- the")
+            emit("   asparagine the chain hangs off -- in 15 A and 25 A bands, and it")
+            emit("   flags three anchors on that basis. The two tests answer different")
+            emit("   questions, so the results do not contradict each other.")
             hit_anchors = [p for p in close if p in ANCHORS]
             if hit_anchors:
                 emit()
-                emit("   CONSEQUENCE: at least one anchor has a sugar chain nearby.")
-                emit("   Its usable surface is smaller than the bare-protein number")
-                emit("   above, and glycans are flexible so the real extent is not")
-                emit("   fixed by this structure. Treat those anchors' RSA as an")
-                emit("   UPPER BOUND, not a measurement.")
+                emit("   What follows from this: at least one anchor has a sugar chain")
+                emit("   nearby, so its usable surface is smaller than the bare-protein")
+                emit("   number above. Glycans are flexible, so this structure does not")
+                emit("   fix how far the chain actually extends. Treat those anchors'")
+                emit("   RSA as an upper bound on what a binder could reach.")
             else:
                 emit()
                 emit("   No anchor is within 5 A of a sugar. Glycan occlusion is")
@@ -384,21 +400,22 @@ def main():
             emit("   No epitope residue is within 5 A of any sugar atom in this")
             emit("   structure. Glycan occlusion is not a concern here.")
         emit()
-        emit("   LIMIT: a crystal structure resolves only the innermost, most")
-        emit("   ordered sugars. Real glycan chains extend considerably further")
-        emit("   and are mobile. Absence of a modelled sugar is weak evidence of")
-        emit("   absence. Flagged as a residual risk, not resolved.")
+        emit("   One limit on all of the above: a crystal structure resolves only the")
+        emit("   innermost, most ordered sugars. Real glycan chains extend considerably")
+        emit("   further and they move about, so a sugar missing from the file is weak")
+        emit("   evidence that nothing is there. This stays on the list as a residual")
+        emit("   risk rather than something we have settled.")
     emit()
 
     # ---- What this means ----
-    emit("5. WHAT THIS MEANS FOR THE DESIGN")
+    emit("5. What this means for the design")
     emit()
     if n_usable >= 4:
-        emit(f"   {n_usable} of 8 anchors are reachable. The pairing rule needs")
-        emit("   three or four pairs stacked, because the pH switch is partial")
-        emit("   rather than binary, so this is enough material to work with --")
-        emit("   PROVIDED they cluster within reach of a single binder, which is")
-        emit("   step 05's question and is not answered here.")
+        emit(f"   {n_usable} of 8 anchors are reachable. The pairing rule needs three")
+        emit("   or four pairs stacked, because the pH switch is partial rather than")
+        emit("   all-or-nothing, so this is enough material to work with, provided the")
+        emit("   anchors cluster within reach of a single binder. That is step 05's")
+        emit("   question and is not answered here.")
     elif n_usable == 3:
         emit("   Exactly 3 anchors reachable. That is the bare minimum for a")
         emit("   stacked switch and leaves no redundancy: if step 05 finds any of")
@@ -408,12 +425,11 @@ def main():
         emit("   stacked switch the design depends on cannot be built here.")
         emit("   Consider the fallback blocks 394-411 and 331-347.")
     emit()
-    emit("   NOTE ON WHAT EXPOSURE DOES AND DOES NOT TELL US. An exposed anchor")
-    emit("   is reachable. It is not therefore a good contact point: it still has")
-    emit("   to point in a compatible direction, sit in a pocket a designed")
-    emit("   backbone can present a partner to, and cluster with the others.")
-    emit("   Exposure is a filter that removes impossible options, not evidence")
-    emit("   that the remaining ones work.")
+    emit("   What exposure does and does not tell us: an exposed anchor is reachable,")
+    emit("   and that is all it says. To be a good contact point it still has to point")
+    emit("   in a compatible direction, sit in a pocket a designed backbone can present")
+    emit("   a partner to, and cluster with the other anchors. Exposure removes the")
+    emit("   impossible options; it is no evidence that the ones left over will work.")
     emit()
 
     # ---- CSVs ----
@@ -446,7 +462,7 @@ def main():
     emit("=" * 72)
     emit(f"RESULT: {n_usable} of 8 anchors usable "
          f"({', '.join(f'{ANCHORS[p]}{p}' for p in usable) or 'none'}).")
-    emit("Clustering is step 05's question. This step only removed the buried.")
+    emit("Whether they cluster is step 05's question. This step removed the buried.")
     emit("=" * 72)
 
     FINDINGS.mkdir(parents=True, exist_ok=True)
@@ -459,8 +475,9 @@ def main():
         "doi:10.1371/journal.pone.0080635 — transcribed from the journal's\n"
         "manuscript XML on 30 September 2026.\n\n"
         "The classification cutoffs (RSA >= 0.25 exposed, <= 0.05 buried) are\n"
-        "**conventional, not physical constants**. Nothing changes in the molecule\n"
-        "at 0.25. Residues near a cutoff are flagged BORDERLINE.\n\n"
+        "conventions the field has settled on, rather than physical constants.\n"
+        "Nothing changes in the molecule at 0.25, so residues near a cutoff are\n"
+        "flagged BORDERLINE.\n\n"
         "```\n" + "\n".join(out) + "\n```\n"
     )
     return 0

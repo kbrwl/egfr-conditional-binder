@@ -5,39 +5,46 @@
 WHAT THIS MEASURES AND WHY IT MATTERS
 -------------------------------------
 Cetuximab is an approved antibody drug that binds EGFR domain III. It is known
-not to bind mouse EGFR. A previous working assumption in this project was that
+not to bind mouse EGFR. An earlier working assumption in this project was that
 four specific human/mouse differences -- Q390R, E412D, R414W and K467R -- sit in
-cetuximab's grip and explain that failure. That assumption was stated from memory
-and never computed. It is flagged UNVERIFIED in the decisions log. This script
-resolves it by measurement.
+cetuximab's grip and explain that failure. That assumption came from memory and
+was never measured, so it is flagged UNVERIFIED in the decisions log. This script
+settles it by measurement.
 
-A "contact" needs a definition, because there is no natural boundary where one
+The measurement is made on structure 6ARU from the Protein Data Bank (PDB), the
+public archive of measured 3D protein structures. Residue numbers here are
+positions in the human record in UniProt, the public protein sequence archive,
+which is the numbering used everywhere in this project.
+
+A "contact" has to be defined, because there is no natural boundary where one
 protein stops touching another. The convention used here: an EGFR residue is in
-contact if ANY of its heavy atoms sits within 4.5 angstroms of ANY heavy atom of
-either Fab chain. "Heavy atom" means any atom except hydrogen -- hydrogens are
-too light to appear in most crystal structures and are simply absent from this
-file, so heavy-atom distances are what we actually have. 4.5 A is the standard
-cutoff for "these two residues are touching".
+contact if any of its heavy atoms sits within 4.5 angstroms of any heavy atom of
+either Fab chain. A Fab is the gripping arm of an antibody, separated from the
+rest of the antibody; the 6ARU file holds two Fab chains alongside the EGFR
+chain. "Heavy atom" means any atom except hydrogen -- hydrogens are too light to
+appear in most crystal structures and are simply absent from this file, so
+heavy-atom distances are what we actually have to work with. 4.5 A is the
+standard cutoff for "these two residues are touching".
 
 Distance queries use Bio.PDB.NeighborSearch, which builds a spatial index, rather
 than a brute-force double loop over every atom pair. With ~5000 protein atoms a
-double loop is ~25 million comparisons; the index makes it near-instant. Same
-answer, different cost.
+double loop is ~25 million comparisons; the index makes it near-instant. Both
+routes give the same answer, so this is purely a question of cost.
 
 THREE QUESTIONS THIS ANSWERS
 ----------------------------
 (a) Do any of the 16 human/mouse domain III differences fall in the contact set,
-    and specifically Q390R, E412D, R414W, K467R? If yes, that is a computed
-    explanation for cetuximab's species failure. If no, the prior speculation is
-    DISPROVED and must be recorded as such.
+    and in particular Q390R, E412D, R414W, K467R? If yes, that is a measured
+    explanation for cetuximab's species failure. If no, the earlier speculation
+    is disproved and gets recorded in the decisions log as disproved.
 
 (b) How much does cetuximab's footprint overlap our 415-466 block? We want to be
-    NEARBY -- close enough that our binder blocks the same functional site -- but
-    NOT on identical residues, because the competition rules forbid starting from
-    an existing binder, and landing on exactly cetuximab's footprint invites the
-    novelty objection even for a genuinely de novo design.
+    nearby -- close enough that our binder blocks the same functional site -- but
+    off the identical residues, because the competition rules forbid starting
+    from an existing binder, and landing on exactly cetuximab's footprint invites
+    the novelty objection even for a genuinely de novo design.
 
-(c) Which residues in 415-466 does cetuximab NOT touch? Those are where our
+(c) Which residues in 415-466 does cetuximab leave untouched? Those are where our
     design can differentiate itself.
 
 Outputs:
@@ -69,7 +76,7 @@ EPI_START, EPI_END = 415, 466
 ANCHORS = {416: "D", 418: "H", 421: "E", 424: "E",
            433: "H", 455: "E", 458: "D", 460: "D"}
 
-# The four differences the earlier speculation named.
+# The four differences the earlier, memory-based assumption named.
 SPECULATED = ["Q390R", "E412D", "R414W", "K467R"]
 
 def load_differences():
@@ -107,14 +114,18 @@ def main():
     emit(f"Structure: 6ARU, receptor chain {RECEPTOR_CHAIN}, "
          f"Fab chains {', '.join(c.id for c in fab_chains)}")
     emit(f"Definition: an EGFR residue is in contact if any heavy atom is within")
-    emit(f"            {CUTOFF} A of any heavy atom of either Fab chain.")
-    emit("Method: Bio.PDB.NeighborSearch spatial index (not a double loop).")
-    emit("Numbering: UniProt = PDB + 24, established empirically by step 02.")
+    emit(f"            {CUTOFF} A of any heavy atom of either Fab chain. A Fab is")
+    emit("            the gripping arm of an antibody, on its own; a heavy atom is")
+    emit("            any atom except hydrogen, and hydrogens are absent from this")
+    emit("            structure file.")
+    emit("Method: Bio.PDB.NeighborSearch builds a spatial index, so we avoid")
+    emit("        comparing all ~25 million atom pairs one by one. Same answer.")
+    emit("Numbering: UniProt position = PDB position + 24, measured by step 02.")
     emit()
 
-    # The calculation itself lives in egfr_common.contacts_to_partner, so that
-    # step 06 asking the same question gets the same answer. It previously had its
-    # own copy and reported a different contact set.
+    # The calculation lives in egfr_common.contacts_to_partner so that step 06,
+    # which asks the same question, gets the same answer. Step 06 used to keep its
+    # own copy of this code and reported a different contact set.
     contacts = common.contacts_to_partner(
         model, RECEPTOR_CHAIN, [c.id for c in fab_chains], numbering,
         cutoff=CUTOFF)
@@ -124,6 +135,10 @@ def main():
 
     # ---- Full contact list ----
     emit("1. Full contact list")
+    emit()
+    emit("   One row per EGFR residue cetuximab touches. 'aa' is the amino acid in")
+    emit("   one-letter code, and 'min dist' is the closest heavy-atom approach")
+    emit("   between that residue and the Fab.")
     emit()
     emit("   | UniProt | aa | PDB# | min dist A | Fab chain | EGFR atom | Fab atom |")
     emit("   |---|---|---|---|---|---|---|")
@@ -142,7 +157,7 @@ def main():
     emit()
 
     # ---- (a) species differences in the contact set ----
-    emit("2. QUESTION (a): do human/mouse differences fall in the contact set?")
+    emit("2. Question (a): do human/mouse differences fall in the contact set?")
     emit()
     contact_set = set(contacts)
     in_contact, not_in_contact = [], []
@@ -163,7 +178,7 @@ def main():
          + ", ".join(lbl for _, _, _, lbl in not_in_contact))
     emit()
 
-    emit("   Testing the four specifically speculated differences:")
+    emit("   Testing the four differences the earlier assumption named:")
     verdicts = {}
     for label in SPECULATED:
         pos = int(label[1:-1])
@@ -171,30 +186,30 @@ def main():
         verdicts[label] = hit
         if hit:
             c = contacts[pos]
-            emit(f"     {label}: IN CONTACT — {c['min_dist']:.2f} A from chain "
+            emit(f"     {label}: in contact — {c['min_dist']:.2f} A from chain "
                  f"{c['partner_chain']}")
         else:
-            emit(f"     {label}: NOT in contact"
+            emit(f"     {label}: not in contact"
                  + (f" (nearest contact residue is "
                     f"{min(contact_set, key=lambda p: abs(p - pos))})"
                     if contact_set else ""))
     emit()
 
     n_confirmed = sum(verdicts.values())
-    emit("   VERDICT ON THE PRIOR SPECULATION:")
+    emit("   Verdict on the earlier assumption:")
     if n_confirmed == len(SPECULATED):
-        emit("   CONFIRMED. All four speculated differences are in cetuximab's")
-        emit("   contact set. This is now a computed explanation for why")
-        emit("   cetuximab fails on mouse EGFR, and replaces the speculation.")
+        emit("   Confirmed. All four of the named differences are in cetuximab's")
+        emit("   contact set. That gives us a measured explanation for why")
+        emit("   cetuximab fails on mouse EGFR, and it replaces the assumption.")
     elif n_confirmed == 0:
-        emit("   DISPROVED. None of the four speculated differences is in")
-        emit("   cetuximab's contact set. The memory-based explanation was wrong")
-        emit("   and must be recorded as disproved, not quietly dropped.")
+        emit("   Disproved. None of the four named differences is in cetuximab's")
+        emit("   contact set. The explanation we were carrying from memory was")
+        emit("   wrong, and the decisions log records it as disproved.")
     else:
-        emit(f"   PARTIALLY CONFIRMED — {n_confirmed} of {len(SPECULATED)} are in")
-        emit("   contact. The speculation was directionally right but not")
-        emit("   accurate as stated. It must be restated to the computed set")
-        emit("   rather than kept as originally written.")
+        emit(f"   Partly confirmed: {n_confirmed} of {len(SPECULATED)} are in")
+        emit("   contact. The assumption pointed in the right direction but was")
+        emit("   inaccurate as written, so the decisions log now carries the")
+        emit("   measured set in its place.")
         emit()
         emit("   Confirmed in contact: "
              + ", ".join(k for k, v in verdicts.items() if v))
@@ -202,16 +217,17 @@ def main():
              + ", ".join(k for k, v in verdicts.items() if not v))
     emit()
     if in_contact:
-        emit("   Note what this does and does not establish. Showing that a")
-        emit("   differing residue is inside the footprint is consistent with it")
-        emit("   causing the species failure, and is far better evidence than an")
-        emit("   assumption. It is not proof: whether a given substitution")
-        emit("   actually abolishes binding depends on how much that contact")
-        emit("   contributes, which this calculation does not measure.")
+        emit("   What this establishes, and what it does not. A differing residue")
+        emit("   sitting inside the footprint is consistent with it causing the")
+        emit("   species failure, and is far better evidence than an assumption.")
+        emit("   It is not proof: whether a given substitution actually abolishes")
+        emit("   binding depends on how much that particular contact contributes")
+        emit("   to the grip, which this calculation does not measure. So we can")
+        emit("   cite it as the likely explanation, but not as a settled one.")
     emit()
 
     # ---- (b) overlap with our block ----
-    emit(f"3. QUESTION (b): overlap between cetuximab's footprint and {EPI_START}-{EPI_END}")
+    emit(f"3. Question (b): overlap between cetuximab's footprint and {EPI_START}-{EPI_END}")
     emit()
     epi_contacts = sorted(p for p in contact_set if EPI_START <= p <= EPI_END)
     epi_size = EPI_END - EPI_START + 1
@@ -238,42 +254,45 @@ def main():
          + (f" — {', '.join(f'{ANCHORS[p]}{p}' for p in anchors_in_contact)}"
             if anchors_in_contact else ""))
     emit()
-    emit("   Reading this for the design:")
+    emit("   What this means for the design:")
     frac = len(epi_contacts) / epi_size
     if frac == 0:
-        emit("   Zero overlap. Our block is a genuinely distinct surface. Good for")
-        emit("   the novelty requirement — but raises the question of whether we")
-        emit("   are still blocking the functionally important site at all.")
+        emit("   Zero overlap. Our block is a genuinely separate surface, which")
+        emit("   satisfies the novelty requirement easily — but it leaves open")
+        emit("   whether we are still blocking the functionally important site.")
     elif frac < 0.35:
-        emit("   Partial overlap. This is the position we wanted: adjacent to and")
-        emit("   partly sharing the druggable surface, so a binder here plausibly")
-        emit("   blocks the same function, while most of our contact positions are")
-        emit("   cetuximab-independent. Novelty is defensible on residue identity.")
+        emit("   Partial overlap. Our block sits alongside the druggable surface and")
+        emit("   shares part of it, so a binder here plausibly blocks the same")
+        emit("   function, while most of our contact positions are ones cetuximab")
+        emit("   never touches. That makes the novelty claim defensible on residue")
+        emit("   identity alone, and we can keep the block as it stands.")
     else:
         emit("   Heavy overlap. Our block largely reproduces cetuximab's footprint,")
-        emit("   which invites the novelty objection even for a de novo design.")
-        emit("   Consider shifting the design's contact centre toward the")
-        emit("   non-overlapping residues identified below.")
+        emit("   which invites the novelty objection even for a de novo design. The")
+        emit("   response is to shift the design's contact centre toward the")
+        emit("   non-overlapping residues listed below.")
     emit()
 
-    # ---- (c) what cetuximab does NOT touch ----
-    emit(f"4. QUESTION (c): residues in {EPI_START}-{EPI_END} cetuximab does NOT touch")
+    # ---- (c) what cetuximab leaves untouched ----
+    emit(f"4. Question (c): residues in {EPI_START}-{EPI_END} cetuximab leaves untouched")
     emit()
     untouched = [p for p in range(EPI_START, EPI_END + 1) if p not in contact_set]
     emit(f"   {len(untouched)} of {epi_size} residues are cetuximab-free.")
-    emit("   These are where our design can differentiate.")
+    emit("   These are the positions our design can build on to look unlike")
+    emit("   cetuximab while still sitting on the same surface.")
     emit()
     for i in range(0, len(untouched), 13):
         emit("   " + " ".join(str(p) for p in untouched[i:i + 13]))
     emit()
     free_anchors = [p for p in sorted(ANCHORS) if p in untouched]
-    emit(f"   Anchors cetuximab does NOT touch: {len(free_anchors)} of 8"
+    emit(f"   Anchors cetuximab leaves untouched: {len(free_anchors)} of 8"
          + (f" — {', '.join(f'{ANCHORS[p]}{p}' for p in free_anchors)}"
             if free_anchors else ""))
     emit()
-    emit("   This is the most directly useful output of this step: an anchor that")
-    emit("   is both reachable (step 03) and outside cetuximab's footprint gives")
-    emit("   pH-switch capability on a surface no approved drug occupies.")
+    emit("   These free anchors are the most directly useful output of this step. An")
+    emit("   anchor that is both reachable (step 03) and outside cetuximab's")
+    emit("   footprint lets us build the pH switch on a surface no approved drug")
+    emit("   occupies, so those anchors get first preference in the design.")
     emit()
 
     # ---- CSVs ----
@@ -308,9 +327,14 @@ def main():
     (FINDINGS / "04-cetuximab-contacts.md").write_text(
         "# Cetuximab contact set (computed)\n\n"
         "Computed output of `analysis/04_cetuximab_contacts.py`. Do not hand-edit.\n\n"
-        "Resolves the UNVERIFIED claim that Q390R, E412D, R414W and K467R explain\n"
-        "cetuximab's failure on mouse EGFR. Contact definition: any EGFR heavy atom\n"
-        f"within {CUTOFF} A of any heavy atom of either Fab chain, in PDB 6ARU.\n\n"
+        "Settles a claim that had been carried as UNVERIFIED, meaning stated from\n"
+        "memory rather than computed: that the differences Q390R, E412D, R414W and\n"
+        "K467R explain why cetuximab does not bind mouse EGFR.\n\n"
+        "A residue counts as in contact when any of its heavy atoms, meaning any\n"
+        "atom except hydrogen, comes within\n"
+        f"{CUTOFF} angstroms of any heavy atom of either chain of the antibody\n"
+        "fragment, in structure 6ARU. Hydrogen is left out because it is too light\n"
+        "to appear in most measured structures.\n\n"
         "```\n" + "\n".join(out) + "\n```\n"
     )
     return 0

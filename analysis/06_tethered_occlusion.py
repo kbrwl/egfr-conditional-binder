@@ -1,45 +1,69 @@
 #!/usr/bin/env python3
 """
-06_tethered_occlusion.py — is the epitope reachable in the CLOSED conformation?
+06_tethered_occlusion.py — is the epitope reachable in the closed conformation?
 
-WHY THIS COULD STILL KILL THE DESIGN
-------------------------------------
+Abbreviations, expanded here because each file gets read on its own:
+  PDB      Protein Data Bank, the public archive of measured 3D protein
+           structures. Also used to mean a file from that archive.
+  UniProt  the public protein sequence archive. Our residue numbers are
+           positions in its records.
+  SASA     solvent-accessible surface area: how much of a residue's surface
+           water can reach, measured in square angstroms.
+  RSA      relative solvent accessibility: SASA divided by the largest value
+           that residue type could have, which makes residue types comparable.
+  CA       the alpha carbon, one atom present in every residue, often used as a
+           single stand-in for the whole residue's position.
+  RMSD     root-mean-square deviation: the average distance left between matched
+           atoms once two structures have been laid on top of each other.
+  Fab      the gripping arm of an antibody, separated from the rest of it.
+  EGF      epidermal growth factor, the signalling molecule EGFR normally
+           responds to.
+  aa       amino acids, the building blocks a protein chain is made of.
+  BLOSUM62 a table of how chemically similar each pair of residue types is.
+
+WHY THIS STEP EXISTS
+--------------------
 Everything up to here used 6ARU, in which EGFR is held by a cetuximab Fab. But
 EGFR's extracellular region is not a rigid object. It switches between two
 shapes:
 
-  EXTENDED (open)   -- the domains splayed out, domain III fully presented
-  TETHERED (closed) -- the molecule folded back on itself, autoinhibited, with
+  extended (open)   -- the domains splayed out, domain III fully presented
+  tethered (closed) -- the molecule folded back on itself, autoinhibited, with
                        domain III partly pressed against other domains
 
-The competition assays the WHOLE extracellular region in solution. So whichever
-shape predominates in that buffer decides what a binder can physically reach. If
-our 415-466 block is covered in the tethered form, then a design that is correct
-in every other respect measures as nothing, and we would have no way of telling
-that apart from a bad design.
+The competition assays the whole extracellular region in solution, so whichever
+shape predominates in that buffer decides what a binder can physically reach. A
+design that is right in every other respect would measure as nothing if our
+415-466 block is covered in the tethered form, and we would have no way of
+telling that apart from a bad design.
 
 WHAT THIS SCRIPT COMPUTES
 -------------------------
 It compares per-residue solvent accessibility of 415-466 between the two
-structures, receptor protein only in both cases, so the difference isolates
-conformation rather than bound partners.
+structures, using the receptor protein alone in both cases, so the difference
+comes from the conformation and not from whatever partner is bound. Working from
+the isolated receptor chain is deliberate: the two files have different partners
+stuck to them, a Fab in one and EGF in the other, so leaving the partners in
+would mostly measure the difference between those two partners.
 
-Two occlusion sources must be separated, because they have different
+Two sources of occlusion have to be kept apart, because they have different
 consequences:
 
-  1. OTHER DOMAINS of the same receptor chain covering the epitope. This is the
-     tether itself, and it is intrinsic -- it would be present in the assay.
-  2. THE BOUND LIGAND (EGF) covering the epitope. 1NQL is an EGF-bound structure,
-     and EGF is known to engage domain III. This is NOT intrinsic: the assay
+  1. Other domains of the same receptor chain covering the epitope. This is the
+     tether itself, and it is intrinsic to the molecule -- it would be present in
+     the assay.
+  2. The bound ligand, EGF, covering the epitope. 1NQL is an EGF-bound structure,
+     and EGF is known to engage domain III. This one is not intrinsic: the assay
      presents the receptor without EGF, so ligand occlusion must not be counted
-     against us.
+     against us. Conflating the two would make the tethered form look far worse
+     than it is.
 
-Conflating the two would make the tethered form look far worse than it is.
-
-To measure source 1 without needing exact domain boundaries, the script simply
-asks: which residues OUTSIDE 310-480, in the same chain, come within 4.5 A of a
-residue in 415-466? That is "covered by other parts of the receptor" stated
-directly, with no dependence on where anyone draws a domain border.
+To measure source 1 without needing exact domain boundaries, the script asks
+which residues outside 310-480, in the same chain, come within 4.5 A of a residue
+in 415-466. The alternative was to name the domains doing the covering, which
+would make the answer depend on where the domain borders are drawn, and those
+borders are something we are unsure of. Asking "covered by other parts of the
+receptor" needs no such judgement.
 
 It also superposes domain III between the two structures and reports RMSD, to
 establish that domain III itself has the same fold in both. If the fold were
@@ -47,7 +71,7 @@ different, an accessibility comparison would be measuring two things at once.
 
 STRUCTURE CHOICE — NOW VERIFIED
 -------------------------------
-1NQL was proposed as the tethered structure but was UNVERIFIED. Checked against
+1NQL was proposed as the tethered structure and was UNVERIFIED. Checked against
 the RCSB entry record on 30 September 2026:
 
   title:  "Structure of the extracellular domain of human epidermal growth
@@ -56,15 +80,15 @@ the RCSB entry record on 30 September 2026:
   contents: an EGFR extracellular region entity plus a 53-residue EGF entity,
             with N-linked sugars
 
-So 1NQL is confirmed as an EGFR extracellular-region structure, described by the
-depositors as INACTIVE. "Inactive / autoinhibited" is the file's own
-characterisation; this script does not take it on trust, and reports its own
-computed inter-domain contact counts as the actual evidence for whether the
-molecule is closed.
+So 1NQL is confirmed as an EGFR extracellular-region structure with EGF bound,
+described by the depositors as inactive. "Inactive / autoinhibited" is the file's
+own characterisation, which this script does not take on trust: it reports its
+own computed inter-domain contact counts as the evidence for whether the molecule
+is closed.
 
-Note the additional wrinkle that 1NQL was solved at LOW pH. That is a
-crystallisation condition, not a statement about our assay, but it is worth
-noticing given that pH is the variable our whole design turns on.
+1NQL was also solved at low pH. Low pH and the bound EGF are both circumstances
+of getting the crystal to form, rather than descriptions of our assay, but the pH
+is worth noticing given that pH is the variable our whole design turns on.
 
 Outputs:
   results/findings/06-tethered-occlusion.md
@@ -132,6 +156,12 @@ def download(pdb_id):
 
 
 def aligner():
+    """Set up the sequence aligner: BLOSUM62 scoring, gap open -11, extend -1.
+
+    Lining two sequences up is what lets us work out which residue in the
+    structure file is which position in the UniProt record, instead of assuming an
+    offset.
+    """
     a = Align.PairwiseAligner()
     a.mode = "global"
     a.open_gap_score = -11
@@ -147,7 +177,11 @@ def chain_seq(chain):
 
 
 def map_to_uniprot(residues, seq, human):
-    """Align an observed chain to the human sequence; return pdb_num -> uniprot."""
+    """Align an observed chain to the human sequence; return pdb_num -> uniprot.
+
+    Also returns the percentage of aligned positions that matched, which doubles
+    as a check that this chain really is the protein we think it is.
+    """
     aln = aligner().align(human, seq)[0]
     hi = si = 0
     mapping, matches = {}, 0
@@ -164,6 +198,8 @@ def map_to_uniprot(residues, seq, human):
 
 
 class ProteinChain(Select):
+    """Keeps one chain and only its standard amino acids when writing a file out."""
+
     def __init__(self, chain_id):
         self.chain_id = chain_id
 
@@ -175,7 +211,13 @@ class ProteinChain(Select):
 
 
 def receptor_only_sasa(structure, chain_id, tmp_path):
-    """Write one protein chain alone, then compute per-residue SASA on it."""
+    """Write one protein chain on its own, then compute per-residue SASA on it.
+
+    The chain is isolated first because the two structures have different partners
+    bound: a Fab in 6ARU, EGF in 1NQL. Computing accessibility on the whole file
+    would tell us which partner covers more of the surface, when the question is
+    what the receptor's own shape covers.
+    """
     io = PDBIO()
     io.set_structure(structure)
     io.save(str(tmp_path), select=ProteinChain(chain_id))
@@ -196,12 +238,13 @@ def main():
     parser = PDBParser(QUIET=True)
 
     emit("=" * 72)
-    emit("CONFORMATION CHECK — is 415-466 reachable in the CLOSED form?")
+    emit("CONFORMATION CHECK — is 415-466 reachable in the closed form?")
     emit("=" * 72)
     emit()
-    emit("Compares per-residue accessibility of the epitope between an OPEN-form")
-    emit("structure and a CLOSED-form structure, receptor protein only in both,")
-    emit("so the difference isolates conformation rather than bound partners.")
+    emit("Compares per-residue accessibility of the epitope between an open-form")
+    emit("structure and a closed-form structure, using the receptor protein alone in")
+    emit("both, so the difference comes from the conformation and not from whichever")
+    emit("partner happens to be bound in each file.")
     emit()
     emit(f"  open   / reference: {OPEN_ID}")
     emit(f"  closed / tethered:  {CLOSED_ID}")
@@ -215,7 +258,7 @@ def main():
         emit(f"  {pid}: {status}")
     emit()
 
-    # ---- 1NQL provenance, from the file itself ----
+    # ---- Where 1NQL came from, read out of the file itself ----
     emit(f"1. What {CLOSED_ID} actually contains (was UNVERIFIED)")
     emit()
     for ln in paths[CLOSED_ID].read_text().splitlines()[:30]:
@@ -271,10 +314,11 @@ def main():
     # ---- Does domain III have the same fold in both? ----
     emit("2. Is domain III the same fold in both structures?")
     emit()
-    emit("   If domain III itself were folded differently, an accessibility")
-    emit("   comparison would be measuring two things at once. Superposing the")
-    emit("   domain and reporting RMSD (the average leftover distance between")
-    emit("   matched atoms, in angstroms) separates those.")
+    emit("   An accessibility comparison would be measuring two things at once if")
+    emit("   domain III itself were folded differently in the two files. Laying the")
+    emit("   two copies of the domain on top of each other and measuring RMSD — the")
+    emit("   average distance left between matched atoms, in angstroms — tells us")
+    emit("   whether that is the case.")
     emit()
     fixed, moving = [], []
     open_chain = structures[OPEN_ID][0][receptor_chain[OPEN_ID]]
@@ -293,41 +337,46 @@ def main():
     if len(fixed) >= 20:
         sup = Superimposer()
         sup.set_atoms(fixed, moving)
-        emit(f"   Superposed {len(fixed)} matched CA atoms across domain III "
-             f"({D3_START}-{D3_END}).")
+        emit(f"   Superposed {len(fixed)} matched CA atoms (the alpha carbon, the one "
+             f"atom every residue has) across domain III ({D3_START}-{D3_END}).")
         emit(f"   RMSD = {sup.rms:.2f} A")
         if sup.rms < 2.0:
-            emit("   Domain III has essentially the same fold in both structures.")
+            emit("   Domain III has essentially the same fold in both structures: the")
+            emit("   two copies sit on top of each other to within a couple of")
+            emit("   angstroms on average, which for a protein means the same shape.")
             emit("   Any accessibility difference below is therefore caused by what")
-            emit("   surrounds the domain, not by the domain rearranging.")
+            emit("   surrounds the domain, and not by the domain rearranging.")
         else:
-            emit("   RMSD is high enough that domain III differs between the two")
-            emit("   structures, so the comparison below mixes conformational")
-            emit("   occlusion with local structural change. Treat it as")
+            emit("   That is enough leftover distance that domain III itself differs")
+            emit("   between the two structures, so the comparison below mixes")
+            emit("   conformational occlusion with local structural change. Treat it as")
             emit("   indicative rather than clean.")
     else:
         emit("   Too few matched atoms to superpose meaningfully.")
     emit()
 
-    # ---- Do the two structures actually differ in GLOBAL conformation? ----
-    # Without this, the whole comparison could be vacuous: if both structures are
-    # in the same conformation, comparing them says nothing about tethering.
-    emit("2b. Do these two structures actually represent DIFFERENT conformations?")
+    # ---- Do the two structures actually differ in global conformation? ----
+    # Everything in this step rests on the two structures being in different
+    # conformations. If they are both in the same one, comparing them says nothing
+    # about tethering, which is why the check runs before any of it is believed.
+    emit("2b. Do these two structures actually represent different conformations?")
     emit()
-    emit("   This check is necessary, not decorative. If both structures happen to")
-    emit("   be in the same conformation, then comparing them tells us NOTHING")
-    emit("   about the tethered state, and a reassuring result would be vacuous.")
+    emit("   The rest of this step only means something if the two structures are in")
+    emit("   different conformations. If they both happen to be in the same one, then")
+    emit("   comparing them tells us nothing about the tethered state, and even a")
+    emit("   reassuring result would carry no information. Hence this check.")
     emit()
-    emit("   Method: superpose on domain III only (done above), then measure how")
-    emit("   far the REST of the molecule sits from its counterpart. If the global")
+    emit("   Method: superpose on domain III only (done above), then measure how far")
+    emit("   the rest of the molecule sits from its counterpart. If the global")
     emit("   arrangement is the same, those displacements are small.")
     emit()
     conformations_differ = None
     if len(fixed) >= 20:
-        # Apply the domain-III-derived transform to COPIES of the coordinates.
-        # Calling sup.apply() would mutate the structure in place, which would
-        # silently corrupt the ligand-contact measurement in section 4, where
-        # the untransformed EGF chain is compared against this chain.
+        # Apply the transform worked out from domain III to copies of the
+        # coordinates. The obvious alternative, calling sup.apply(), rewrites the
+        # atom positions inside the structure itself. That would silently corrupt
+        # the ligand-contact measurement in section 4, which compares this chain
+        # against the EGF chain where the file actually puts it.
         rot, tran = sup.rotran
 
         def moved(atom):
@@ -361,24 +410,28 @@ def main():
                if "III" not in k and v > 5.0]
         if far:
             conformations_differ = True
-            emit("   The two structures DO differ in global conformation: with")
-            emit("   domain III superposed, other domains sit far from their")
+            emit("   The two structures do differ in global conformation: with domain")
+            emit("   III superposed, the other domains sit a long way from their")
             emit(f"   counterparts ({', '.join(f'{k} at {region_rms[k]:.1f} A' for k in far)}).")
-            emit("   So this IS a comparison between two different arrangements, and")
-            emit("   the accessibility comparison below is meaningful.")
+            emit("   So this is a comparison between two different arrangements, and the")
+            emit("   accessibility comparison below is meaningful.")
         else:
             conformations_differ = False
-            emit("   *** The two structures do NOT differ much in global")
-            emit("   arrangement. ***")
-            emit("   That makes this comparison largely VACUOUS as a test of the")
-            emit("   tethered state: we may be comparing two similar conformations")
-            emit("   and learning nothing about the closed form. Any reassuring")
-            emit("   result below must NOT be read as clearing the tethering risk.")
-            emit("   A genuinely tethered structure would be needed to settle it.")
+            emit("   The two structures do not differ much in global arrangement.")
+            emit("   That leaves this comparison unable to test the tethered state: we")
+            emit("   may be comparing two similar conformations and learning nothing")
+            emit("   about the closed form. A reassuring result below must not be read")
+            emit("   as clearing the tethering risk. Settling the question would need a")
+            emit("   structure that is genuinely tethered.")
     emit()
 
     # ---- SASA in both, receptor only ----
     emit("3. Accessibility of the epitope, receptor protein only")
+    emit()
+    emit("   RSA, relative solvent accessibility, is how much of a residue's surface")
+    emit("   water can reach, divided by the most that residue type could ever")
+    emit("   expose. Near 0 means covered over; near 1 means out in the open. A")
+    emit("   binder can only grip what water can reach.")
     emit()
     tmp = STRUCT / "_tmp_isolated.pdb"
     sasa_open = receptor_only_sasa(structures[OPEN_ID], receptor_chain[OPEN_ID], tmp)
@@ -441,11 +494,13 @@ def main():
     # ---- Occlusion by other parts of the receptor ----
     emit("4. What covers the epitope in the closed form?")
     emit()
-    emit("   Source 1 — OTHER PARTS OF THE RECEPTOR CHAIN. This is the tether")
-    emit("   itself and would be present in the assay. Measured as: residues")
-    emit(f"   outside {D3_START}-{D3_END}, same chain, within {CONTACT_CUTOFF} A of")
-    emit(f"   a residue in {EPI_START}-{EPI_END}. No domain-boundary definition")
-    emit("   needed beyond domain III's own range.")
+    emit("   Source 1 — other parts of the receptor chain. This is the tether itself,")
+    emit("   and it would be present in the assay. Measured as: residues outside")
+    emit(f"   {D3_START}-{D3_END}, same chain, within {CONTACT_CUTOFF} A of a residue "
+         f"in {EPI_START}-{EPI_END}.")
+    emit("   Putting it that way avoids naming the domains that do the covering, so")
+    emit("   the answer does not rest on domain boundaries we are unsure of. The only")
+    emit("   boundary it needs is domain III's own range.")
     emit()
     intra = {}
     for pid in (OPEN_ID, CLOSED_ID):
@@ -474,33 +529,33 @@ def main():
     emit()
     emit("   The two structures give almost the same list, so this packing is a")
     emit("   standing feature of how the protein folds rather than something the")
-    emit("   closed shape introduces. The partner residues are in the 481-524")
-    emit("   range, which is domain IV, the domain that follows ours.")
+    emit("   closed shape introduces. The partner residues are in the 481-524 range,")
+    emit("   which is domain IV, the domain that follows ours.")
     emit()
     if anchors_touched:
         emit(f"   Anchors sitting against domain IV in both structures: "
              f"{', '.join(f'{ANCHORS[u]}{u}' for u in anchors_touched)}")
         emit()
-        emit("   What this changes for the design. These anchors are still")
-        emit("   reachable by water, because step 03 measured accessibility on the")
-        emit("   whole receptor chain with domain IV already present, so its")
-        emit("   effect is included in those numbers. What it adds is that they sit")
-        emit("   in a groove between two domains rather than on an open face. A")
-        emit("   binder reaching them has to fit into that groove, which is a")
-        emit("   harder shape to design against than a flat surface, and it makes")
-        emit("   those contacts more sensitive to any shift in how the two domains")
-        emit("   sit against each other.")
+        emit("   What this changes for the design. These anchors are still reachable by")
+        emit("   water: step 03 measured accessibility on the whole receptor chain with")
+        emit("   domain IV already present, so its effect is already inside those")
+        emit("   numbers. What this adds is that they sit in a groove between two")
+        emit("   domains rather than on an open face. A binder reaching them has to fit")
+        emit("   into that groove, which is a harder shape to design against than a")
+        emit("   flat surface, and it makes those contacts more sensitive to any shift")
+        emit("   in how the two domains sit against each other.")
         emit()
-        emit("   This is worth weighing when choosing between the candidate anchor")
-        emit("   clusters in step 05, which does not have this information: it runs")
-        emit("   before this step and reads only the exposure and antibody-overlap")
-        emit("   tables.")
+        emit("   Worth weighing when choosing between the candidate anchor clusters in")
+        emit("   step 05, which does not have this information: it runs before this step")
+        emit("   and reads only the exposure and antibody-overlap tables.")
     else:
         emit("   No anchor is contacted from outside domain III in both structures.")
     emit()
 
-    emit("   Source 2 — THE BOUND LIGAND. Not intrinsic: the assay presents the")
-    emit("   receptor without EGF, so this must NOT be counted against us.")
+    emit("   Source 2 — the bound ligand, meaning EGF, the epidermal growth factor")
+    emit("   that EGFR normally responds to. The assay presents the receptor without")
+    emit("   EGF, so occlusion by the ligand must not be counted against us: doing so")
+    emit("   would make the tethered form look far worse than it is.")
     emit()
     for pid in (OPEN_ID, CLOSED_ID):
         others = ligand_chains[pid]
@@ -519,10 +574,10 @@ def main():
                  f"{hit[uni]['partner_chain']}{mark}")
 
         # Cross-check. For 6ARU this is the same question step 04 answered, so the
-        # two must agree. They did not before: this script had its own copy of the
-        # calculation and looked residue numbers up in the wrong direction,
-        # reporting residues 48 positions away from the real ones. Both now call
-        # the same function, and this compares the result against the table step 04
+        # two have to agree. They did not before: this script kept its own copy of
+        # the calculation and looked residue numbers up in the wrong direction,
+        # reporting residues 48 positions away from the real ones. Both now call the
+        # same function, and this compares the result against the table step 04
         # wrote, stopping the run if they differ.
         if pid == OPEN_ID:
             emit()
@@ -551,8 +606,8 @@ def main():
          f"{', '.join(f'{r['aa']}{r['uni']}' for r in much_worse) or 'none'}")
     emit()
 
-    # Anchors whose verdict DISAGREES between the two structures are genuinely
-    # ambiguous and must not be reported as settled either way.
+    # Anchors the two structures disagree about are genuinely ambiguous and must
+    # not be reported as settled either way.
     disagree = []
     for r, d, _reading in anchor_rows:
         cls_o = "buried" if r["rsa_open"] <= 0.05 else (
@@ -562,88 +617,89 @@ def main():
         if cls_o != cls_c:
             disagree.append((r, cls_o, cls_c))
     if disagree:
-        emit("   ANCHORS THE TWO STRUCTURES DISAGREE ABOUT:")
+        emit("   Anchors the two structures disagree about:")
         for r, cls_o, cls_c in disagree:
             emit(f"     {r['aa']}{r['uni']}: {cls_o} in {OPEN_ID} "
                  f"({r['rsa_open']:.3f}) but {cls_c} in {CLOSED_ID} "
                  f"({r['rsa_closed']:.3f})")
         emit()
-        emit("   These are AMBIGUOUS, not resolved. Two experimental structures")
-        emit("   give different answers, and this comparison cannot say which")
-        emit("   reflects the molecule in our assay. Do not round either reading")
-        emit("   into a conclusion.")
+        emit("   These are ambiguous rather than resolved. Two measured structures give")
+        emit("   different answers, and this comparison cannot say which one reflects")
+        emit("   the molecule in our assay. Do not round either reading into a")
+        emit("   conclusion.")
         buried_open = [r for r, co, cc in disagree if co == "buried"]
         if buried_open:
             emit()
             emit("   Worth noting specifically: "
                  f"{', '.join(f'{r['aa']}{r['uni']}' for r in buried_open)} read as")
-            emit(f"   buried in {OPEN_ID} but accessible in {CLOSED_ID}. Since")
-            emit(f"   {OPEN_ID} is an antibody complex, burial there may be an")
-            emit("   artefact of that antibody holding a side chain in place")
-            emit("   rather than an intrinsic property. Step 03 excluded H418 on")
-            emit(f"   the {OPEN_ID} reading alone; that exclusion should now be")
-            emit("   treated as UNCERTAIN rather than settled. It matters, because")
-            emit("   H418 is a target histidine and therefore carries the")
-            emit("   method-novelty claim.")
+            emit(f"   buried in {OPEN_ID} but accessible in {CLOSED_ID}. {OPEN_ID} is an")
+            emit("   antibody complex, so burial there may be an artefact of the")
+            emit("   antibody holding a side chain in place rather than a property of")
+            emit("   the receptor on its own. Step 03 excluded H418 on the")
+            emit(f"   {OPEN_ID} reading alone, and that exclusion should now be treated")
+            emit("   as uncertain rather than settled. It matters because H418 is a")
+            emit("   target histidine, and the method-novelty claim rests on it.")
         emit()
 
     if conformations_differ is False:
-        emit("   NO CONCLUSION AVAILABLE ON THE TETHERING RISK.")
-        emit("   Section 2b found that these two structures are NOT in meaningfully")
-        emit("   different global conformations, so this comparison does not test")
-        emit("   the closed form at all. The accessibility numbers above are real,")
-        emit("   but they do not answer the question this step was written to")
-        emit("   answer. The tethering risk remains OPEN and must stay in the")
-        emit("   decisions log as such.")
+        emit("   No conclusion available on the tethering risk.")
+        emit("   Section 2b found that these two structures are not in meaningfully")
+        emit("   different global conformations, so this comparison does not test the")
+        emit("   closed form at all. The accessibility numbers above are real, but they")
+        emit("   do not answer the question this step was written to answer. The")
+        emit("   tethering risk remains open and stays in the decisions log as such.")
     elif len(still_usable) >= 3 and abs(delta) < 0.10:
-        emit("   THE EPITOPE SURVIVES THE CONFORMATION CHECK.")
-        emit("   Accessibility of the block is similar in both structures and at")
-        emit("   least three anchors remain reachable in the closed form, so a")
-        emit("   binder aimed here is not dependent on the receptor being open.")
+        emit("   The epitope survives the conformation check.")
+        emit("   Accessibility of the block is similar in both structures and at least")
+        emit("   three anchors remain reachable in the closed form, so a binder aimed")
+        emit("   here does not depend on the receptor being open.")
         emit()
-        emit("   The block is slightly more accessible in the closed structure")
-        emit("   than in the open one. The concern that prompted this step, that")
-        emit("   domain II folds across our face of domain III when the receptor")
-        emit("   closes, is not what the numbers show.")
+        emit("   The block is slightly more accessible in the closed structure than in")
+        emit("   the open one. The worry that prompted this step was that domain II")
+        emit("   folds across our face of domain III when the receptor closes, and the")
+        emit("   numbers do not show that happening.")
         emit()
         emit(f"   What they do show is that {len(both)} residues in the second half")
-        emit("   of our block sit against domain IV, in both structures and to")
-        emit("   within a few tenths of an angstrom of the same distances. That is")
-        emit("   a standing feature of the fold, not something closing introduces,")
-        emit("   and it is already reflected in the accessibility numbers. Two")
-        emit("   anchors, D458 and D460, are in that group, which means they sit in")
-        emit("   a groove between two domains rather than on an open face.")
+        emit("   of our block sit against domain IV, in both structures and to within a")
+        emit("   few tenths of an angstrom of the same distances. That is a standing")
+        emit("   feature of the fold rather than something closing introduces, and it is")
+        emit("   already reflected in the accessibility numbers. Two anchors, D458 and")
+        emit("   D460, are in that group, so they sit in a groove between two domains")
+        emit("   rather than on an open face, and a binder aimed at them has to fit that")
+        emit("   groove.")
     elif len(still_usable) >= 3:
-        emit("   THE EPITOPE PROBABLY SURVIVES, with a caveat.")
-        emit("   At least three anchors remain reachable in the closed form, but")
-        emit("   overall accessibility of the block differs enough between the two")
-        emit("   structures that the conformational mix in the assay buffer")
-        emit("   plausibly affects measured affinity. Not a blocker; a source of")
+        emit("   The epitope probably survives, with a caveat.")
+        emit("   At least three anchors remain reachable in the closed form, but overall")
+        emit("   accessibility of the block differs enough between the two structures")
+        emit("   that the mix of conformations in the assay buffer plausibly affects")
+        emit("   measured affinity. That does not block the design; it is a source of")
         emit("   variance we cannot predict.")
     else:
-        emit("   *** WARNING: THE CLOSED FORM MAY DEFEAT THIS EPITOPE. ***")
-        emit(f"   Only {len(still_usable)} anchor(s) remain accessible in the")
-        emit("   closed conformation, below the three needed for a stacked switch.")
-        emit("   If the tethered form predominates in the assay buffer, a correct")
-        emit("   design measures as nothing.")
+        emit("   WARNING: the closed form may defeat this epitope.")
+        emit(f"   Only {len(still_usable)} anchor(s) remain accessible in the closed")
+        emit("   conformation, below the three needed for a stacked switch. If the")
+        emit("   tethered form predominates in the assay buffer, a correct design")
+        emit("   measures as nothing.")
     emit()
-    emit("   LIMITS OF THIS COMPARISON, stated plainly:")
+    emit("   Limits of this comparison:")
     emit()
     emit("   - Two crystal structures are two snapshots. Neither tells us the")
-    emit("     PROPORTION of open to closed in the assay buffer, which is the")
-    emit("     number that actually matters and which we do not have.")
+    emit("     proportion of open to closed in the assay buffer, which is the number")
+    emit("     that actually matters and the one we do not have.")
     emit(f"   - {CLOSED_ID} was solved at low pH and with EGF bound. Both are")
-    emit("     crystallisation circumstances, not descriptions of our assay.")
-    emit("   - The two structures differ in construct, resolution and")
-    emit("     crystallisation conditions, not only conformation. Some of the")
-    emit("     difference measured above is attributable to those.")
-    emit("   - Accessibility computed on the bare protein ignores glycans, which")
-    emit("     step 03 showed are attached inside this very block at N444.")
+    emit("     circumstances of getting the crystal to form, and neither describes our")
+    emit("     assay.")
+    emit("   - The two structures differ in construct, resolution and crystallisation")
+    emit("     conditions as well as in conformation. Some of the difference measured")
+    emit("     above is attributable to those.")
+    emit("   - Accessibility computed on the bare protein ignores glycans, the sugar")
+    emit("     chains attached to the protein surface, and step 03 showed one is")
+    emit("     attached inside this very block at N444.")
     emit()
-    emit("   This step reduces a risk; it does not eliminate it. The honest")
+    emit("   This step reduces the tethering risk without eliminating it. The honest")
     emit("   statement for the write-up is that the epitope is accessible in both")
-    emit("   published conformations we could test, and that the conformational")
-    emit("   equilibrium in the assay remains unknown.")
+    emit("   published conformations we could test, and that the balance of")
+    emit("   conformations in the assay remains unknown.")
     emit()
 
     DERIVED.mkdir(parents=True, exist_ok=True)
@@ -675,12 +731,14 @@ def main():
     (FINDINGS / "06-tethered-occlusion.md").write_text(
         "# Conformation check: is the epitope reachable when EGFR is closed?\n\n"
         "Computed output of `analysis/06_tethered_occlusion.py`. Do not hand-edit.\n\n"
-        f"Compares epitope accessibility between {OPEN_ID} and {CLOSED_ID},\n"
-        "separating occlusion by other parts of the receptor (intrinsic, would be\n"
-        "present in the assay) from occlusion by a bound ligand (not intrinsic).\n\n"
-        f"`{CLOSED_ID}` structure choice was UNVERIFIED and is now verified against\n"
-        "the RCSB entry record: it is an EGFR extracellular-region structure with\n"
-        "EGF bound, described by the depositors as inactive, solved at low pH.\n\n"
+        f"Compares epitope accessibility between {OPEN_ID} and {CLOSED_ID}, keeping\n"
+        "two sources of occlusion apart: other parts of the receptor, which is\n"
+        "intrinsic to the molecule and would be present in the assay, and a bound\n"
+        "ligand, which is not.\n\n"
+        f"The `{CLOSED_ID}` structure choice was UNVERIFIED and is now verified\n"
+        "against the RCSB entry record: it is an EGFR extracellular-region structure\n"
+        "with EGF (epidermal growth factor) bound, described by the depositors as\n"
+        "inactive, solved at low pH.\n\n"
         "```\n" + "\n".join(out) + "\n```\n"
     )
     return 0

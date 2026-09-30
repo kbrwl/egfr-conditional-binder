@@ -9,32 +9,36 @@ doi:10.1371/journal.pone.0080635 — transcribed from the journal's
 manuscript XML on 30 September 2026.
 
 The classification cutoffs (RSA >= 0.25 exposed, <= 0.05 buried) are
-**conventional, not physical constants**. Nothing changes in the molecule
-at 0.25. Residues near a cutoff are flagged BORDERLINE.
+conventions the field has settled on, rather than physical constants.
+Nothing changes in the molecule at 0.25, so residues near a cutoff are
+flagged BORDERLINE.
 
 ```
 ========================================================================
 SOLVENT ACCESSIBILITY OF THE CANDIDATE EPITOPE
 ========================================================================
 
-Input:  data/structures/6aru_receptor_only.pdb  (Fab REMOVED)
+Input:  data/structures/6aru_receptor_only.pdb  (Fab removed)
 Method: Shrake-Rupley probe rolling, Bio.PDB.SASA.ShrakeRupley
 Norm:   Tien et al. 2013, PLOS ONE 8(11):e80635, Table 1
         theoretical column for headline values,
         empirical column as a sensitivity check
-Numbering: UniProt = PDB + 24 (established empirically by step 02)
+Numbering: UniProt = PDB + 24 (measured by step 02, not assumed)
 
-The Fab is removed deliberately. Cetuximab sits on the surface we are
-measuring, so computing on the complex would report our epitope as
-buried when it is only covered by an antibody absent from our assay.
+The Fab -- the gripping arm of the cetuximab antibody -- was removed on
+purpose. It sits on the surface we are measuring, so running this on the
+whole complex would report our epitope as buried when it is only covered
+by an antibody that will not be present in our assay.
 
 Computed SASA for 609 residues in the receptor chain.
 
 1. Every residue in 415-466
 
-   RSA is the number to read. 'anchor' marks our eight candidates.
-   'BORDERLINE' means within 0.05 of a classification cutoff, so the
-   label should not be read as precise.
+   'aa' is the amino acid at that position, 'SASA A^2' its accessible area
+   in square angstroms, and RSA that area corrected for residue size, which
+   is the number to read. 'ANCHOR' marks our eight candidates. 'BORDERLINE'
+   means the value sits within 0.05 of a classification cutoff, so the label
+   on that row is less precise than it looks.
 
    | UniProt | aa | PDB# | SASA A^2 | RSA | class | flags |
    |---|---|---|---|---|---|---|
@@ -94,9 +98,9 @@ Computed SASA for 609 residues in the receptor chain.
    Epitope summary (52 resolved): 13 exposed, 19 partial, 20 buried
    Mean RSA across the block: 0.173
 
-2. VERDICT ON EACH OF THE EIGHT ANCHORS
+2. Verdict on each of the eight anchors
 
-   This determines how much material we have left to work with.
+   This is what decides how much material the design has left to work with.
 
    | anchor | role | SASA A^2 | RSA (theor.) | RSA (emp.) | VERDICT | usable? |
    |---|---|---|---|---|---|---|
@@ -115,27 +119,28 @@ Computed SASA for 609 residues in the receptor chain.
 
 3. How solid are these verdicts?
 
-   Two ways a verdict could be an artefact of an arbitrary choice:
+   Two ways a verdict could be an artefact of a choice we made arbitrarily:
 
-   a) Which reference table we normalise by.
+   a) Which column of maximum areas we divide by.
       1 anchor(s) change class between the
       theoretical and empirical columns: D458
-      Their verdicts are NOT robust and should be treated as
+      Their verdicts are not robust, so treat those anchors as
       ambiguous rather than settled.
 
-   b) Where the cutoffs sit (0.25 / 0.05 are conventions, not physics).
+   b) Where the cutoffs sit. 0.25 and 0.05 are conventions the field uses.
       3 anchor(s) sit within 0.05 of a
       cutoff: H418, E421, D458
-      Read these as 'somewhere near the boundary', not as the label.
+      Read these as sitting near the boundary rather than as whatever
+      label the row happens to carry.
 
-4. CAVEAT NOT IN THE ORIGINAL PLAN: glycan occlusion
+4. A caveat not in the original plan: sugar chains in the way
 
-   EGFR is a glycoprotein -- sugar chains are attached to it at specific
-   points. Those chains are large, and the receptor-only file used above
-   contains protein atoms ONLY, because step 02 stripped everything that
-   was not a standard amino acid. So the surface measured above is the
-   BARE protein. If a sugar chain sits over our epitope, the real
-   accessible surface is smaller than computed here.
+   EGFR is a glycoprotein: sugar chains, called glycans, are attached to it
+   at specific points, and those chains are large. The receptor-only file
+   used above holds protein atoms only, because step 02 dropped everything
+   that was not a standard amino acid, so the areas above describe the bare
+   protein. If a sugar chain sits over our epitope, the surface a binder
+   could really reach is smaller than the numbers above.
 
    Checking the original complex for sugar atoms near the epitope:
    Sugar residues present in 6ARU: 13
@@ -144,43 +149,44 @@ Computed SASA for 609 residues in the receptor chain.
      N444: 1.44 A from NAG (chain E)
      T446: 3.25 A from NAG (chain E)
 
-   Note on what this 5 A test does and does not settle. It asks
-   whether an anchor touches a sugar atom that is present in the
-   file. A structure shows only the first few sugars of a chain
-   that continues past them, so a 'no' here does not mean the full
-   chain cannot reach. Step 05 asks the wider question, measuring
-   each anchor's distance to the attachment point N444 with 15 A
-   and 25 A bands, and flags three anchors on that basis. The two
-   results are answers to different questions, not a disagreement.
+   What this 5 A test settles, and what it does not. It asks whether
+   an anchor touches a sugar atom that is actually present in the
+   file. A structure shows only the first few sugars of a chain that
+   continues past them, so a 'no' here does not mean the full chain
+   cannot reach that far. Step 05 asks the wider question, measuring
+   each anchor's distance to the attachment point N444 -- the
+   asparagine the chain hangs off -- in 15 A and 25 A bands, and it
+   flags three anchors on that basis. The two tests answer different
+   questions, so the results do not contradict each other.
 
    No anchor is within 5 A of a sugar. Glycan occlusion is
    not a concern for the anchors specifically.
 
-   LIMIT: a crystal structure resolves only the innermost, most
-   ordered sugars. Real glycan chains extend considerably further
-   and are mobile. Absence of a modelled sugar is weak evidence of
-   absence. Flagged as a residual risk, not resolved.
+   One limit on all of the above: a crystal structure resolves only the
+   innermost, most ordered sugars. Real glycan chains extend considerably
+   further and they move about, so a sugar missing from the file is weak
+   evidence that nothing is there. This stays on the list as a residual
+   risk rather than something we have settled.
 
-5. WHAT THIS MEANS FOR THE DESIGN
+5. What this means for the design
 
-   7 of 8 anchors are reachable. The pairing rule needs
-   three or four pairs stacked, because the pH switch is partial
-   rather than binary, so this is enough material to work with --
-   PROVIDED they cluster within reach of a single binder, which is
-   step 05's question and is not answered here.
+   7 of 8 anchors are reachable. The pairing rule needs three
+   or four pairs stacked, because the pH switch is partial rather than
+   all-or-nothing, so this is enough material to work with, provided the
+   anchors cluster within reach of a single binder. That is step 05's
+   question and is not answered here.
 
-   NOTE ON WHAT EXPOSURE DOES AND DOES NOT TELL US. An exposed anchor
-   is reachable. It is not therefore a good contact point: it still has
-   to point in a compatible direction, sit in a pocket a designed
-   backbone can present a partner to, and cluster with the others.
-   Exposure is a filter that removes impossible options, not evidence
-   that the remaining ones work.
+   What exposure does and does not tell us: an exposed anchor is reachable,
+   and that is all it says. To be a good contact point it still has to point
+   in a compatible direction, sit in a pocket a designed backbone can present
+   a partner to, and cluster with the other anchors. Exposure removes the
+   impossible options; it is no evidence that the ones left over will work.
 
 Wrote data/derived/03-epitope-rsa.csv
 Wrote data/derived/03-anchor-verdicts.csv
 
 ========================================================================
 RESULT: 7 of 8 anchors usable (D416, E421, E424, H433, E455, D458, D460).
-Clustering is step 05's question. This step only removed the buried.
+Whether they cluster is step 05's question. This step removed the buried.
 ========================================================================
 ```

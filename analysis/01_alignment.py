@@ -1,36 +1,40 @@
 #!/usr/bin/env python3
 """
-01_alignment.py — human vs mouse EGFR comparison. REGRESSION TEST.
+01_alignment.py — compare human and mouse EGFR. This is a regression test.
 
 WHAT THIS MEASURES AND WHY IT MATTERS
 -------------------------------------
 One of the competition's objectives, mouse cross-reactivity, is that a single
-sequence must bind both human and
-mouse EGFR. The cheapest way to satisfy that is not to design for it afterwards,
-but to aim at a patch of the target where the two species are already identical:
-if the binder never touches a residue that differs, cross-reactivity follows by
-construction rather than by luck.
+binder sequence must bind both human and mouse EGFR. The cheapest way to get
+there is to aim at a patch of the target where the two species already have the
+same residues (a residue is one building block of a protein), rather than
+designing for human first and fixing up the mouse case afterwards. If the binder
+never touches a position where the two species differ, it works on both by
+construction instead of by luck.
 
-To find such a patch we need to know exactly where the two proteins differ. That
-requires an ALIGNMENT -- lining the two sequences up position by position,
-inserting gaps where one has extra residues. You cannot simply compare position 1
-to position 1, because a single insertion early on would shift everything after
-it and make every later comparison wrong.
+Finding such a patch means knowing exactly where the two proteins differ, and
+that needs an alignment: the two sequences laid side by side position by
+position, with gaps inserted where one of them has extra residues. Comparing
+position 1 to position 1 straight down the sequences does not work, because a
+single insertion early on shifts everything after it and makes every later
+comparison wrong.
 
-Method: global pairwise alignment (align the sequences end to end, not just
-their best-matching fragments) with the BLOSUM62 scoring table, gap open -11,
-gap extend -1. BLOSUM62 encodes that some substitutions are chemically mild
-(serine to glycine) and others drastic, so the alignment prefers biologically
-sensible arrangements. The gap penalties are the standard defaults: opening a
-gap is expensive, extending an existing one is cheap, which reflects that
-real insertions tend to be single multi-residue events.
+Method: global pairwise alignment, meaning the two sequences are aligned end to
+end rather than only at their best-matching fragments. Scoring uses BLOSUM62, a
+table of how chemically similar each pair of residues is, with a penalty of -11
+for opening a gap and -1 for extending one. BLOSUM62 records that some swaps are
+chemically mild (serine to glycine) and others drastic, so the alignment prefers
+biologically sensible arrangements. The gap penalties are the standard defaults:
+opening a gap is expensive and extending one already open is cheap, which
+reflects that a real insertion is usually one event several residues long.
 
-THIS SCRIPT IS A REGRESSION TEST. The expected answer is already known from
+This script is a regression test. The expected answer is already known from
 earlier work, so the script asserts it:
-  - exactly 16 differences in domain III (310-480)
-  - exactly one difference inside 415-466, namely S442G
+  - exactly 16 differences in domain III (residues 310-480)
+  - exactly one difference inside 415-466, namely S442G: human has serine at
+    position 442 where mouse has glycine
 If either assertion fails, the environment or the input data is wrong, and
-NOTHING DOWNSTREAM SHOULD BE TRUSTED until that is fixed.
+nothing downstream should be trusted until that is fixed.
 
 Outputs:
   results/findings/01-alignment.md
@@ -38,7 +42,7 @@ Outputs:
   data/derived/01-identical-runs.csv
 
 Run standalone:  python analysis/01_alignment.py
-Exit code 0 = expectations met.
+Exit code 0 means the expectations above were met.
 """
 
 import sys
@@ -52,14 +56,15 @@ FASTA = ROOT / "data" / "sequences" / "egfr-uniprot-full.fasta"
 DERIVED = ROOT / "data" / "derived"
 FINDINGS = ROOT / "results" / "findings"
 
-# All ranges are in full human UniProt P00533 numbering.
-ECD_START, ECD_END = 25, 645      # mature extracellular region
-D3_START, D3_END = 310, 480       # domain III, working definition
-EPI_START, EPI_END = 415, 466     # candidate epitope
+# All ranges are positions in the full human record P00533 in UniProt, the public
+# protein sequence archive.
+ECD_START, ECD_END = 25, 645      # the mature part of EGFR that sits outside the cell
+D3_START, D3_END = 310, 480       # domain III, the working definition we use
+EPI_START, EPI_END = 415, 466     # candidate epitope: the patch we aim the binder at
 
 MIN_RUN = 10                       # report identical runs of at least this length
 
-# Expectations this script asserts.
+# The answers this script asserts, carried over from earlier work.
 EXPECTED_D3_DIFFS = [
     "A313P", "S315Y", "M318V", "V323I", "E330D", "S348T", "N361Y", "S364A",
     "R377K", "H383R", "Q390R", "D393E", "E412D", "R414W", "S442G", "K467R",
@@ -113,10 +118,10 @@ def main():
     emit("HUMAN vs MOUSE EGFR ALIGNMENT  (regression test)")
     emit("=" * 72)
     emit()
-    emit(f"human P00533: {len(human)} aa")
+    emit(f"human P00533: {len(human)} aa (amino acids, the building blocks)")
     emit(f"mouse Q01279: {len(mouse)} aa")
-    emit("method: global pairwise, BLOSUM62, gap open -11, gap extend -1")
-    emit("numbering: full human UniProt positions throughout")
+    emit("method: end-to-end pairwise alignment, BLOSUM62 table, gap open -11, gap extend -1")
+    emit("numbering: positions in the full human UniProt record throughout")
     emit()
 
     aligner = Align.PairwiseAligner()
@@ -126,10 +131,10 @@ def main():
     aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
     alignment = aligner.align(human, mouse)[0]
 
-    # Walk the alignment and index by HUMAN position. Columns where the human
-    # side is a gap have no human position and are skipped for numbering, but
-    # are counted as non-identity at the neighbouring position's expense only
-    # insofar as they appear as gaps on the mouse side below.
+    # Walk the alignment column by column, numbering everything by its human
+    # position. A column where the human side is a gap has no human position to
+    # assign, so it is left out of the numbering and counted only in the tally of
+    # mouse insertions reported below.
     rows = []            # (human_pos, human_aa, mouse_aa, identical)
     human_pos = 0
     human_gaps_in_mouse = 0
@@ -166,7 +171,7 @@ def main():
     d3_labels = [f"{h}{p}{m}" for p, h, m in d3_diffs]
 
     emit("2. Domain III differences, human UniProt numbering")
-    emit("   Notation: Q390R means human has Q at 390, mouse has R.")
+    emit("   Notation: Q390R means human has Q at position 390 where mouse has R.")
     emit()
     for i in range(0, len(d3_labels), 8):
         emit("   " + "  ".join(d3_labels[i:i + 8]))
@@ -182,8 +187,9 @@ def main():
     emit(f"   {epi_diffs if epi_diffs else 'none'}")
     emit()
 
-    # Runs of consecutive identity, computed across the whole ECD then filtered
-    # to domain III, so a run straddling the boundary is not silently truncated.
+    # Stretches where the two species match residue for residue. These are found
+    # across the whole extracellular region first and filtered to domain III only
+    # afterwards, so a stretch that crosses the domain III boundary is not cut short.
     runs = []
     start = None
     for r in rows:
@@ -216,7 +222,7 @@ def main():
           f"{len(d3_labels)} (expected 16)")
     check("domain III difference identities", d3_labels == EXPECTED_D3_DIFFS,
           "match expected list" if d3_labels == EXPECTED_D3_DIFFS
-          else f"MISMATCH: got {d3_labels}")
+          else f"does not match the expected list: got {d3_labels}")
     check(f"epitope {EPI_START}-{EPI_END} differences",
           epi_diffs == EXPECTED_EPITOPE_DIFFS,
           f"{epi_diffs} (expected {EXPECTED_EPITOPE_DIFFS})")
@@ -225,20 +231,21 @@ def main():
     emit("6. What this means for the design")
     emit()
     emit(f"   The {EPI_START}-{EPI_END} block is 52 positions with a single")
-    emit("   difference, S442G. Serine and glycine are both among the smallest")
-    emit("   amino acids, so the local shape barely changes -- this is about as")
-    emit("   close to species-identical as a real surface patch gets.")
+    emit("   difference, S442G: human serine, mouse glycine. Both are among the")
+    emit("   smallest amino acids, so the local shape barely changes, which is about")
+    emit("   as close to species-identical as a real surface patch gets.")
     emit()
-    emit("   Fourteen of the sixteen domain III differences fall before 415.")
-    emit("   That is the whole argument for aiming here rather than elsewhere in")
-    emit("   domain III: a binder confined to this block satisfies mouse")
-    emit("   cross-reactivity by construction.")
+    emit("   Fourteen of the sixteen domain III differences fall before 415, which")
+    emit("   is the argument for aiming here rather than elsewhere in domain III: a")
+    emit("   binder confined to this block satisfies mouse cross-reactivity by")
+    emit("   construction.")
     emit()
-    emit("   LIMIT OF THIS RESULT, stated plainly: this is sequence analysis. It")
-    emit("   says what each residue IS, not which direction it POINTS. Domain III")
-    emit("   folds into a solenoid (spiral-staircase) shape in which residues")
-    emit("   adjacent in sequence can point opposite ways. Whether these anchors")
-    emit("   are reachable is decided by steps 02-06, not here.")
+    emit("   What this result does not settle: it is sequence analysis, so it tells")
+    emit("   us which residue sits at each position and nothing about which")
+    emit("   direction that residue points. Domain III folds into a solenoid, a")
+    emit("   spiral-staircase shape in which residues next to each other in the")
+    emit("   sequence can point opposite ways. Whether these anchors are actually")
+    emit("   reachable is decided by steps 02-06.")
     emit()
 
     DERIVED.mkdir(parents=True, exist_ok=True)
@@ -268,9 +275,11 @@ def main():
     (FINDINGS / "01-alignment.md").write_text(
         "# Human vs mouse EGFR alignment (computed)\n\n"
         "Computed output of `analysis/01_alignment.py`. Do not hand-edit.\n\n"
-        "This is a regression test: the expected answer was known before the\n"
-        "script was written, and the script asserts it. See\n"
-        "`alignment-findings.md` in this directory for the interpretation.\n\n"
+        "This is a regression test: the expected answer was known before the script\n"
+        "was written, and the script checks itself against it. If it ever disagrees,\n"
+        "the environment or the input data has changed and nothing computed after it\n"
+        "should be trusted until that is sorted out. See `alignment-findings.md` in\n"
+        "this directory for what the numbers mean for the design.\n\n"
         "```\n" + "\n".join(out) + "\n```\n"
     )
     return 1 if failures else 0

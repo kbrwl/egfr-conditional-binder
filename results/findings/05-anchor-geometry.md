@@ -2,11 +2,13 @@
 
 Computed output of `analysis/05_anchor_geometry.py`. Do not hand-edit.
 
-Tests whether the anchors that survived step 03 sit within 25 A
-of one another, which is roughly the span a single small binder face can
-cover. Distances are measured between side-chain functional groups, not
-backbones. Verdict rule fixed in advance: fewer than 3 clustered
-anchors means the epitope is dead.
+Tests whether the anchors that survived step 03 sit within 25
+angstroms of one another, which is roughly how far across a single small
+binder can reach with one face. Distances are measured between the tips of
+the side chains, the parts that actually form a charge pair, rather than
+between backbone atoms, which are the same chemistry in every residue.
+The rule was fixed before measuring: if fewer than 3 anchors
+cluster, this epitope fails and the fallback stretches are tried instead.
 
 ```
 ========================================================================
@@ -14,14 +16,19 @@ ANCHOR GEOMETRY — is the epitope a real surface?
 ========================================================================
 
 Reach cutoff: 25 A — roughly what one small binder face
-              can span. Chosen in advance, not fitted to the answer.
+              can span. Fixed before the measurement, so it cannot have
+              been tuned to suit the answer.
 Minimum viable cluster: 3 anchors.
 
-Measuring from side-chain functional groups, not the backbone:
-  D -> CG (carboxylate carbon)
-  E -> CD (carboxylate carbon)
-  H -> centroid of the imidazole ring (CG, ND1, CD2, CE1, NE2)
-  unresolved side chain -> CB, reported as a FALLBACK
+Measured from the charged tip of each side chain, because that is what
+forms a charge pair. Backbone-to-backbone distances were the alternative
+and were rejected: the backbone is identical chemistry in every residue
+and sits several angstroms from the charge.
+  D (aspartate) -> CG, the carboxylate carbon
+  E (glutamate) -> CD, the carboxylate carbon, one atom further out
+  H (histidine) -> centre of the imidazole ring (CG, ND1, CD2, CE1, NE2)
+  unresolved side chain -> CB, the first side-chain carbon, flagged as a
+                          fallback
 
 Anchors carried forward from step 03 (exposed or partial): 7 of 8
   D416, E421, E424, H433, E455, D458, D460
@@ -45,6 +52,10 @@ Excluded as buried/unresolved: H418 (buried)
 
 2. Full pairwise distance matrix (angstroms)
 
+   Every anchor against every other anchor. Each cell is the distance
+   between those two functional groups, so the table shows which anchors
+   could share one binder face and which are on opposite sides.
+
    | | D416 | E421 | E424 | H433 | E455 | D458 | D460 |
    |---|---|---|---|---|---|---|---|
    | **D416** | — | 7.7 | 17.7 | 26.1 | 22.6 | 26.7 | 24.6 |
@@ -61,18 +72,20 @@ Excluded as buried/unresolved: H418 (buried)
 
 3. Largest subset with every pairwise distance under 25 A
 
-   Exhaustive search over all subsets (there are few enough that this is
-   exact rather than approximate).
+   Every possible subset of the anchors is checked, so this answer is
+   exact. With this few anchors that is quick, which is why no
+   approximate clustering method is used.
 
-   LARGEST CLUSTER: 4 anchors
+   Largest cluster: 4 anchors
    D416, E421, E424, E455
    Maximum internal distance: 22.6 A
 
-   Composition: 4 acidic (each takes a HISTIDINE on the
-   binder), 0 target histidine (takes a D or E on the binder).
+   Composition: 4 acidic (each one calls for a histidine on
+   the binder), 0 target histidine (calls for a D or E on the
+   binder). That is the shopping list the binder has to present.
 
-   NOTE: 4 different subsets of size 4 qualify.
-   The design is not forced to one choice of contact set:
+   4 different subsets of size 4 qualify, so the
+   design has a choice of contact set:
      D416, E421, E424, E455  (span 22.6 A)
      E424, E455, D458, D460  (span 22.8 A)
      H433, E455, D458, D460  (span 23.6 A)
@@ -80,13 +93,13 @@ Excluded as buried/unresolved: H418 (buried)
 
 4. How tight can a cluster be? (relevant to molecule size choice)
 
-   A microbinder (<40 aa) presents a smaller face than a minibinder
-   (40-100 aa), so it needs a tighter anchor cluster. Largest cluster
-   at several spans:
+   A microbinder (under 40 amino acids, abbreviated aa) presents a smaller
+   face than a minibinder (40-100 aa), so it needs a tighter anchor
+   cluster. Largest cluster at several spans:
 
-   For each limit: the largest cluster that fits, and the TIGHTEST
-   example of that size (not an arbitrary one, which would hide the
-   most compact option available).
+   For each limit: the largest cluster that fits, and the most compact
+   example of that size. An arbitrary example of that size would hide how
+   tight the best available option actually is.
 
    | span limit | largest cluster | tightest such set | its span |
    |---|---|---|---|
@@ -96,17 +109,17 @@ Excluded as buried/unresolved: H418 (buried)
    | 20 A | 3 | H433, D458, D460 | 15.6 A |
    | 25 A | 4 | D416, E421, E424, E455 | 22.6 A |
 
-   Reading this for the molecule-size decision: a microbinder (<40 aa)
-   presents a small face and needs a tight cluster; a minibinder
-   (40-100 aa) can span more. The row where the cluster size drops below
-   three is the point at which a binder becomes too small to carry the
-   stacked switch at all.
+   What this decides: how big the molecule has to be. A microbinder
+   presents a small face and needs a tight cluster; a minibinder (40-100
+   aa) can span more. The row where the cluster size drops below three is
+   the size at which a binder becomes too small to carry the stacked
+   switch at all, so pick a size above that row.
 
 5. Distance from the sugar attachment point N444
 
    Step 03 found a sugar chain attached at N444, inside our block.
 
-   WHAT IS MEASURED HERE, AND HOW IT DIFFERS FROM STEP 03. The two steps
+   What is measured here, and how it differs from step 03. The two steps
    measure different things, and read together without this note they
    look like they disagree:
 
@@ -119,22 +132,23 @@ Excluded as buried/unresolved: H418 (buried)
      the chain is attached, N444, with the 15 A and 25 A bands below.
      The chain itself is longer than the part the structure shows.
 
-   Both are correct. Step 03 answers 'does an anchor touch a sugar atom
-   we have coordinates for', and the answer is no. This step answers
-   'could the full chain reach an anchor', and the answer is that three
-   of them are close enough that it might. The second question matters
+   Both are correct. Step 03 answers 'does an anchor touch a sugar atom we
+   have coordinates for', and the answer is no. This step answers 'could
+   the full chain reach an anchor', and the answer is that three of them
+   are close enough that it might. The second question is worth asking
    because a structure only shows the first few sugars of a chain that
    continues past them, so step 03's answer does not settle it.
 
-   A complex N-linked glycan is a branched chain that can sweep
-   20-30 A from where it attaches, so the bands below are cautious:
+   A complex N-linked glycan is a branched chain of sugars that can
+   sweep 20-30 A from where it attaches, so the bands below are
+   deliberately cautious:
      under 15 A  — likely shadowed at least some of the time
      under 25 A  — within reach of an extended chain
      beyond that — probably clear
 
    | anchor | distance to N444 CB | assessment |
    |---|---|---|
-   | D416 | 11.3 A | LIKELY SHADOWED — read exposure as an upper bound |
+   | D416 | 11.3 A | likely shadowed — read exposure as an upper bound |
    | E421 | 18.2 A | possibly reached by an extended chain |
    | E424 | 27.1 A | probably clear |
    | H433 | 23.0 A | possibly reached by an extended chain |
@@ -147,26 +161,27 @@ Excluded as buried/unresolved: H418 (buried)
    no anchor within 5 A of a sugar atom present in the file.
    Anchors flagged: D416, E421, H433
 
-   This is a flagged risk, not a resolved question, and it cuts both
-   ways: a glycan is flexible, so 'within reach' means 'sometimes
-   covered', not 'blocked'. It cannot be settled from a crystal
-   structure, and we are not going to pretend otherwise. Its practical
-   use is as a tie-breaker between otherwise equivalent clusters.
+   This is a flagged risk rather than a settled question, and it cuts
+   both ways: a glycan is flexible, so 'within reach' means 'covered
+   some of the time' rather than 'blocked'. A crystal structure cannot
+   settle it either way. In practice we use it as a tie-breaker between
+   clusters that are otherwise equally good.
 
-6. VERDICT
+6. Verdict
 
-   The 415-466 epitope SURVIVES the structure check.
+   The 415-466 epitope survives the structure check.
 
    4 anchors cluster within 25 A (max internal span 22.6 A), against a minimum of 3.
    A single binder face can reach them, so the stacked switch the
    design depends on is geometrically possible.
 
    4 distinct cluster(s) of size 4 qualify, so the
-   design is not forced to one contact set. Comparing them on the
-   three things that matter:
+   design has a choice of contact set. Comparing them on the three
+   things that matter:
 
-   'within 25 A of N444' below is the attachment-point measure from
-   section 5, not step 03's 5 A sugar-atom check.
+   The last column uses the attachment-point measure from section 5,
+   at 15 A and 25 A. It is not step 03's 5 A check against the sugar
+   atoms present in the file, which found no anchor within 5 A.
 
    | cluster | span A | target His? | cetuximab overlap | within 25 A of N444 |
    |---|---|---|---|---|
@@ -175,36 +190,37 @@ Excluded as buried/unresolved: H418 (buried)
    | H433, E455, D458, D460 | 23.6 | H433 | H433 | H433 |
    | D416, E424, E455, D460 | 24.6 | none | none | D416 |
 
-   THE METHOD-NOVELTY CLAIM SURVIVES, but it is a CHOICE, not a
-   free consequence of the epitope. Specifically:
+   The method-novelty claim survives, but we have to choose it: the
+   epitope allows it rather than guaranteeing it. The clusters that
+   deliver it are:
 
      H433, E455, D458, D460 (span 23.6 A) contains H433
 
    Pairing an acidic binder residue against a target histidine is
-   what requires reasoning about the TARGET's protonation rather
-   than only the binder's, which is the part off-the-shelf
-   pipelines do not do. Choosing a cluster without a target
-   histidine would give up that claim.
+   what forces us to reason about the protonation of the target
+   itself, not just of the binder, and that is the part
+   off-the-shelf pipelines do not do. Choosing a cluster without a
+   target histidine would give the claim up.
 
-   THE TRADE-OFF, stated plainly. The clusters containing a target
-   histidine are the ones that overlap cetuximab's footprint,
-   because H433 is the single anchor cetuximab touches. So the
+   The trade-off. The clusters containing a target histidine are
+   exactly the ones that overlap cetuximab's footprint, because
+   H433 is the single anchor cetuximab touches. So the
    mechanistically distinctive choice is also the one most open to
    a 'this is cetuximab's epitope' objection. The counter-argument
-   is that cetuximab contacts H433 with no pH dependence at all,
-   so sharing one residue with it is not sharing a mechanism --
-   but that is an argument to make in the write-up, not a
-   computed result, and it should not be presented as one.
+   is that cetuximab contacts H433 with no pH dependence at all, so
+   sharing one residue with it is not sharing a mechanism. That
+   counter-argument is something to argue in the write-up; nothing
+   here computes it, and it should not be presented as a result.
 
    For reference, the tightest cluster (D416, E421, E424, E455) has 4 of
    4 anchors outside cetuximab's footprint.
 
-   WHAT THIS DOES NOT ESTABLISH. Geometric reachability is a
-   necessary condition, not a sufficient one. It does not show that a
-   foldable binder exists that presents the right partner residues in
-   the right orientations, nor that the resulting switch is large
-   enough to clear the assay's detection floor at pH 7.4. Those are
-   design and prediction questions, still open.
+   What this does not establish. Geometric reachability is necessary
+   but not sufficient: it does not show that a foldable binder exists
+   which presents the right partner residues in the right
+   orientations, nor that the resulting switch is large enough to clear
+   the assay's detection floor at pH 7.4. Those are design and
+   prediction questions, and both are still open.
 
 Wrote data/derived/05-anchor-distance-matrix.csv
 Wrote data/derived/05-anchor-clusters.csv
@@ -212,6 +228,6 @@ Wrote explorer/anchor-viewer.html  (open in a browser)
 Wrote explorer/anchor-view.pml     (PyMOL: run this file)
 
 ========================================================================
-RESULT: largest cluster = 4 anchors within 25 A. Epitope SURVIVES.
+RESULT: largest cluster = 4 anchors within 25 A. Epitope survives.
 ========================================================================
 ```

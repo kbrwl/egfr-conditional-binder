@@ -25,6 +25,13 @@ One protein chain can contain several, strung together like beads.
 same amino acid, after lining them up. 87% identity means they agree at 87
 positions out of every 100.
 
+**MSA (multiple sequence alignment)** — the same idea as an alignment but with many
+sequences at once, usually the same protein from many different species. Useful
+because a position that has stayed the same across millions of years of evolution is
+usually one the protein cannot afford to change, which tells you it matters. Several
+structure-prediction tools take one as input. We have not needed one yet; our
+comparison is between exactly two sequences, human and mouse.
+
 **Alignment** — lining up two sequences position by position so you can compare
 them, inserting gaps where one has extra residues. The comparison is only
 meaningful after alignment; you cannot just compare position 1 to position 1.
@@ -63,7 +70,8 @@ Thirty weak contacts at once makes a grip that lasts.
 designing.
 
 **Affinity / K_D (dissociation constant)** — how tightly a binder grips,
-measured as a concentration. Confusingly, lower is stronger. Micromolar (µM) is
+measured as a concentration, where a lower number means a tighter grip.
+Micromolar (µM) is
 a weak grip. Nanomolar (nM) is drug-grade, a thousand times tighter.
 Picomolar (pM) is a vise.
 
@@ -75,7 +83,7 @@ existing molecule. The competition requires it.
 
 **Zero-shot** — submitted without ever having been tested in a lab and refined.
 A separate requirement from de novo, and easy to conflate with it. De novo is
-about *where the design came from* (invented, not copied). Zero-shot is about
+about where the design came from: invented rather than copied. Zero-shot is about
 *what happened to it afterwards* (no experimental feedback loop). A design could
 be de novo but not zero-shot — invented from scratch, then improved over three
 rounds of lab measurement. The competition forbids that: one shot, predicted
@@ -83,9 +91,9 @@ only. It is also why the write-up carries so much weight, since nobody has
 measurements to show.
 
 **Molecule size categories** — the competition judges these separately, so the
-category is a deliberate choice, not a by-product. **Microbinder** under 40
-amino acids; **minibinder** 40–100; **large binder** over 100; plus
-**nanobody** and **antibody** as their own categories. Overall length limit
+category is a deliberate choice rather than a by-product. Microbinder under 40
+amino acids; minibinder 40–100; large binder over 100; plus
+nanobody and antibody as their own categories. Overall length limit
 10–250.
 
 **Detection floor** — the weakest binding an assay can still see. Anything
@@ -94,12 +102,18 @@ weaker is reported as nothing at all. This is what makes the pH-selectivity requ
 about landing underneath the floor, not about the gap between two numbers. A
 binder at 10 nM / 200 nM has a 20-fold ratio and still fails, because 200 nM is
 comfortably visible. A binder at 2 µM / nothing has a worse ratio on paper and
-passes. Stronger is therefore not better here, which inverts the default
-objective of every standard design pipeline.
+passes. Aiming for stronger binding therefore works against us here, which is
+the opposite of what every standard design pipeline does by default.
 
 **Antibody** — a Y-shaped protein the immune system makes. The two tips of the Y
 are the gripping surfaces; the body can generate billions of variants of just
 those tips.
+
+**VH and VL** — the two chains that make up the gripping end of an antibody: VH is
+the heavy chain's variable part, VL the light chain's. "Variable" because these are
+the regions the immune system varies to produce different grips, while the rest
+stays the same. The competition asks for a Fab to be submitted as the two written
+together with a colon between them, `{VH}:{VL}`.
 
 **scFv / Fab** — two standard ways of packaging just the gripping part of an
 antibody into a smaller molecule. Both are allowed submission formats.
@@ -171,7 +185,7 @@ both pH values. Useful for plain affinity, useless for the switch, since
 nothing about them changes between 7.4 and 6.5.
 
 **Contact pair** — one position on the binder facing one position on the target.
-An interface is a *patterned* surface, not a uniformly charged one, and
+An interface is a patterned surface rather than a uniformly charged one, and
 electrostatic attraction falls off fast with distance, so each pair behaves
 more or less independently. A positive charge twenty ångströms away barely
 affects a given pair. This is why the design rule is positional rather than
@@ -204,6 +218,15 @@ it contains the whole extracellular region rather than domain III alone, which
 lets us also ask whether neighbouring domains cover our epitope. It is also the
 entry the competition page itself references.
 
+**CA and CB (alpha carbon, beta carbon)** — two specific atoms named by their
+position in a residue. Every amino acid has a CA: it is the atom on the protein's
+backbone, the continuous chain running through the whole molecule, so a list of CA
+positions is a compact way of describing a protein's overall shape. CB is the first
+atom of the side chain, the part that differs between amino acid types and sticks out
+from the backbone. Where a side chain is too mobile to locate in a structure, CB is
+sometimes used as a stand-in for it, which is approximate because the part that
+actually forms a charge pair can be several angstroms further out.
+
 **Heavy atom** — any atom in a structure except hydrogen. Hydrogen is too light
 to register in most crystal structures, so it is usually simply absent from the
 file. "Heavy-atom distance" therefore means "distance between the atoms we
@@ -228,7 +251,8 @@ that amino acid type could possibly expose if it were fully unobstructed. The
 result runs from about 0 to about 1. This normalisation is necessary because raw
 area is not comparable between residue types: tryptophan is a far bigger amino
 acid than glycine, so 50 Å² of exposed tryptophan is mostly buried while 50 Å² of
-exposed glycine is wide open. **RSA is the number to read; raw SASA is not.**
+exposed glycine is wide open. Read the relative figure; the raw area on its own
+is misleading.
 
 **Tien et al. 2013 maxima** — the reference table of those theoretical maximum
 areas, one per amino acid type, from Tien, Meyer, Sydykova, Spielman and Wilke,
@@ -238,7 +262,8 @@ used has to be stated for a number to be reproducible.
 
 **Exposed / partial / buried** — the conventional RSA bands: exposed at 0.25 and
 above, buried at 0.05 and below, partially exposed in between. Worth being clear
-that these cutoffs are **conventions, not physical constants** — nothing changes
+that these cutoffs are conventions agreed for convenience rather than physical
+constants — nothing changes
 in the molecule at 0.25. A residue at 0.24 and one at 0.26 are essentially the
 same thing, so values near a boundary should be read as ambiguous rather than
 rounded into a verdict.
@@ -255,6 +280,15 @@ across a domain is a good match.
 
 **AlphaFold** — software that predicts a protein's 3D structure from its
 sequence alone. Outputs coordinates plus a confidence score.
+
+**ipTM (interface predicted TM-score)** — a confidence score that structure
+prediction software reports for a complex of two proteins, running from 0 to 1, where
+higher is better. It answers "how sure is the model that these two pieces sit
+together the way it has drawn them", as opposed to how sure it is about each piece on
+its own. Commonly used as the first filter on designed binders, on the reasoning that
+if the software cannot confidently place the binder on the target, the design is
+unlikely to work. It is a statement about the model's confidence and not a
+measurement of binding.
 
 **pAE interaction (predicted aligned error at the interface)** — a confidence
 number from structure prediction. Lower is better: it means the model is

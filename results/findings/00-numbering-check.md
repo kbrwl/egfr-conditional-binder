@@ -2,8 +2,9 @@
 
 Computed output of `analysis/00_numbering_check.py`. Do not hand-edit.
 
-All residue numbers in this project are positions in the full UniProt
-record (human P00533). The official challenge constructs are the mature
+All residue numbers in this project are positions in the full record for
+human EGFR in UniProt, the public archive of protein sequences, where that
+record is P00533. The official challenge constructs are the mature
 extracellular region, UniProt 25-645, so:
 
     UniProt position = challenge-construct position + 24
@@ -13,8 +14,8 @@ extracellular region, UniProt 25-645, so:
 NUMBERING CONVENTION CHECK
 ========================================================================
 
-Convention: all residue numbers in this project are positions in the
-FULL UniProt record. UniProt position = challenge position + 24.
+Convention: every residue number in this project is a position in the
+full UniProt record. UniProt position = challenge position + 24.
 
 1. Record lengths
   [PASS] human UniProt P00533 full length: 1210 aa (expected 1210)
@@ -31,16 +32,16 @@ FULL UniProt record. UniProt position = challenge position + 24.
   [PASS] UniProt 25-645 slice: T
   [PASS] challenge construct, index 390: T
 
-   CAVEAT: the mouse challenge construct is 623 aa, two longer than
-   mouse UniProt 25-645 (621 aa). Mouse carries a 2-residue insertion
-   near human-equivalent position 638. The +24 offset is therefore only
-   valid UPSTREAM of that insertion. Domain III (310-480) and our
-   epitope (415-466) sit well upstream, so the offset is safe here --
-   but do not reuse it for mouse positions past ~638 without rechecking.
+   Caveat: the mouse challenge construct is 623 amino acids, two longer
+   than mouse UniProt 25-645 (621 aa), because mouse carries a 2-residue
+   insertion near the position matching human 638. The +24 offset holds
+   only upstream of that insertion. Domain III (310-480) and our epitope
+   (415-466) sit well upstream, so the offset is safe for the work here.
+   Do not reuse it for mouse positions past about 638 without rechecking.
 
 4. The eight pH anchors, read in both numbering systems
-   (identity must also match between human and mouse -- these anchors
-    are the ones we claim are cross-species conserved)
+   (the residue must also be the same in human and mouse, because these
+    are the anchors we claim are conserved across the two species)
   [PASS] anchor D416: UniProt=D challenge=D mouse=D | acidic (binder gets HIS)
   [PASS] anchor H418: UniProt=H challenge=H mouse=H | target HIS (binder gets D/E)
   [PASS] anchor E421: UniProt=E challenge=E mouse=E | acidic (binder gets HIS)

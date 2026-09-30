@@ -10,9 +10,10 @@ Last updated: 30 September 2026 (numbering convention, structure-check results)
 
 Anthropic x Adaptyv Protein Design Competition, Challenge 1 (of 5).
 Official page: proteinbase.com/competitions/anthropic-adaptyv-2026/challenges/egfr
-Deadline **4 October 2026, 23:59 AoE**.
+Deadline 4 October 2026, 23:59 AoE (Anywhere on Earth: the deadline has not passed
+until it has passed in every time zone, which is UTC-12).
 
-Four further challenges follow weekly until **1 November 2026**. Everything built
+Four further challenges follow weekly until 1 November 2026. Everything built
 here — the analysis scripts, the numbering guard, the findings format — should be
 reusable against a new target by swapping the sequences and the epitope, not
 rewritten. Treat single-use code as a defect.
@@ -25,9 +26,10 @@ github.com/anthropics/uplifting-biomolecular-modeling. Full copy in
 
 Design binders that:
 
-1. bind the extracellular region of human EGFR (residues 25–645, 621 aa)
+1. bind the extracellular region of human EGFR (residues 25–645, 621 aa, where aa
+   stands for amino acids)
 2. also bind mouse EGFR
-3. bind human EGFR at pH 6.5 with **no detectable binding** at pH 7.4
+3. bind human EGFR at pH 6.5 with no detectable binding at pH 7.4
 
 Ranking priority, official: pH selectivity first, mouse cross-reactivity second,
 affinity third. Organisers state explicitly that a weak but clearly pH-sensitive
@@ -50,7 +52,7 @@ for disqualification.
 **Selection.** ~1500 designs screened per challenge, split 50% Track 1,
 25% Track 2, 25% Track 3. Track 1 takes each participant's own top 20.
 Tracks 2 and 3 pool all designs and a Claude workflow selects ~375 per track
-based on predicted design quality, design novelty **and method novelty**,
+based on predicted design quality, design novelty and method novelty,
 reading the documentation participants submit alongside their sequences.
 
 **Resources.** Claude and Modal credits go to selected Track 1 and 2 teams only;
@@ -67,14 +69,17 @@ Deliverable is sequences plus written methods. No lab work by us.
 ## Settled
 
 **Numbering convention: full UniProt P00533, always.**
-Every residue number in this project is a position in the full human UniProt
-record (1210 aa), where residues 1–24 are the signal peptide and the mature
+UniProt is the public archive of protein sequences; P00533 is its record for human
+EGFR. Every residue number in this project is a position in that full record, which
+is 1210 amino acids long, where residues 1–24 are the signal peptide and the mature
 extracellular region runs 25–645. The official challenge constructs are the
 mature region, so their position 1 is our position 25:
 
     UniProt position = challenge-construct position + 24
 
-Nothing in a FASTA file or a PDB file records which convention it uses, so a
+Nothing in a FASTA sequence file or a PDB structure file records which convention it
+uses — PDB being the Protein Data Bank, the public archive of measured
+three-dimensional structures — so a
 mix-up shifts every number by 24 with no error raised — the results just become
 wrong. Structure files are worse: PDB entries frequently number by the mature
 protein. **Any structure-derived numbering must be offset-checked empirically
@@ -94,21 +99,21 @@ This is where cetuximab and panitumumab bind, and what the organisers recommend.
 **Candidate epitope: residues 415–466.**
 52 consecutive positions, one conservative difference (S442G). Six acidic anchor
 residues for histidine pairing. Details in `alignment-findings.md`.
-Status: leading candidate, **conditional on the structure check passing**.
+Status: leading candidate, conditional on the structure check passing.
 
 **pH mechanism: charge pairing, decided per position.**
 Histidine is the only amino acid that switches charge between pH 7.4 and 6.5
 (neutral above, positive below). An interface is a patterned surface and each
 pair behaves independently, so the rule is positional:
 
-- opposite an acidic target residue (D/E) → put **histidine** on the binder
-- opposite a target histidine (H418, H433) → put **D or E** on the binder
+- opposite an acidic target residue (D/E) → put histidine on the binder
+- opposite a target histidine (H418, H433) → put D or E on the binder
 
-Both switch on as pH drops. Do **not** place histidine opposite H418 or H433 —
+Both switch on as pH drops. Do not place histidine opposite H418 or H433 —
 that pair switches off in the tumour and can cancel a correct pair elsewhere.
 
 Two known limits: the switch is partial rather than binary at pH 6.5, so use
-three or four pairs, not one; and a histidine's flipping point shifts with its
+three or four pairs rather than one; and a histidine's flipping point shifts with its
 neighbours, which is why no tool predicts pH selectivity reliably.
 
 **Track: Track 3 (open track).** Not a choice — applications for Tracks 1 and 2
@@ -130,7 +135,7 @@ quotas are per-track (50/25/25). The winner categories described by the
 organisers (highest affinity, most cross-reactive, most pH-sensitive) make no
 mention of tracks. Best reading: Track 3's disadvantage is getting screened, not
 the judging afterwards, meaning a tested design competes with professional lab
-submissions. Not stated anywhere. **Ask in the Proteinbase Slack channel.**
+submissions. Not stated anywhere. Ask in the Proteinbase Slack channel.
 
 **Strategy: compete where no established method exists.**
 Affinity optimisation is a solved-ish problem that well-resourced labs will win.
@@ -152,14 +157,14 @@ own H418 and H433 as anchors for acidic residues on our side requires reasoning
 about the target's protonation, which no standard pipeline does. This is worth
 pressing on and worth writing up in detail.
 
-**Strategy: the methods write-up is part of the submission, not paperwork.**
+**Strategy: treat the methods write-up as part of the submission.**
 In Track 3 we hold no reserved testing slot, so the submission competes in a
 pool. Selection runs all submissions through a Claude workflow weighing
 predicted design quality, design novelty and method novelty, reading the
 documentation submitted alongside the sequences. Organisers state selection
 will not rely on a single in silico metric. A clear written argument for the
 epitope choice and the positional charge-pairing rule is therefore the main
-available edge, not paperwork. Budget real time for it.
+available edge. Budget real time for it.
 
 **Sequence provenance verified, both species.** The human sequence (UniProt
 P00533, residues 25-645, 621 aa) is character-for-character identical to the
@@ -170,12 +175,12 @@ constructs, domain III still shows the same 16 differences, 415-466 still shows
 only S442G, and all eight anchors (D416, H418, E421, E424, H433, E455, D458,
 D460) are identical in both. Checked 30 September 2026.
 
-**Affinity target is deliberately marginal, not maximal.** The pH-selectivity
-requirement demands
-*no detectable binding* at pH 7.4 — a threshold, not a ratio. A design binding
-at 10 nM / 200 nM (20-fold selective) fails, because 200 nM is plainly
-detectable. A design binding at 2 uM / undetectable passes. Organisers confirm a
-weak but clearly pH-sensitive binder may outrank a strong non-selective one.
+**Aim for weak binding, deliberately.** The pH-selectivity requirement demands no
+detectable binding at pH 7.4, which is a threshold rather than a ratio: the pH 7.4
+state has to fall below what the instrument can see at all. A design binding at
+10 nM / 200 nM is twentyfold selective and fails, because 200 nM is easily detected.
+A design binding at 2 µM with nothing measurable passes. The organisers confirm that
+a weak but clearly pH-sensitive binder may outrank a strong non-selective one.
 Standard design pipelines maximise affinity by default, which produces exactly
 the failing case. **Do not accept the pipeline's built-in objective.** Target a
 baseline weak enough that the pH 7.4 state falls under the assay detection floor,
@@ -186,7 +191,7 @@ detection floor actually sits.** The threshold we are designing to is a number w
 have not been given. That is why we aim for a wide margin rather than a computed
 one, and why the write-up should say the margin is a judgement.
 
-**THE STRUCTURE CHECK PASSED. The 415–466 epitope is real.** Computed
+**The structure check passed; the 415–466 epitope is a real surface.** Computed
 30 September 2026 by `analysis/02`–`06`, all output in `results/findings/`.
 
 *Numbering.* Both 6ARU and 1NQL number by the mature protein: UniProt = PDB + 24,
@@ -199,11 +204,12 @@ no missing loops, so every position has an answer.
 
 *Exposure (step 03, on the receptor alone with the Fab removed).* **Seven of
 eight anchors are exposed or partially exposed.** H418 is buried in 6ARU
-(RSA 0.032) — but see the Open section, because 1NQL disagrees. D458 is
+(relative solvent accessibility, the share of a residue's surface that water can
+reach, 0.032) — but see the Open section, because 1NQL disagrees. D458 is
 classification-sensitive: it lands either side of the boundary depending on which
 published normalisation table is used, so its label is not robust. E421 and D458
-sit within 0.05 of a cutoff and should be read as near-boundary, not as their
-label.
+sit within 0.05 of a cutoff, so read them as near the boundary rather than as the
+label they were given.
 
 *Geometry (step 05).* **Four anchors cluster within 25 Å** (max span 22.6 Å),
 against a minimum of three. Distances measured between side-chain functional
@@ -214,16 +220,20 @@ H433/D458/D460 at 15.6 Å, which keeps a microbinder in play; below ~18 Å only 
 anchors fit, which is too few for a stacked switch.
 
 *Cetuximab's real footprint (step 04).* 24 EGFR residues contact the Fab. It
-touches 10 of our 52 residues (19.2%) and exactly **one** of our eight anchors,
+touches 10 of our 52 residues (19.2%) and exactly one of our eight anchors,
 H433. So we sit adjacent to and partly overlapping the druggable surface without
-reproducing it — the position we wanted for the novelty requirement.
+reproducing it. That is the position we were aiming for: near enough to block the
+same functional site, while most of our contact positions are ones cetuximab does
+not use.
 
-*Conformation (step 06).* The epitope is **accessible in both published
-conformations**, and slightly *more* accessible in the closed one (mean RSA 0.173
-in 6ARU, 0.189 in 1NQL). The comparison is not vacuous: with domain III
-superposed (RMSD 1.08 Å, same fold), domains I–II sit 23.4 Å apart between the
-two structures, so these genuinely are different global arrangements. EGF contacts
-none of our block.
+*Conformation (step 06).* The epitope is accessible in both published
+conformations, and slightly more accessible in the closed one: mean relative solvent
+accessibility across the block is 0.173 in 6ARU and 0.189 in 1NQL. The comparison is
+meaningful because the two structures really are in different shapes. Laying domain
+III of one onto domain III of the other matches them to within about one angstrom on
+average, so the domain itself has the same fold, and once matched that way the
+domain I–II region sits 23.4 Å away from its counterpart, which is a large
+rearrangement. EGF contacts none of our block.
 
 *The second half of the epitope rests against domain IV (step 06, corrected
 1 October 2026).* 19 residues in 6ARU and 18 in 1NQL, spanning roughly 446–466,
@@ -231,7 +241,7 @@ are within 4.5 Å of residues outside domain III, and the partners are in the
 481–524 range, which is domain IV. The two structures give nearly the same list at
 nearly the same distances, so this is a standing feature of how the protein folds
 rather than something the closed shape introduces — the original concern about the
-tether is still answered. Two anchors, **D458 and D460**, are in that group.
+tether is still answered. Two anchors, D458 and D460, are in that group.
 
 This does not change their accessibility numbers: step 03 measured those on the
 whole receptor chain with domain IV already present, so its effect is included.
@@ -249,12 +259,14 @@ ones. Corrected and recorded under Resolved.
 human/mouse difference inside our block, and step 04 shows it is in cetuximab's
 contact set — a real, used surface. A binder touching 442 risks species-specific
 behaviour at the one position where the species differ, which would undermine
-mouse cross-reactivity. Computed, not assumed.
+mouse cross-reactivity. This came out of the contact calculation rather than being
+assumed.
 
 **New risk: the epitope carries a sugar chain.** N444 is an N-glycosylation site
 *inside* 415–466 — step 03 measured 1.44 Å from N444 to a NAG, which is a
-covalent bond, not proximity. All accessibility numbers above are for the bare
-protein, so for anchors near N444 they are **upper bounds**. D416 (11.3 Å from
+covalent bond rather than two things happening to sit close. All accessibility
+numbers above are for the bare
+protein, so for anchors near N444 they are upper bounds. D416 (11.3 Å from
 N444) is most affected; E421 (18.2 Å) and H433 (23.0 Å) are within reach of an
 extended chain. This cannot be settled from a crystal structure, which resolves
 only the innermost ordered sugars.
@@ -273,9 +285,9 @@ not settled.**
 
 It matters more than any other open item, because H418 is a *target histidine* and
 therefore carries the method-novelty claim. Computed 30 September 2026: if H418 is
-usable, the largest cluster becomes **five** anchors — D416, H418, E421, E424,
+usable, the largest cluster becomes five anchors — D416, H418, E421, E424,
 E455 at 24.0 Å span — which beats every 4-anchor option, contains a target
-histidine, and is **entirely outside cetuximab's footprint**. H418–H433 is 25.2 Å,
+histidine, and is entirely outside cetuximab's footprint. H418–H433 is 25.2 Å,
 just over the cutoff, so the two histidines cannot both be reached; it is one or
 the other.
 
@@ -331,7 +343,7 @@ write-up, **not a computed result**, and must not be presented as one.
 large binder >100 aa, nanobody or antibody. Winners are announced per category, so
 a less crowded category may be worth choosing deliberately. Not yet chosen, but
 the geometry now constrains it: a 4-anchor cluster spans 22.6–24.6 Å, which points
-to a **minibinder (40–100 aa)** as the default. A microbinder (<40 aa) is viable
+to a minibinder (40–100 aa) as the default. A microbinder (<40 aa) is viable
 only against the tightest triad (H433/D458/D460 or E455/D458/D460, both 15.6 Å)
 and would carry three pairs rather than four — thinner margin on a switch that is
 already partial.
@@ -343,7 +355,7 @@ Prefer clusters away from N444 where the choice is otherwise even.
 
 **What proportion of receptor is open vs closed in the assay buffer.** Step 06
 established the epitope is accessible in *both* published conformations, which
-removes the specific fear that domain II covers our face. It does **not** give the
+removes the specific fear that domain II covers our face. It does not give the
 equilibrium in the assay, which is the number that would actually matter, and
 which two crystal snapshots cannot supply. Reduced from a potential blocker to an
 unquantified source of variance.
@@ -410,15 +422,15 @@ mostly DISPROVED.** Computed in `analysis/04_cetuximab_contacts.py`: any EGFR
 heavy atom within 4.5 Å of any Fab heavy atom in 6ARU, using a spatial index.
 
 The speculation was that Q390R, E412D, R414W and K467R explain cetuximab's failure
-on mouse EGFR. Computed result: **1 of the 4 confirmed.**
+on mouse EGFR. Computed result: 1 of the 4 confirmed.
 
-- **K467R — confirmed in contact** (3.39 Å from Fab chain C).
-- **Q390R, E412D, R414W — NOT in contact. Disproved.** None of the three is within
+- K467R — confirmed in contact (3.39 Å from Fab chain C).
+- Q390R, E412D and R414W — not in contact, and therefore disproved. None of the three is within
   4.5 Å of the Fab. Recorded as disproved rather than dropped.
-- **Two the speculation missed:** R377K (3.61 Å) and S442G (3.26 Å) *are* in the
+- Two the speculation missed: R377K (3.61 Å) and S442G (3.26 Å) are in the
   contact set.
 
-So the computed explanation is **R377K, S442G and K467R** — three of the sixteen
+So the computed explanation is R377K, S442G and K467R — three of the sixteen
 domain III species differences lie in cetuximab's footprint. This replaces the
 remembered version.
 
@@ -440,7 +452,7 @@ is "Structure of the extracellular domain of human epidermal growth factor (EGF)
 receptor in an inactive (low pH) complex with EGF", X-ray at 2.8 Å, containing an
 EGFR extracellular-region entity (612 residues observed, 99.8% identity to human
 EGFR) plus a 53-residue EGF entity. Confirmed suitable. Two circumstances worth
-carrying: it was solved at **low pH**, and with **EGF bound**. Both are
+carrying: it was solved at low pH, and with EGF bound. Both are
 crystallisation conditions rather than statements about our assay, and step 06
 separates ligand occlusion from conformational occlusion for exactly that reason.
 
@@ -455,15 +467,16 @@ Open as a variance source rather than a blocker.
 ## Ruled out
 
 **H418 as a confidently usable anchor, on the 6ARU reading alone.** Ruled out by
-step 03 (RSA 0.032, buried), then *un*-ruled-out by step 06, which found it
-partially exposed in 1NQL. Currently ambiguous, not ruled out. Recorded here
-because the ruling was made and then withdrawn, and that sequence should be
-visible rather than tidied away.
+step 03 (relative solvent accessibility 0.032, buried), then reinstated by step 06,
+which found it
+partially exposed in 1NQL. It is currently ambiguous rather than ruled out.
+Recorded here because the ruling was made and then withdrawn, and that sequence is
+worth keeping visible.
 
 **Q390R, E412D and R414W as the explanation for cetuximab's species failure.**
 Disproved by computation — none is in the contact set. See Resolved above.
 
-**The fallback epitopes 394–411 and 331–347 — not needed, not evaluated.** These
+**The fallback epitopes 394–411 and 331–347 — never evaluated.** These
 were the contingency if 415–466 failed the structure check. It passed, so they were
 never characterised. They remain available and untested if the H418 question or the
 cluster choice later makes 415–466 look worse than it does now. `analysis/03`–`05`
@@ -474,7 +487,7 @@ changing those.
 
 ## Next actions, in order
 
-Steps 1–4 of the previous list are **done** — see Settled, "The structure check
+Steps 1–4 of the previous list are done — see Settled, "The structure check
 passed". Reproducible via `analysis/00`–`06`.
 
 1. **Resolve the H418 question.** Highest value per unit effort of anything
@@ -496,7 +509,7 @@ passed". Reproducible via `analysis/00`–`06`.
    binder contact position faces, then apply the positional rule: histidine
    opposite acidic targets, acidic opposite the target histidine. Keep versions
    where at least three correct pairs form and the fold still holds. Explicitly
-   **reject** any candidate with a histidine facing H418 or H433. Additionally
+   reject any candidate with a histidine facing H418 or H433. Additionally
    reject any candidate contacting position 442 (see Settled).
 7. **Hold affinity down, deliberately.** Re-read the marginal-not-maximal rule in
    `CLAUDE.md` before filtering candidates, because the pipeline's default

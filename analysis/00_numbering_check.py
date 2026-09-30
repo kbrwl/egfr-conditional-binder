@@ -1,33 +1,37 @@
 #!/usr/bin/env python3
 """
-00_numbering_check.py — guard against the 24-residue offset trap.
+00_numbering_check.py — check that residue numbers mean what we think they mean.
 
 WHAT THIS CHECKS AND WHY IT MATTERS
 -----------------------------------
-This project refers to residues by their position in the full UniProt record
-P00533 (human EGFR), which is 1210 amino acids long. In that record, residues
-1-24 are the signal peptide -- a short leader sequence that is cut off and
-thrown away when the protein is manufactured, so it is not present in the
-mature protein that actually sits on the cell surface.
+This project refers to residues (the individual building blocks of a protein) by
+their position in the full record P00533 for human EGFR in UniProt, the public
+protein sequence archive. That record is 1210 amino acids long (aa = amino
+acids). In it, residues 1-24 are the signal peptide: a short leader sequence
+that is cut off and thrown away when the protein is manufactured, so it is
+absent from the mature protein that sits on the cell surface.
 
-The official competition constructs are the MATURE extracellular region:
+The official competition constructs are the mature extracellular region,
 UniProt residues 25-645. Their position 1 is our position 25.
 
   UniProt position = challenge-construct position + 24
 
-Nothing in a FASTA file records which convention it uses. If we ever read a
+A FASTA file -- the plain-text format sequences are stored in -- records nothing
+about which of the two conventions its numbers follow. If we read a
 challenge-construct position as a UniProt position, every residue number in the
-project shifts by 24 and every result is silently wrong -- no error, no crash,
-just wrong. This script asserts the convention holds, so that failure is loud.
+project shifts by 24 and every result is quietly wrong: no error and no crash,
+just wrong answers. This script asserts the convention holds, so that kind of
+failure is loud instead.
 
 It verifies:
   1. Both challenge constructs have the expected length (human 621, mouse 623).
   2. The human challenge construct is an exact substring of UniProt 25-645.
   3. UniProt position 415 is threonine (T), reached three independent ways.
-  4. All eight pH anchors read as expected in BOTH numbering systems.
+  4. All eight pH anchors read as expected in both numbering systems.
 
 Run standalone:  python analysis/00_numbering_check.py
-Exit code 0 = convention holds. Non-zero = STOP, do not run anything else.
+Exit code 0 means the convention holds. Anything else means stop and run nothing
+else until it is fixed.
 """
 
 import sys
@@ -46,9 +50,12 @@ SIGNAL_PEPTIDE_LEN = 24
 # Mature extracellular region, in UniProt numbering.
 ECD_START, ECD_END = 25, 645
 
-# The eight pH-switch anchors, in UniProt numbering, with expected identity.
-# Acidic (pair with a histidine on the binder): D416 E421 E424 E455 D458 D460
-# Target histidines (pair with D or E on the binder): H418 H433
+# The eight residues the pH switch is built around, in UniProt numbering, with the
+# residue we expect to find at each one. Histidine (H) is the only amino acid whose
+# charge changes between pH 7.4 and pH 6.5, so it is what does the switching.
+# Acidic, always negative -- these get a histidine facing them on the binder:
+#   D416 E421 E424 E455 D458 D460
+# Histidines on the target -- these get a D or an E facing them: H418 H433
 ANCHORS = {
     416: "D", 418: "H", 421: "E", 424: "E",
     433: "H", 455: "E", 458: "D", 460: "D",
@@ -56,7 +63,7 @@ ANCHORS = {
 
 
 def read_fasta(path):
-    """Return {header_without_'>': sequence} preserving file order."""
+    """Read a FASTA file into {header without its leading '>': sequence}, in file order."""
     records, header, chunks = {}, None, []
     for line in path.read_text().splitlines():
         line = line.strip()
@@ -107,8 +114,8 @@ def main():
     emit("NUMBERING CONVENTION CHECK")
     emit("=" * 72)
     emit()
-    emit("Convention: all residue numbers in this project are positions in the")
-    emit("FULL UniProt record. UniProt position = challenge position + 24.")
+    emit("Convention: every residue number in this project is a position in the")
+    emit("full UniProt record. UniProt position = challenge position + 24.")
     emit()
 
     emit("1. Record lengths")
@@ -122,14 +129,15 @@ def main():
           f"{len(mouse_chal)} aa (expected 623)")
     emit()
 
-    # Slice the UniProt record to the mature ECD. Python is 0-indexed and slice
-    # ends are exclusive, so UniProt residues 25..645 are [24:645].
+    # Cut the UniProt record down to the mature extracellular region. Python counts
+    # from 0 and leaves the end of a slice out, so UniProt residues 25..645 are
+    # written [24:645].
     human_ecd = human_full[ECD_START - 1:ECD_END]
     emit("2. Does the official human construct equal UniProt 25-645?")
     check("slice length", len(human_ecd) == 621, f"{len(human_ecd)} aa")
     identical = human_ecd == human_chal
     check("character-for-character identity", identical,
-          "identical" if identical else "DIFFERS -- provenance broken")
+          "identical" if identical else "differs -- the construct did not come from this record")
     if not identical:
         diffs = [(i + ECD_START, a, b)
                  for i, (a, b) in enumerate(zip(human_ecd, human_chal)) if a != b]
@@ -146,17 +154,17 @@ def main():
     check("challenge construct, index 390", via_chal == "T", f"{via_chal}")
     emit()
 
-    emit("   CAVEAT: the mouse challenge construct is 623 aa, two longer than")
-    emit("   mouse UniProt 25-645 (621 aa). Mouse carries a 2-residue insertion")
-    emit("   near human-equivalent position 638. The +24 offset is therefore only")
-    emit("   valid UPSTREAM of that insertion. Domain III (310-480) and our")
-    emit("   epitope (415-466) sit well upstream, so the offset is safe here --")
-    emit("   but do not reuse it for mouse positions past ~638 without rechecking.")
+    emit("   Caveat: the mouse challenge construct is 623 amino acids, two longer")
+    emit("   than mouse UniProt 25-645 (621 aa), because mouse carries a 2-residue")
+    emit("   insertion near the position matching human 638. The +24 offset holds")
+    emit("   only upstream of that insertion. Domain III (310-480) and our epitope")
+    emit("   (415-466) sit well upstream, so the offset is safe for the work here.")
+    emit("   Do not reuse it for mouse positions past about 638 without rechecking.")
     emit()
 
     emit("4. The eight pH anchors, read in both numbering systems")
-    emit("   (identity must also match between human and mouse -- these anchors")
-    emit("    are the ones we claim are cross-species conserved)")
+    emit("   (the residue must also be the same in human and mouse, because these")
+    emit("    are the anchors we claim are conserved across the two species)")
     rows = []
     for pos in sorted(ANCHORS):
         want = ANCHORS[pos]
@@ -197,8 +205,9 @@ def main():
     (FINDINGS / "00-numbering-check.md").write_text(
         "# Numbering convention check\n\n"
         "Computed output of `analysis/00_numbering_check.py`. Do not hand-edit.\n\n"
-        "All residue numbers in this project are positions in the full UniProt\n"
-        "record (human P00533). The official challenge constructs are the mature\n"
+        "All residue numbers in this project are positions in the full record for\n"
+        "human EGFR in UniProt, the public archive of protein sequences, where that\n"
+        "record is P00533. The official challenge constructs are the mature\n"
         "extracellular region, UniProt 25-645, so:\n\n"
         "    UniProt position = challenge-construct position + 24\n\n"
         "```\n" + "\n".join(lines) + "\n```\n"

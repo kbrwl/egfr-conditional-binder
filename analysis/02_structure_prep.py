@@ -4,35 +4,37 @@
 
 WHAT THIS DOES AND WHY IT MATTERS
 ---------------------------------
-Steps 00 and 01 compared letters in a row. That tells us what each residue IS.
-It cannot tell us which direction a residue POINTS, and domain III folds into a
-solenoid -- a spiral-staircase shape -- in which residues adjacent in the
+Steps 00 and 01 compared letters in a row. That tells us what each residue is,
+but not which direction it points, and domain III folds into a solenoid -- a
+spiral-staircase shape -- in which residues that sit next to each other in the
 sequence can face opposite ways. To find out which of our eight anchors a binder
 could actually reach, we need measured 3D coordinates.
 
-6ARU is the Protein Data Bank entry for the EGFR extracellular region bound to a
-cetuximab Fab mutant. A "Fab" is the gripping arm of an antibody, cut free of the
-rest. We use 6ARU rather than 1YY9 because it contains the WHOLE extracellular
-region rather than domain III alone, which additionally lets step 06 ask whether
-neighbouring domains cover our epitope. It is also the entry the competition page
-itself references.
+6ARU is an entry in the Protein Data Bank (PDB), the public archive of measured
+3D protein structures. It holds the EGFR extracellular region bound to a mutant
+cetuximab Fab -- a Fab is the gripping arm of an antibody, cut free of the rest.
+We use 6ARU rather than 1YY9 because it contains the whole extracellular region
+rather than domain III alone, which also lets step 06 ask whether neighbouring
+domains cover our epitope. It is the entry the competition page references too.
 
-THE CRITICAL FIRST STEP: THE NUMBERING OFFSET
----------------------------------------------
+THE NUMBERING OFFSET
+--------------------
 A PDB file carries its own residue numbers, and there is no rule about which
-convention they follow. Structures of secreted proteins very often number by the
-MATURE protein -- residue 1 = UniProt residue 25 -- because that is the molecule
-that was actually crystallised. Nothing in the file records the choice.
+convention they follow. Structures of secreted proteins are very often numbered
+by the mature protein -- residue 1 = residue 25 in UniProt, the public protein
+sequence archive -- because the mature protein is what was actually crystallised.
+Nothing in the file records the choice.
 
-If we assume wrongly, every number in steps 03-06 shifts by 24 positions and
-NOTHING RAISES AN ERROR. We would compute the solvent accessibility of the wrong
-residues, confidently, and design against a surface that does not exist.
+Assume wrongly and every number in steps 03-06 shifts by 24 positions, with no
+error raised anywhere. We would compute the solvent-accessible surface area (how
+much of a residue's surface water can reach) of the wrong residues, confidently,
+and design against a surface that does not exist.
 
 So this script does not assume. It extracts the receptor chain's observed
 sequence from the coordinates, aligns that against the human UniProt sequence,
-and derives the offset empirically, position by position. It then verifies the
-result by checking that our eight anchors really are the amino acids we expect.
-If any disagrees, the script stops.
+and works the offset out position by position from that alignment. It then
+verifies the result by checking that our eight anchors really are the amino acids
+(aa) we expect. If any disagrees, the script stops.
 
 It also identifies which chain is which, from the file's own annotation rather
 than from assumption, and reports which residue ranges are actually resolved.
@@ -102,7 +104,8 @@ def download(url, dest):
 def parse_compnd(pdb_path):
     """Read the file's own COMPND annotation: molecule name -> chain IDs.
 
-    This is the file's self-description, not our inference and not recall.
+    COMPND is the header record where the depositors wrote down what each chain is,
+    so taking the mapping from here means we never have to guess which chain is which.
     """
     text, current, mapping = pdb_path.read_text().splitlines(), None, {}
     raw = []
@@ -133,8 +136,9 @@ class ChainSelect(Select):
         return chain.id in self.keep
 
     def accept_residue(self, residue):
-        # Keep only standard amino acids: drop waters, ions and glycans so the
-        # receptor-only file is a clean protein surface for the SASA step.
+        # Keep only standard amino acids: drop water, ions and glycans (attached
+        # sugar chains), so the file handed to the solvent-accessible surface area
+        # (SASA) step in 03 is bare protein surface.
         return is_aa(residue, standard=True)
 
 
@@ -176,8 +180,8 @@ def main():
     emit()
 
     compnd = parse_compnd(pdb_path)
-    emit("   Chain annotation from the file's own COMPND records")
-    emit("   (the file's self-description — not our inference):")
+    emit("   Chain annotation as recorded in the file's own COMPND records,")
+    emit("   which is how the depositors described each chain:")
     for c in sorted(compnd):
         emit(f"     chain {c}: {compnd[c]}")
     emit()
@@ -186,7 +190,7 @@ def main():
     structure = parser.get_structure(PDB_ID, str(pdb_path))
     model = structure[0]
     if len(structure) > 1:
-        emit(f"   NOTE: {len(structure)} models present; using the first.")
+        emit(f"   Note: {len(structure)} models present; using the first.")
         emit()
 
     human = read_human()
@@ -227,7 +231,8 @@ def main():
         emit(f"              annotation: {compnd.get(chain.id, '(none in file)')}")
     emit()
 
-    # The receptor is the chain that matches human EGFR. Decided by measurement.
+    # The receptor is whichever chain matches human EGFR, taken from the identity
+    # scores measured above rather than from the chain letter.
     ranked = sorted(chain_data.items(), key=lambda kv: -kv[1]["egfr_identity"])
     receptor_id = ranked[0][0]
     receptor_pct = ranked[0][1]["egfr_identity"]
@@ -235,7 +240,7 @@ def main():
 
     emit("3. Which chain is the receptor?")
     emit()
-    emit("   Decided by measurement, not by trusting the competition page.")
+    emit("   Answered by measuring each chain's identity to the human EGFR sequence.")
     check("receptor identified by EGFR identity",
           receptor_pct > 90,
           f"chain {receptor_id} at {receptor_pct:.1f}% — "
@@ -250,19 +255,21 @@ def main():
         emit(f"     chain {cid}: {compnd.get(cid, '(none in file)')} "
              f"— {len(chain_data[cid]['residues'])} residues")
     emit()
-    emit("   Heavy vs light assignment is taken from the file's COMPND annotation")
-    emit("   above. Steps 03-04 do not depend on which is which: contacts are")
-    emit("   computed against 'either Fab chain', and both are removed together")
-    emit("   for the receptor-only file.")
+    emit("   Which of the two Fab chains is the heavy one and which the light comes")
+    emit("   from the file's COMPND annotation above. Steps 03-04 do not depend on")
+    emit("   that: contacts are computed against 'either Fab chain', and both chains")
+    emit("   are removed together for the receptor-only file.")
     emit()
 
-    # ---- THE OFFSET, derived empirically ----
-    emit("4. THE NUMBERING OFFSET, derived empirically")
+    # ---- The offset, measured from the alignment rather than assumed ----
+    emit("4. The numbering offset, measured rather than assumed")
     emit()
     emit("   Method: align the receptor chain's observed sequence against the full")
     emit("   human UniProt sequence, then for every observed residue compute")
     emit("      offset = UniProt position - PDB residue number")
-    emit("   A single dominant value means one consistent convention.")
+    emit("   A single dominant value means the file follows one consistent")
+    emit("   convention. We measure it because nothing in the file records which")
+    emit("   convention that is, and guessing wrong shifts every later result.")
     emit()
 
     rec = chain_data[receptor_id]
@@ -295,11 +302,11 @@ def main():
           f"{share:.1f}% of aligned residues share offset {dominant_offset:+d}")
 
     if dominant_offset == 0:
-        interpretation = ("PDB numbering ALREADY EQUALS UniProt numbering. "
+        interpretation = ("PDB numbering already matches UniProt numbering. "
                           "No conversion needed.")
     elif dominant_offset == 24:
-        interpretation = ("PDB numbers by the MATURE protein. UniProt = PDB + 24. "
-                          "This is the trap the brief warned about.")
+        interpretation = ("PDB numbers by the mature protein, so UniProt = PDB + 24. "
+                          "This is the convention the brief warned about.")
     else:
         interpretation = (f"PDB uses an unexpected convention. "
                           f"UniProt = PDB + {dominant_offset}.")
@@ -308,18 +315,19 @@ def main():
 
     uniprot_to_pdb = {u: p for p, u in pdb_to_uniprot.items()}
 
-    # ---- VERIFY against the eight anchors ----
+    # ---- Verify against the eight anchors ----
     emit("5. Verification: are the eight anchors the residues we expect?")
     emit()
     emit("   This is the check that catches an offset error. If the offset were")
-    emit("   wrong by 24, these would read as the wrong amino acids.")
+    emit("   wrong by 24, these positions would read as the wrong amino acids, and")
+    emit("   the script stops rather than letting steps 03-06 run on them.")
     emit()
     anchor_rows = []
     for pos in sorted(ANCHORS):
         want = ANCHORS[pos]
         if pos not in uniprot_to_pdb:
             check(f"anchor {want}{pos}", False,
-                  "NOT RESOLVED in the structure — no coordinates")
+                  "not resolved in the structure — no coordinates for it")
             anchor_rows.append((pos, want, "", "", False, "unresolved"))
             continue
         pdb_num = uniprot_to_pdb[pos]
@@ -328,7 +336,7 @@ def main():
         ok = got == want
         check(f"anchor {want}{pos}", ok,
               f"PDB {receptor_id}/{res.get_resname()}{pdb_num} reads {got}"
-              f"{'' if ok else f' — EXPECTED {want}'}")
+              f"{'' if ok else f' — expected {want}'}")
         anchor_rows.append((pos, want, pdb_num, got, ok, "resolved"))
     emit()
 
@@ -363,18 +371,20 @@ def main():
           "all 52 residues have coordinates" if not epi_missing
           else f"{len(epi_missing)} missing: {epi_missing}")
     if epi_missing:
-        emit("   A missing residue means no coordinates and therefore NO ANSWER")
-        emit("   for that position in steps 03 and 05. Missing anchors cannot be")
-        emit("   assessed and must not be assumed usable.")
+        emit("   A missing residue has no coordinates, so steps 03 and 05 have no")
+        emit("   answer for that position. A missing anchor cannot be assessed, and")
+        emit("   must not be counted as usable on the strength of the sequence alone.")
     emit()
 
     # ---- Write receptor-only structure ----
     emit("7. Writing receptor-only structure for step 03")
     emit()
-    emit("   Step 03 must compute solvent accessibility on the receptor ALONE.")
-    emit("   Cetuximab is sitting on the very surface we care about, so computing")
-    emit("   on the complex would report our epitope as buried when it is merely")
-    emit("   covered by an antibody that will not be present in our assay.")
+    emit("   Step 03 measures solvent accessibility on the receptor by itself, so")
+    emit("   the Fab chains come out here. The alternative, measuring on the whole")
+    emit("   complex, was rejected because cetuximab sits on the very surface we")
+    emit("   care about: it would report our epitope as buried when it is only")
+    emit("   covered by an antibody that will not be present in our assay, and we")
+    emit("   would discard a workable epitope for that reason.")
     emit()
     io = PDBIO()
     io.set_structure(structure)
@@ -419,17 +429,20 @@ def main():
         emit("RESULT: PASSED.")
         emit(f"Receptor is chain {receptor_id}. "
              f"UniProt position = PDB residue number {dominant_offset:+d}.")
-        emit("All eight anchors verified as the expected amino acids.")
+        emit("All eight anchors read as the expected amino acids; steps 03-06 can proceed.")
     emit("=" * 72)
 
     FINDINGS.mkdir(parents=True, exist_ok=True)
     (FINDINGS / "02-structure-prep.md").write_text(
         f"# Structure preparation: PDB {PDB_ID}\n\n"
         "Computed output of `analysis/02_structure_prep.py`. Do not hand-edit.\n\n"
-        "Resolves the PDB-to-UniProt numbering offset empirically, identifies the\n"
-        "chains from the file's own annotation and from measured identity to human\n"
-        "EGFR, reports which residues are actually resolved, and writes a\n"
-        "receptor-only structure for the solvent-accessibility step.\n\n"
+        "Works out, by measurement rather than assumption, how the residue numbers\n"
+        "in this structure file relate to ours. PDB is the Protein Data Bank, the\n"
+        "public archive of measured three-dimensional structures; UniProt is the\n"
+        "public sequence archive our numbering follows. Also identifies which chain\n"
+        "is the receptor and which are the antibody, reports which residues the\n"
+        "structure actually resolves, and writes out a receptor-only file for the\n"
+        "accessibility step.\n\n"
         "```\n" + "\n".join(out) + "\n```\n"
     )
     return 1 if failures else 0

@@ -8,47 +8,61 @@ A binder is a single small object. It has one face, and that face can only press
 against one patch of the target. It cannot wrap around the protein to reach
 residues on opposite sides.
 
-So it is not enough for our anchors to be individually exposed, which is what
-step 03 established. They must also sit CLOSE TO ONE ANOTHER -- roughly within
-25 angstroms, which is about the span a small designed protein can cover with a
-single interface. If the survivors are scattered across different faces of the
-solenoid fold, then there is no single patch containing three or four of them,
-and the whole design premise fails. The epitope would be an artefact of reading
-a sequence left to right rather than a real surface.
+So individual exposure, which is what step 03 established, is not enough. The
+anchors also have to sit close to one another -- roughly within 25 angstroms,
+about the span a small designed protein can cover with a single interface. If the
+survivors are scattered across different faces of the solenoid fold (a long
+coiled repeat, so residues that are neighbours in the sequence can end up far
+apart in space), then no single patch contains three or four of them and the
+design premise fails. The epitope would be an artefact of reading a sequence left
+to right rather than a real surface.
 
-This step can therefore kill the epitope, and it is written to do that plainly if
-that is the answer, rather than to find a way to rescue it.
+This step can therefore end the 415-466 epitope. If that is the answer, the
+script reports it and names the fallback runs to try instead.
 
 WHICH ATOM TO MEASURE FROM
 --------------------------
-Not the backbone. The backbone is the protein's structural spine and is the same
-chemistry in every residue; it is not what forms a charge pair. What forms the
-pair is the tip of the side chain -- the charged functional group:
+Distances are measured between the tips of the side chains. The obvious
+alternative, measuring backbone to backbone, was rejected: the backbone is the
+protein's structural spine and is the same chemistry in every residue, so it says
+where the residues sit but not where their charges sit, and the charge can be
+several angstroms away from it. What forms a charge pair is the charged
+functional group at the end of the side chain:
 
-  aspartate (D): the carboxylate carbon, atom CG
-  glutamate (E): the carboxylate carbon, atom CD
-  histidine (H): the centroid of the five-membered imidazole ring
-                 (atoms CG, ND1, CD2, CE1, NE2), because the ring's charge is
-                 spread over it rather than sitting on one atom
+  aspartate (D): the carboxylate carbon, atom CG -- side-chain atoms are named by
+                 how far out along the chain they sit, so CG is a specific carbon
+  glutamate (E): the carboxylate carbon, atom CD, one position further out again
+  histidine (H): the centroid, meaning the average position, of the
+                 five-membered imidazole ring (atoms CG, ND1, CD2, CE1, NE2),
+                 because the ring's charge is spread over the whole ring rather
+                 than sitting on one atom
 
-If a side chain is unresolved in the crystal (too mobile to locate), we fall back
-to CB, the first side-chain carbon. That is a poorer proxy -- it is up to a few
-angstroms from the functional group -- so any fallback is reported explicitly
-rather than silently substituted.
+If a side chain is unresolved in the crystal structure (too mobile for the
+experiment to pin down), we fall back to CB, the first carbon of the side chain.
+That is a poorer proxy -- it is up to a few angstroms from the functional group --
+so every fallback is reported explicitly rather than quietly substituted. If even
+CB is missing, the last resort is CA, the alpha carbon, which is present in every
+residue.
 
 THE VERDICT RULE, FIXED IN ADVANCE
 ----------------------------------
 Find the largest subset of surviving anchors whose maximum pairwise distance is
-under 25 A. If fewer than three anchors cluster, the 415-466 epitope is DEAD and
-this script says so. The fallback conserved runs are 394-411 (18 residues) and
-331-347 (17 residues), and steps 03-05 would be rerun against those.
+under 25 A. If fewer than three anchors cluster, the 415-466 epitope fails and we
+move to the fallback conserved runs 394-411 (18 residues) and 331-347 (17
+residues), rerunning steps 03-05 against those.
 
 Three is the minimum because the pH switch is partial rather than binary: at
-pH 6.5 a histidine is only fractionally protonated, so a single pair produces a
-weak effect and three or four must be stacked.
+pH 6.5 a histidine is only fractionally protonated -- only some copies of it carry
+the extra positive charge at any moment -- so a single pair produces a weak effect
+and three or four have to be stacked.
 
-Also writes an interactive py3Dmol viewer so the geometry can be looked at rather
-than only read as numbers.
+Residue numbers here are positions in the human record in UniProt, the public
+protein sequence archive. The structure file is 6ARU from the Protein Data Bank
+(PDB), the public archive of measured 3D protein structures, which numbers the
+same residues 24 lower; step 02's conversion table handles that throughout.
+
+Also writes an interactive py3Dmol viewer, so the geometry can be looked at
+instead of only read as numbers.
 
 Outputs:
   results/findings/05-anchor-geometry.md
@@ -80,24 +94,25 @@ OFFSET_CSV = DERIVED / "02-numbering-offset.csv"
 OVERLAP_CSV = DERIVED / "04-epitope-overlap.csv"
 
 REACH_CUTOFF = 25.0      # angstroms; approximate span of one small binder face
-MIN_CLUSTER = 3          # fewer than this and the epitope is dead
+MIN_CLUSTER = 3          # fewer anchors than this in one patch and the epitope fails
 
 EPI_START, EPI_END = 415, 466
 ANCHORS = {416: "D", 418: "H", 421: "E", 424: "E",
            433: "H", 455: "E", 458: "D", 460: "D"}
-GLYCO_SITE = 444         # N-glycosylation site found inside the block by step 03
+GLYCO_SITE = 444         # sugar attachment point found inside the block by step 03
 
 FUNCTIONAL_ATOM = {"D": ["CG"], "E": ["CD"],
                    "H": ["CG", "ND1", "CD2", "CE1", "NE2"]}
 
-# Populated by the glycosylation-proximity section: anchors close enough to the
-# N444 glycan that their measured exposure should be read as an upper bound.
+# Filled in by the sugar-proximity section below: anchors close enough to the
+# sugar chain at N444 that their measured exposure should be read as an upper
+# bound on how reachable they really are.
 GLYCAN_RISK = set()
 
-# A complex N-linked glycan is a branched chain, not a single sugar. Only its
-# innermost residues are ordered enough to appear in a crystal structure, while
-# the whole assembly can sweep 20-30 A from the attachment point and is mobile.
-# These bands are therefore deliberately cautious.
+# A complex N-linked glycan is a branched chain of sugars rather than a single
+# sugar. Only its innermost sugars sit still enough to appear in a crystal
+# structure, while the whole assembly is mobile and can sweep 20-30 A from the
+# point where it attaches. The two bands below are therefore cautious on purpose.
 GLYCAN_NEAR = 15.0     # very likely shadowed some of the time
 GLYCAN_PLAUSIBLE = 25.0  # within reach of an extended chain
 
@@ -141,7 +156,13 @@ def load_cetuximab_contacts():
 
 
 def functional_point(res, aa):
-    """Return (coord, atom_label, used_fallback)."""
+    """Pick the atom this anchor is measured from.
+
+    Returns (coordinates, a label for the atom used, whether it is a fallback).
+    The preferred atom is the charged tip of the side chain; CB, the first carbon
+    of the side chain, and then CA, the alpha carbon, are the fallbacks used when
+    the structure does not resolve the tip.
+    """
     wanted = FUNCTIONAL_ATOM.get(aa, [])
     coords = [res[a].coord for a in wanted if a in res]
     if len(coords) == len(wanted) and coords:
@@ -174,14 +195,19 @@ def main():
     emit("=" * 72)
     emit()
     emit(f"Reach cutoff: {REACH_CUTOFF:.0f} A — roughly what one small binder face")
-    emit("              can span. Chosen in advance, not fitted to the answer.")
+    emit("              can span. Fixed before the measurement, so it cannot have")
+    emit("              been tuned to suit the answer.")
     emit(f"Minimum viable cluster: {MIN_CLUSTER} anchors.")
     emit()
-    emit("Measuring from side-chain functional groups, not the backbone:")
-    emit("  D -> CG (carboxylate carbon)")
-    emit("  E -> CD (carboxylate carbon)")
-    emit("  H -> centroid of the imidazole ring (CG, ND1, CD2, CE1, NE2)")
-    emit("  unresolved side chain -> CB, reported as a FALLBACK")
+    emit("Measured from the charged tip of each side chain, because that is what")
+    emit("forms a charge pair. Backbone-to-backbone distances were the alternative")
+    emit("and were rejected: the backbone is identical chemistry in every residue")
+    emit("and sits several angstroms from the charge.")
+    emit("  D (aspartate) -> CG, the carboxylate carbon")
+    emit("  E (glutamate) -> CD, the carboxylate carbon, one atom further out")
+    emit("  H (histidine) -> centre of the imidazole ring (CG, ND1, CD2, CE1, NE2)")
+    emit("  unresolved side chain -> CB, the first side-chain carbon, flagged as a")
+    emit("                          fallback")
     emit()
     emit(f"Anchors carried forward from step 03 (exposed or partial): "
          f"{len(survivors)} of 8")
@@ -218,7 +244,9 @@ def main():
         emit(f"   {len(fallbacks)} anchor(s) fell back to CB because the side chain")
         emit(f"   is unresolved: {', '.join(f'{ANCHORS[p]}{p}' for p in fallbacks)}")
         emit("   CB can sit several angstroms from the functional group, so those")
-        emit("   distances carry extra uncertainty.")
+        emit("   distances carry extra uncertainty, and a cluster that only just")
+        emit("   fits the cutoff because of one of them should be treated as")
+        emit("   borderline rather than as a clean pass.")
     else:
         emit("   No fallbacks — every functional group is fully resolved, so every")
         emit("   distance below is measured from the atoms that actually form the")
@@ -228,6 +256,10 @@ def main():
     # ---- Distance matrix ----
     ordered = sorted(points)
     emit("2. Full pairwise distance matrix (angstroms)")
+    emit()
+    emit("   Every anchor against every other anchor. Each cell is the distance")
+    emit("   between those two functional groups, so the table shows which anchors")
+    emit("   could share one binder face and which are on opposite sides.")
     emit()
     header = "   | | " + " | ".join(f"{ANCHORS[p]}{p}" for p in ordered) + " |"
     emit(header)
@@ -256,8 +288,9 @@ def main():
     # ---- Largest cluster ----
     emit(f"3. Largest subset with every pairwise distance under {REACH_CUTOFF:.0f} A")
     emit()
-    emit("   Exhaustive search over all subsets (there are few enough that this is")
-    emit("   exact rather than approximate).")
+    emit("   Every possible subset of the anchors is checked, so this answer is")
+    emit("   exact. With this few anchors that is quick, which is why no")
+    emit("   approximate clustering method is used.")
     emit()
     best = []
     all_valid = []
@@ -273,19 +306,20 @@ def main():
 
     if best:
         span = max(dist[(a, b)] for a, b in itertools.combinations(best, 2))
-        emit(f"   LARGEST CLUSTER: {len(best)} anchors")
+        emit(f"   Largest cluster: {len(best)} anchors")
         emit(f"   {', '.join(f'{ANCHORS[p]}{p}' for p in best)}")
         emit(f"   Maximum internal distance: {span:.1f} A")
         emit()
         n_acidic = sum(1 for p in best if ANCHORS[p] in "DE")
         n_his = sum(1 for p in best if ANCHORS[p] == "H")
-        emit(f"   Composition: {n_acidic} acidic (each takes a HISTIDINE on the")
-        emit(f"   binder), {n_his} target histidine (takes a D or E on the binder).")
+        emit(f"   Composition: {n_acidic} acidic (each one calls for a histidine on")
+        emit(f"   the binder), {n_his} target histidine (calls for a D or E on the")
+        emit("   binder). That is the shopping list the binder has to present.")
         emit()
         ties = [c for c, s in all_valid if len(c) == len(best)]
         if len(ties) > 1:
-            emit(f"   NOTE: {len(ties)} different subsets of size {len(best)} qualify.")
-            emit("   The design is not forced to one choice of contact set:")
+            emit(f"   {len(ties)} different subsets of size {len(best)} qualify, so the")
+            emit("   design has a choice of contact set:")
             for c, s in sorted([(c, s) for c, s in all_valid
                                 if len(c) == len(best)], key=lambda t: t[1])[:6]:
                 emit(f"     {', '.join(f'{ANCHORS[p]}{p}' for p in c)}  "
@@ -298,13 +332,13 @@ def main():
     # ---- Tighter sub-clusters, for a smaller binder ----
     emit("4. How tight can a cluster be? (relevant to molecule size choice)")
     emit()
-    emit("   A microbinder (<40 aa) presents a smaller face than a minibinder")
-    emit("   (40-100 aa), so it needs a tighter anchor cluster. Largest cluster")
-    emit("   at several spans:")
+    emit("   A microbinder (under 40 amino acids, abbreviated aa) presents a smaller")
+    emit("   face than a minibinder (40-100 aa), so it needs a tighter anchor")
+    emit("   cluster. Largest cluster at several spans:")
     emit()
-    emit("   For each limit: the largest cluster that fits, and the TIGHTEST")
-    emit("   example of that size (not an arbitrary one, which would hide the")
-    emit("   most compact option available).")
+    emit("   For each limit: the largest cluster that fits, and the most compact")
+    emit("   example of that size. An arbitrary example of that size would hide how")
+    emit("   tight the best available option actually is.")
     emit()
     emit("   | span limit | largest cluster | tightest such set | its span |")
     emit("   |---|---|---|---|")
@@ -326,11 +360,11 @@ def main():
         else:
             emit(f"   | {limit:.0f} A | 0 | — | — |")
     emit()
-    emit("   Reading this for the molecule-size decision: a microbinder (<40 aa)")
-    emit("   presents a small face and needs a tight cluster; a minibinder")
-    emit("   (40-100 aa) can span more. The row where the cluster size drops below")
-    emit("   three is the point at which a binder becomes too small to carry the")
-    emit("   stacked switch at all.")
+    emit("   What this decides: how big the molecule has to be. A microbinder")
+    emit("   presents a small face and needs a tight cluster; a minibinder (40-100")
+    emit("   aa) can span more. The row where the cluster size drops below three is")
+    emit("   the size at which a binder becomes too small to carry the stacked")
+    emit("   switch at all, so pick a size above that row.")
     emit()
 
     # ---- Glycosylation site proximity ----
@@ -338,7 +372,7 @@ def main():
     emit()
     emit("   Step 03 found a sugar chain attached at N444, inside our block.")
     emit()
-    emit("   WHAT IS MEASURED HERE, AND HOW IT DIFFERS FROM STEP 03. The two steps")
+    emit("   What is measured here, and how it differs from step 03. The two steps")
     emit("   measure different things, and read together without this note they")
     emit("   look like they disagree:")
     emit()
@@ -351,10 +385,10 @@ def main():
     emit("     the chain is attached, N444, with the 15 A and 25 A bands below.")
     emit("     The chain itself is longer than the part the structure shows.")
     emit()
-    emit("   Both are correct. Step 03 answers 'does an anchor touch a sugar atom")
-    emit("   we have coordinates for', and the answer is no. This step answers")
-    emit("   'could the full chain reach an anchor', and the answer is that three")
-    emit("   of them are close enough that it might. The second question matters")
+    emit("   Both are correct. Step 03 answers 'does an anchor touch a sugar atom we")
+    emit("   have coordinates for', and the answer is no. This step answers 'could")
+    emit("   the full chain reach an anchor', and the answer is that three of them")
+    emit("   are close enough that it might. The second question is worth asking")
     emit("   because a structure only shows the first few sugars of a chain that")
     emit("   continues past them, so step 03's answer does not settle it.")
     emit()
@@ -362,8 +396,9 @@ def main():
     gly_res = by_pdb.get(gly_pdb)
     if gly_res is not None and "CB" in gly_res:
         gly_pt = np.asarray(gly_res["CB"].coord, dtype=float)
-        emit("   A complex N-linked glycan is a branched chain that can sweep")
-        emit("   20-30 A from where it attaches, so the bands below are cautious:")
+        emit("   A complex N-linked glycan is a branched chain of sugars that can")
+        emit("   sweep 20-30 A from where it attaches, so the bands below are")
+        emit("   deliberately cautious:")
         emit(f"     under {GLYCAN_NEAR:.0f} A  — likely shadowed at least some of the time")
         emit(f"     under {GLYCAN_PLAUSIBLE:.0f} A  — within reach of an extended chain")
         emit("     beyond that — probably clear")
@@ -373,7 +408,7 @@ def main():
         for pos in ordered:
             d = float(np.linalg.norm(points[pos]["coord"] - gly_pt))
             if d < GLYCAN_NEAR:
-                note = "LIKELY SHADOWED — read exposure as an upper bound"
+                note = "likely shadowed — read exposure as an upper bound"
                 GLYCAN_RISK.add(pos)
             elif d < GLYCAN_PLAUSIBLE:
                 note = "possibly reached by an extended chain"
@@ -388,33 +423,33 @@ def main():
         emit(f"   Anchors flagged: "
              f"{', '.join(f'{ANCHORS[p]}{p}' for p in sorted(GLYCAN_RISK)) or 'none'}")
         emit()
-        emit("   This is a flagged risk, not a resolved question, and it cuts both")
-        emit("   ways: a glycan is flexible, so 'within reach' means 'sometimes")
-        emit("   covered', not 'blocked'. It cannot be settled from a crystal")
-        emit("   structure, and we are not going to pretend otherwise. Its practical")
-        emit("   use is as a tie-breaker between otherwise equivalent clusters.")
+        emit("   This is a flagged risk rather than a settled question, and it cuts")
+        emit("   both ways: a glycan is flexible, so 'within reach' means 'covered")
+        emit("   some of the time' rather than 'blocked'. A crystal structure cannot")
+        emit("   settle it either way. In practice we use it as a tie-breaker between")
+        emit("   clusters that are otherwise equally good.")
     else:
         emit(f"   N{GLYCO_SITE} not resolved; cannot measure.")
     emit()
 
-    # ---- VERDICT ----
-    emit("6. VERDICT")
+    # ---- Verdict ----
+    emit("6. Verdict")
     emit()
     n_best = len(best)
     dead = n_best < MIN_CLUSTER
     if dead:
-        emit(f"   *** THE {EPI_START}-{EPI_END} EPITOPE IS DEAD. ***")
+        emit(f"   The {EPI_START}-{EPI_END} epitope fails this check.")
         emit()
         emit(f"   Only {n_best} anchor(s) cluster within {REACH_CUTOFF:.0f} A, and the")
         emit(f"   stacked switch requires at least {MIN_CLUSTER}. A single binder")
         emit("   cannot reach enough anchors to build a pH switch on this surface.")
-        emit("   This is not rescuable by better design: it is a geometric fact")
-        emit("   about where these residues sit.")
+        emit("   Better design cannot recover it, because the obstacle is simply")
+        emit("   where these residues sit on the protein.")
         emit()
-        emit("   NEXT STEP: rerun steps 03-05 against the fallback conserved runs")
+        emit("   Next step: rerun steps 03-05 against the fallback conserved runs")
         emit("   394-411 (18 residues) and 331-347 (17 residues).")
     else:
-        emit(f"   The {EPI_START}-{EPI_END} epitope SURVIVES the structure check.")
+        emit(f"   The {EPI_START}-{EPI_END} epitope survives the structure check.")
         emit()
         emit(f"   {n_best} anchors cluster within {REACH_CUTOFF:.0f} A "
              f"(max internal span {span:.1f} A), against a minimum of "
@@ -423,17 +458,19 @@ def main():
         emit("   design depends on is geometrically possible.")
         emit()
         # There may be several equally large clusters. Whether the method-novelty
-        # claim survives depends on whether ANY of them contains a target
-        # histidine -- not on whichever one the search happened to return first.
+        # claim survives depends on whether any one of them contains a target
+        # histidine, so we check them all rather than only the first one the
+        # search returned.
         maximal = [c for c, s in all_valid if len(c) == n_best]
         with_his = [c for c in maximal if any(ANCHORS[p] == "H" for p in c)]
 
         emit(f"   {len(maximal)} distinct cluster(s) of size {n_best} qualify, so the")
-        emit("   design is not forced to one contact set. Comparing them on the")
-        emit("   three things that matter:")
+        emit("   design has a choice of contact set. Comparing them on the three")
+        emit("   things that matter:")
         emit()
-        emit("   'within 25 A of N444' below is the attachment-point measure from")
-        emit("   section 5, not step 03's 5 A sugar-atom check.")
+        emit("   The last column uses the attachment-point measure from section 5,")
+        emit("   at 15 A and 25 A. It is not step 03's 5 A check against the sugar")
+        emit("   atoms present in the file, which found no anchor within 5 A.")
         emit()
         emit("   | cluster | span A | target His? | cetuximab overlap | within 25 A of N444 |")
         emit("   |---|---|---|---|---|")
@@ -450,8 +487,9 @@ def main():
         emit()
 
         if with_his:
-            emit("   THE METHOD-NOVELTY CLAIM SURVIVES, but it is a CHOICE, not a")
-            emit("   free consequence of the epitope. Specifically:")
+            emit("   The method-novelty claim survives, but we have to choose it: the")
+            emit("   epitope allows it rather than guaranteeing it. The clusters that")
+            emit("   deliver it are:")
             emit()
             for c in with_his:
                 s = max(dist[(a, b)] for a, b in itertools.combinations(c, 2))
@@ -460,38 +498,38 @@ def main():
                      f"{', '.join(f'H{p}' for p in c if ANCHORS[p] == 'H')}")
             emit()
             emit("   Pairing an acidic binder residue against a target histidine is")
-            emit("   what requires reasoning about the TARGET's protonation rather")
-            emit("   than only the binder's, which is the part off-the-shelf")
-            emit("   pipelines do not do. Choosing a cluster without a target")
-            emit("   histidine would give up that claim.")
+            emit("   what forces us to reason about the protonation of the target")
+            emit("   itself, not just of the binder, and that is the part")
+            emit("   off-the-shelf pipelines do not do. Choosing a cluster without a")
+            emit("   target histidine would give the claim up.")
             emit()
-            emit("   THE TRADE-OFF, stated plainly. The clusters containing a target")
-            emit("   histidine are the ones that overlap cetuximab's footprint,")
-            emit("   because H433 is the single anchor cetuximab touches. So the")
+            emit("   The trade-off. The clusters containing a target histidine are")
+            emit("   exactly the ones that overlap cetuximab's footprint, because")
+            emit("   H433 is the single anchor cetuximab touches. So the")
             emit("   mechanistically distinctive choice is also the one most open to")
             emit("   a 'this is cetuximab's epitope' objection. The counter-argument")
-            emit("   is that cetuximab contacts H433 with no pH dependence at all,")
-            emit("   so sharing one residue with it is not sharing a mechanism --")
-            emit("   but that is an argument to make in the write-up, not a")
-            emit("   computed result, and it should not be presented as one.")
+            emit("   is that cetuximab contacts H433 with no pH dependence at all, so")
+            emit("   sharing one residue with it is not sharing a mechanism. That")
+            emit("   counter-argument is something to argue in the write-up; nothing")
+            emit("   here computes it, and it should not be presented as a result.")
         else:
-            emit("   NO cluster of the maximum size contains a target histidine.")
-            emit("   The method-novelty claim (pairing acidic binder residues")
-            emit("   against the target's own histidines) cannot be realised at")
-            emit("   full cluster size. Check whether a smaller cluster including")
-            emit("   H433 is still viable before abandoning the claim.")
+            emit("   No cluster of the maximum size contains a target histidine, so")
+            emit("   the method-novelty claim (pairing acidic binder residues against")
+            emit("   the target's own histidines) cannot be realised at full cluster")
+            emit("   size. Before abandoning the claim, check whether a smaller")
+            emit("   cluster that includes H433 is still viable.")
         emit()
         free = [p for p in best if p not in cetux]
         emit(f"   For reference, the tightest cluster ("
              f"{', '.join(f'{ANCHORS[p]}{p}' for p in best)}) has {len(free)} of")
         emit(f"   {n_best} anchors outside cetuximab's footprint.")
         emit()
-        emit("   WHAT THIS DOES NOT ESTABLISH. Geometric reachability is a")
-        emit("   necessary condition, not a sufficient one. It does not show that a")
-        emit("   foldable binder exists that presents the right partner residues in")
-        emit("   the right orientations, nor that the resulting switch is large")
-        emit("   enough to clear the assay's detection floor at pH 7.4. Those are")
-        emit("   design and prediction questions, still open.")
+        emit("   What this does not establish. Geometric reachability is necessary")
+        emit("   but not sufficient: it does not show that a foldable binder exists")
+        emit("   which presents the right partner residues in the right")
+        emit("   orientations, nor that the resulting switch is large enough to clear")
+        emit("   the assay's detection floor at pH 7.4. Those are design and")
+        emit("   prediction questions, and both are still open.")
     emit()
 
     # ---- CSVs ----
@@ -518,18 +556,20 @@ def main():
     emit()
     emit("=" * 72)
     emit(f"RESULT: largest cluster = {n_best} anchors within {REACH_CUTOFF:.0f} A. "
-         f"Epitope {'DEAD' if dead else 'SURVIVES'}.")
+         f"Epitope {'fails this check' if dead else 'survives'}.")
     emit("=" * 72)
 
     FINDINGS.mkdir(parents=True, exist_ok=True)
     (FINDINGS / "05-anchor-geometry.md").write_text(
         "# Anchor geometry: is the epitope a real surface?\n\n"
         "Computed output of `analysis/05_anchor_geometry.py`. Do not hand-edit.\n\n"
-        f"Tests whether the anchors that survived step 03 sit within {REACH_CUTOFF:.0f} A\n"
-        "of one another, which is roughly the span a single small binder face can\n"
-        "cover. Distances are measured between side-chain functional groups, not\n"
-        f"backbones. Verdict rule fixed in advance: fewer than {MIN_CLUSTER} clustered\n"
-        "anchors means the epitope is dead.\n\n"
+        f"Tests whether the anchors that survived step 03 sit within {REACH_CUTOFF:.0f}\n"
+        "angstroms of one another, which is roughly how far across a single small\n"
+        "binder can reach with one face. Distances are measured between the tips of\n"
+        "the side chains, the parts that actually form a charge pair, rather than\n"
+        "between backbone atoms, which are the same chemistry in every residue.\n"
+        f"The rule was fixed before measuring: if fewer than {MIN_CLUSTER} anchors\n"
+        "cluster, this epitope fails and the fallback stretches are tried instead.\n\n"
         "```\n" + "\n".join(out) + "\n```\n"
     )
     return 0
@@ -560,10 +600,11 @@ def write_viewer(path, uni_to_pdb, verdicts, cluster, cetux):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EGFR Anchor Viewer</title>
-<!-- 3Dmol.js, pinned to a version verified to exist on 30 September 2026.
-     Three mirrors are tried in order: a wrong or withdrawn version silently
-     yields "$3Dmol is not defined", which looks like a broken page rather than
-     a failed download, so the loader reports the failure explicitly instead. -->
+<!-- 3Dmol.js, the 3D structure viewer, pinned to a version checked to exist on
+     30 September 2026. Three mirrors are tried in order, because a wrong or
+     withdrawn version number quietly yields "$3Dmol is not defined", which looks
+     like a broken page rather than a failed download. The loader below reports
+     the failure in words instead. -->
 <style>
   :root {{
     --bg: #ffffff; --fg: #1a1a1a; --muted: #5a5a5a; --line: #e2e2e2;
@@ -617,13 +658,16 @@ def write_viewer(path, uni_to_pdb, verdicts, cluster, cetux):
 <body>
 <div class="wrap">
   <h1>EGFR domain III — pH-switch anchors</h1>
-  <p class="sub">PDB 6ARU, receptor chain A. Coloured by computed solvent
-     exposure. Generated by <code>analysis/05_anchor_geometry.py</code>.</p>
+  <p class="sub">Structure 6ARU from the Protein Data Bank (PDB), receptor chain
+     A. Coloured by computed solvent exposure, meaning how much of each residue
+     is reachable from outside the protein. Generated by
+     <code>analysis/05_anchor_geometry.py</code>.</p>
 
   <div id="viewer"><div id="status">Loading 3D viewer&hellip;</div></div>
 
   <div class="legend">
-    <span><span class="sw" style="background:#1a9850"></span>exposed (RSA &ge; 0.25)</span>
+    <span><span class="sw" style="background:#1a9850"></span>exposed (relative
+      solvent accessibility, RSA, &ge; 0.25)</span>
     <span><span class="sw" style="background:#fdae61"></span>partial</span>
     <span><span class="sw" style="background:#d73027"></span>buried (RSA &le; 0.05)</span>
     <span><span class="sw" style="background:#6a9fd8"></span>epitope 415–466 backbone</span>
@@ -642,10 +686,11 @@ def write_viewer(path, uni_to_pdb, verdicts, cluster, cetux):
     <tbody id="rows"></tbody>
   </table>
 
-  <p class="note">Exposure cutoffs (0.25 / 0.05) are conventional, not physical
-     constants. Anchors near a boundary should be read as ambiguous. The surface
-     shown is the bare protein: sugar chains attached at N444 are not drawn and
-     are flexible, so real accessibility near that site is lower than shown.</p>
+  <p class="note">The exposure cutoffs (0.25 / 0.05) are conventions rather than
+     physical constants, so an anchor sitting near a boundary should be read as
+     ambiguous. The surface shown is the bare protein: the flexible sugar chains
+     attached at N444 are not drawn, so real accessibility near that site is
+     lower than what you see here.</p>
 </div>
 
 <script>
@@ -808,8 +853,9 @@ def write_pymol(path, uni_to_pdb, verdicts, cluster):
         "# Generated by analysis/05_anchor_geometry.py — do not hand-edit.",
         "# Run with:  pymol explorer/anchor-view.pml",
         "#",
-        "# Numbering note: this colours by PDB residue numbers, which in 6ARU are",
-        "# UniProt MINUS 24. Labels show the UniProt numbers we use everywhere else.",
+        "# Numbering note: the colouring below uses the residue numbers in the",
+        "# Protein Data Bank file, which in 6ARU are 24 lower than the UniProt",
+        "# numbers. The labels show the UniProt numbers used everywhere else.",
         "",
         "fetch 6ARU, async=0",
         "hide everything",

@@ -1,24 +1,26 @@
 """
 Shared code for the EGFR analysis scripts.
 
-Anything computed in more than one place lives here, so the scripts cannot
-disagree with each other. This file exists because two of them did disagree: step
-04 and step 06 both worked out which residues the antibody touches, from the same
-file with the same settings, and got different answers, because one of them looked
-up a residue number in the wrong direction.
+Anything computed in more than one place lives here, so two scripts cannot give
+two answers to the same question. This file exists because that happened: step 04
+and step 06 both worked out which residues the antibody touches, from the same
+file with the same settings, and got different answers. One of them had looked a
+residue number up in the wrong direction.
 
-Abbreviations used in this file, expanded on first use below:
-  PDB      Protein Data Bank, the public archive of measured 3D protein shapes.
-           Also used to mean a file from that archive.
-  UniProt  the public archive of protein sequences. Our residue numbers are
+Abbreviations, expanded here because each file gets read on its own:
+  PDB      Protein Data Bank, the public archive of measured 3D protein
+           structures. Also used to mean a file from that archive.
+  UniProt  the public protein sequence archive. Our residue numbers are
            positions in its records.
   SASA     solvent-accessible surface area: how much of a residue's surface
            water can reach, measured in square angstroms.
   RSA      relative solvent accessibility: SASA divided by the largest value
            that residue type could have. Comparable between residue types.
-  CA       the "alpha carbon", one specific atom present in every residue. Often
-           used as a single stand-in for the whole residue's position.
+  CA       the alpha carbon, one atom present in every residue. Often used as a
+           single stand-in for the whole residue's position.
   Fab      the gripping arm of an antibody, separated from the rest of it.
+  aa       amino acids, the building blocks a protein chain is made of.
+  BLOSUM62 a table of how chemically similar each pair of residue types is.
 """
 
 from pathlib import Path
@@ -44,8 +46,8 @@ ECD_START, ECD_END = 25, 645    # the part of EGFR outside the cell
 D3_START, D3_END = 310, 480      # domain III, our working definition
 EPI_START, EPI_END = 415, 466    # the candidate epitope, the patch we aim at
 
-# The eight positions we could build a pH switch against, with the amino acid
-# each one is. D and E are acidic and always carry a negative charge, so we put a
+# The eight positions we could build a pH switch against, with the amino acid each
+# one is. D and E are acidic and always carry a negative charge, so we put a
 # histidine opposite them. H is histidine, which changes charge with pH, so we put
 # an acidic residue opposite it.
 ANCHORS = {416: "D", 418: "H", 421: "E", 424: "E",
@@ -155,19 +157,19 @@ def make_aligner(mode="global"):
 class Numbering:
     """Translates between the residue numbers in a structure file and ours.
 
-    Structure files carry their own residue numbers and there is no rule about
-    which convention they follow. Files of secreted proteins often count from the
-    mature protein, whose residue 1 is UniProt residue 25, because that is the
-    molecule that was actually crystallised. Nothing in the file records the
-    choice. Both structures used in this project turn out to be off by 24.
+    Structure files carry their own residue numbers, and no rule says which
+    convention they follow. Files of secreted proteins often count from the mature
+    protein, whose residue 1 is UniProt residue 25, because that is the molecule
+    that was actually crystallised. Nothing in the file records the choice. Both
+    structures used in this project turn out to be off by 24.
 
-    This class exists because the two directions were previously passed around as
-    plain dictionaries, and step 06 indexed a UniProt-to-structure dictionary with
-    a structure number. Since the two ranges overlap, that lookup succeeded and
-    returned a number 48 positions away from the right one, with no error raised.
-    Asking for `uniprot_of(...)` or `pdb_of(...)` by name cannot go wrong in the
-    same way, and passing the wrong kind of number now returns nothing rather than
-    a plausible wrong answer.
+    The class exists because the two directions used to be passed around as plain
+    dictionaries, and step 06 indexed a UniProt-to-structure dictionary with a
+    structure number. The two numbering ranges overlap, so that lookup succeeded
+    and handed back a number 48 positions away from the right one, raising no
+    error. Asking for `uniprot_of(...)` or `pdb_of(...)` by name cannot go wrong
+    the same way: give either method the wrong kind of number and it returns
+    nothing, instead of a plausible wrong answer that survives into a result.
     """
 
     def __init__(self, pdb_to_uniprot):
@@ -310,10 +312,11 @@ def intra_chain_contacts_outside(model, chain_id, numbering,
     """Which residues in `target_range` are touched by residues of the same chain
     from outside `exclude_range`.
 
-    Used to ask whether other parts of the receptor fold across our epitope.
-    Phrasing it as "touched from outside domain III" avoids having to decide where
-    each domain begins and ends, so the answer does not depend on boundaries we
-    are not certain about.
+    Used to ask whether other parts of the receptor fold across our epitope. The
+    alternative was to name the domains doing the covering, which would make the
+    answer depend on where each domain is taken to begin and end, and we are not
+    confident about those boundaries. Asking "touched from outside domain III"
+    needs no such judgement.
 
     Returns {our residue number: (distance, our number of the residue touching it)}.
     """
@@ -372,9 +375,12 @@ def cross_check_residue_set(label, computed, reference_csv, column="uniprot_pos"
     """Compare a set of residue numbers against a set another script wrote out,
     and stop with an error if they differ.
 
-    The point is that a disagreement between two scripts should stop the run
-    rather than sit in two findings files waiting for someone to notice. Step 04
-    and step 06 disagreed about the antibody's contacts for exactly that reason.
+    A disagreement between two scripts stops the run here, instead of sitting in
+    two findings files until somebody happens to notice. That is exactly how step
+    04 and step 06 came to disagree about the antibody's contacts: one of them
+    looked a residue number up in the wrong direction, and because the two
+    numbering ranges overlap, the wrong lookup returned a plausible answer 48
+    positions away rather than failing.
 
     `condition_column` names a true/false column; when given, only rows where it
     reads True are counted.

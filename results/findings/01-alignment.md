@@ -2,19 +2,21 @@
 
 Computed output of `analysis/01_alignment.py`. Do not hand-edit.
 
-This is a regression test: the expected answer was known before the
-script was written, and the script asserts it. See
-`alignment-findings.md` in this directory for the interpretation.
+This is a regression test: the expected answer was known before the script
+was written, and the script checks itself against it. If it ever disagrees,
+the environment or the input data has changed and nothing computed after it
+should be trusted until that is sorted out. See `alignment-findings.md` in
+this directory for what the numbers mean for the design.
 
 ```
 ========================================================================
 HUMAN vs MOUSE EGFR ALIGNMENT  (regression test)
 ========================================================================
 
-human P00533: 1210 aa
+human P00533: 1210 aa (amino acids, the building blocks)
 mouse Q01279: 1210 aa
-method: global pairwise, BLOSUM62, gap open -11, gap extend -1
-numbering: full human UniProt positions throughout
+method: end-to-end pairwise alignment, BLOSUM62 table, gap open -11, gap extend -1
+numbering: positions in the full human UniProt record throughout
 
 1. Identity by region
 
@@ -27,7 +29,7 @@ numbering: full human UniProt positions throughout
    Columns where human has a gap (mouse insertions): 2
 
 2. Domain III differences, human UniProt numbering
-   Notation: Q390R means human has Q at 390, mouse has R.
+   Notation: Q390R means human has Q at position 390 where mouse has R.
 
    A313P  S315Y  M318V  V323I  E330D  S348T  N361Y  S364A
    R377K  H383R  Q390R  D393E  E412D  R414W  S442G  K467R
@@ -58,20 +60,21 @@ numbering: full human UniProt positions throughout
 6. What this means for the design
 
    The 415-466 block is 52 positions with a single
-   difference, S442G. Serine and glycine are both among the smallest
-   amino acids, so the local shape barely changes -- this is about as
-   close to species-identical as a real surface patch gets.
+   difference, S442G: human serine, mouse glycine. Both are among the
+   smallest amino acids, so the local shape barely changes, which is about
+   as close to species-identical as a real surface patch gets.
 
-   Fourteen of the sixteen domain III differences fall before 415.
-   That is the whole argument for aiming here rather than elsewhere in
-   domain III: a binder confined to this block satisfies mouse
-   cross-reactivity by construction.
+   Fourteen of the sixteen domain III differences fall before 415, which
+   is the argument for aiming here rather than elsewhere in domain III: a
+   binder confined to this block satisfies mouse cross-reactivity by
+   construction.
 
-   LIMIT OF THIS RESULT, stated plainly: this is sequence analysis. It
-   says what each residue IS, not which direction it POINTS. Domain III
-   folds into a solenoid (spiral-staircase) shape in which residues
-   adjacent in sequence can point opposite ways. Whether these anchors
-   are reachable is decided by steps 02-06, not here.
+   What this result does not settle: it is sequence analysis, so it tells
+   us which residue sits at each position and nothing about which
+   direction that residue points. Domain III folds into a solenoid, a
+   spiral-staircase shape in which residues next to each other in the
+   sequence can point opposite ways. Whether these anchors are actually
+   reachable is decided by steps 02-06.
 
 Wrote data/derived/01-domain3-differences.csv
 Wrote data/derived/01-identical-runs.csv

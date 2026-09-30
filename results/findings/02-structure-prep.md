@@ -2,10 +2,13 @@
 
 Computed output of `analysis/02_structure_prep.py`. Do not hand-edit.
 
-Resolves the PDB-to-UniProt numbering offset empirically, identifies the
-chains from the file's own annotation and from measured identity to human
-EGFR, reports which residues are actually resolved, and writes a
-receptor-only structure for the solvent-accessibility step.
+Works out, by measurement rather than assumption, how the residue numbers
+in this structure file relate to ours. PDB is the Protein Data Bank, the
+public archive of measured three-dimensional structures; UniProt is the
+public sequence archive our numbering follows. Also identifies which chain
+is the receptor and which are the antibody, reports which residues the
+structure actually resolves, and writes out a receptor-only file for the
+accessibility step.
 
 ```
 ========================================================================
@@ -22,8 +25,8 @@ STRUCTURE PREPARATION — PDB 6ARU
    TITLE     STRUCTURE OF CETUXIMAB FAB MUTANT IN COMPLEX WITH EGFR EXTRACELLULAR
    TITLE    2 DOMAIN
 
-   Chain annotation from the file's own COMPND records
-   (the file's self-description — not our inference):
+   Chain annotation as recorded in the file's own COMPND records,
+   which is how the depositors described each chain:
      chain A: EPIDERMAL GROWTH FACTOR RECEPTOR
      chain B: CETUXIMAB MUTANT LIGHT CHAIN,UNCHARACTERIZED PROTEIN
      chain C: CETUXIMAB MUTANT HEAVY CHAIN FAB FRAGMENT,IMMUNOGLOBULIN GAMMA-1 HEAVY CHAIN
@@ -42,7 +45,7 @@ STRUCTURE PREPARATION — PDB 6ARU
 
 3. Which chain is the receptor?
 
-   Decided by measurement, not by trusting the competition page.
+   Answered by measuring each chain's identity to the human EGFR sequence.
   [PASS] receptor identified by EGFR identity: chain A at 99.7% — next best B at 3.8%
   [PASS] competition page claim 'chain A is the receptor': computed receptor is chain A — claim confirmed
 
@@ -50,29 +53,32 @@ STRUCTURE PREPARATION — PDB 6ARU
      chain B: CETUXIMAB MUTANT LIGHT CHAIN,UNCHARACTERIZED PROTEIN — 210 residues
      chain C: CETUXIMAB MUTANT HEAVY CHAIN FAB FRAGMENT,IMMUNOGLOBULIN GAMMA-1 HEAVY CHAIN — 212 residues
 
-   Heavy vs light assignment is taken from the file's COMPND annotation
-   above. Steps 03-04 do not depend on which is which: contacts are
-   computed against 'either Fab chain', and both are removed together
-   for the receptor-only file.
+   Which of the two Fab chains is the heavy one and which the light comes
+   from the file's COMPND annotation above. Steps 03-04 do not depend on
+   that: contacts are computed against 'either Fab chain', and both chains
+   are removed together for the receptor-only file.
 
-4. THE NUMBERING OFFSET, derived empirically
+4. The numbering offset, measured rather than assumed
 
    Method: align the receptor chain's observed sequence against the full
    human UniProt sequence, then for every observed residue compute
       offset = UniProt position - PDB residue number
-   A single dominant value means one consistent convention.
+   A single dominant value means the file follows one consistent
+   convention. We measure it because nothing in the file records which
+   convention that is, and guessing wrong shifts every later result.
 
    | offset | aligned residues | share |
    |---|---|---|
    | +24 | 609 | 100.0% |
 
   [PASS] offset is consistent across the chain: 100.0% of aligned residues share offset +24
-   Interpretation: PDB numbers by the MATURE protein. UniProt = PDB + 24. This is the trap the brief warned about.
+   Interpretation: PDB numbers by the mature protein, so UniProt = PDB + 24. This is the convention the brief warned about.
 
 5. Verification: are the eight anchors the residues we expect?
 
    This is the check that catches an offset error. If the offset were
-   wrong by 24, these would read as the wrong amino acids.
+   wrong by 24, these positions would read as the wrong amino acids, and
+   the script stops rather than letting steps 03-06 run on them.
 
   [PASS] anchor D416: PDB A/ASP392 reads D
   [PASS] anchor H418: PDB A/HIS394 reads H
@@ -94,10 +100,12 @@ STRUCTURE PREPARATION — PDB 6ARU
 
 7. Writing receptor-only structure for step 03
 
-   Step 03 must compute solvent accessibility on the receptor ALONE.
-   Cetuximab is sitting on the very surface we care about, so computing
-   on the complex would report our epitope as buried when it is merely
-   covered by an antibody that will not be present in our assay.
+   Step 03 measures solvent accessibility on the receptor by itself, so
+   the Fab chains come out here. The alternative, measuring on the whole
+   complex, was rejected because cetuximab sits on the very surface we
+   care about: it would report our epitope as buried when it is only
+   covered by an antibody that will not be present in our assay, and we
+   would discard a workable epitope for that reason.
 
   [PASS] receptor-only file written: 609 residues written to data/structures/6aru_receptor_only.pdb
 
@@ -108,6 +116,6 @@ STRUCTURE PREPARATION — PDB 6ARU
 ========================================================================
 RESULT: PASSED.
 Receptor is chain A. UniProt position = PDB residue number +24.
-All eight anchors verified as the expected amino acids.
+All eight anchors read as the expected amino acids; steps 03-06 can proceed.
 ========================================================================
 ```
