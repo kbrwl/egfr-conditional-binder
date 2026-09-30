@@ -30,3 +30,11 @@ __pycache__/
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Internal drafts and working notes. Kept on disk, not tracked: their form implies
+# they are finished documents for an outside reader, and they are neither. The
+# README and the methods document get written at the end, from settled
+# conclusions. The official facts they contain live in docs/rules-reference.md;
+# our own reasoning lives in docs/decisions-log.md.
+/README.draft.md
+docs/competition-brief.md

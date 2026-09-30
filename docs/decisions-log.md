@@ -21,7 +21,7 @@ Other official links, so they never have to be re-fetched:
 novelty rules adaptyvbio.com/blog/novelty · Slack join.slack.com/t/proteinbase
 (invite `zt-3evw8fs9z-tU9ItWVvw4ySctUuPvIhLQ`) · models
 github.com/anthropics/uplifting-biomolecular-modeling. Full copy in
-`competition-brief.md`.
+`rules-reference.md`.
 
 Design binders that:
 
@@ -180,6 +180,11 @@ Standard design pipelines maximise affinity by default, which produces exactly
 the failing case. **Do not accept the pipeline's built-in objective.** Target a
 baseline weak enough that the pH 7.4 state falls under the assay detection floor,
 then build the largest switch possible on top of it.
+
+The organisers do not say which assay is used, so **we do not know where the
+detection floor actually sits.** The threshold we are designing to is a number we
+have not been given. That is why we aim for a wide margin rather than a computed
+one, and why the write-up should say the margin is a judgement.
 
 **THE STRUCTURE CHECK PASSED. The 415–466 epitope is real.** Computed
 30 September 2026 by `analysis/02`–`06`, all output in `results/findings/`.
