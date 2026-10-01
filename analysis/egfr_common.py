@@ -255,16 +255,34 @@ def heavy_atoms(residues):
     return [a for r in residues for a in r if a.element != "H"]
 
 
-def contacts_to_partner(model, receptor_chain_id, partner_chain_ids, numbering,
-                        cutoff=CONTACT_CUTOFF, restrict_to=None):
-    """Which receptor residues touch the given partner chains.
+def contact_pairs(model, receptor_chain_id, partner_chain_ids, numbering=None,
+                  cutoff=CONTACT_CUTOFF, restrict_to=None):
+    """Every pair of residues in contact across an interface, one row per pair.
 
-    Returns {our residue number: {aa, pdb_resnum, min_dist, partner_chain,
-    receptor_atom, partner_atom}}, where min_dist is the closest approach in
-    angstroms.
+    This is the one place the contact calculation lives. Steps 04, 06 and 10 all
+    reach it, so they cannot produce different answers for the same question.
+    `contacts_to_partner` below is a summary of this function's output rather
+    than a second calculation.
 
-    This is the one place the contact calculation lives. Step 04 and step 06 both
-    call it, so they cannot produce different answers for the same question.
+    Two residues are counted as in contact when any pair of their non-hydrogen
+    atoms is within `cutoff` angstroms. Hydrogens are absent from measured
+    structures, so "non-hydrogen" means the atoms we have positions for.
+
+    Returns a list of dicts, one per contacting pair of residues:
+
+        receptor_pos      our residue number, or the file's own number when no
+                          numbering is supplied
+        receptor_resnum   the number in the structure file
+        receptor_aa       single-letter amino acid
+        partner_chain     chain the partner residue is in
+        partner_resnum    the partner's number in the structure file
+        partner_aa        the partner's single-letter amino acid
+        min_dist          closest approach between the two residues, angstroms
+        receptor_atom     the receptor atom at that closest approach
+        partner_atom      the partner atom at that closest approach
+        atom_pairs        how many atom pairs fall inside the cutoff, which says
+                          whether the two residues brush past each other or sit
+                          against each other
 
     Distances are found with Bio.PDB.NeighborSearch, which sorts the atoms into a
     spatial index first, rather than by comparing every atom against every other
@@ -272,37 +290,89 @@ def contacts_to_partner(model, receptor_chain_id, partner_chain_ids, numbering,
     millions of comparisons; the index gives the same answer in a fraction of the
     time.
 
-    `restrict_to` optionally limits the search to a range of our residue numbers,
-    given as (first, last).
+    `numbering` is an optional `Numbering`. With one, receptor residues it cannot
+    translate are skipped, which is how steps 04 and 06 restrict themselves to
+    residues the alignment accounted for. Without one, the file's own numbers are
+    reported unchanged, which is what a designed binder needs: its residues are
+    positions in a sequence that does not exist in any archive.
+
+    `restrict_to` optionally limits the search to a range of receptor numbers,
+    given as (first, last), in whichever numbering is being reported.
     """
     partner = heavy_atoms(
         [r for cid in partner_chain_ids for r in protein_residues(model[cid])])
     if not partner:
-        return {}
+        return []
     search = NeighborSearch(partner)
 
-    found = {}
+    pairs = []
     for residue in protein_residues(model[receptor_chain_id]):
-        uniprot_pos = numbering.uniprot_of(residue.id[1])
-        if uniprot_pos is None:
+        if numbering is None:
+            receptor_pos = residue.id[1]
+        else:
+            receptor_pos = numbering.uniprot_of(residue.id[1])
+            if receptor_pos is None:
+                continue
+        if restrict_to and not (restrict_to[0] <= receptor_pos <= restrict_to[1]):
             continue
-        if restrict_to and not (restrict_to[0] <= uniprot_pos <= restrict_to[1]):
-            continue
-        best = None
+        # Collect every atom-level hit first, then reduce to one row per pair of
+        # residues, so that a pair's reported distance is its closest approach
+        # rather than whichever atom happened to be looked at last.
+        per_partner = {}
         for atom in residue:
             if atom.element == "H":
                 continue
             for near in search.search(atom.coord, cutoff):
                 distance = atom - near
-                if best is None or distance < best[0]:
-                    best = (distance, near.get_parent().get_parent().id,
-                            atom.get_id(), near.get_id())
-        if best is not None:
-            found[uniprot_pos] = dict(
-                aa=THREE_TO_ONE.get(residue.get_resname(), "X"),
-                pdb_resnum=residue.id[1], min_dist=best[0],
-                partner_chain=best[1], receptor_atom=best[2],
-                partner_atom=best[3])
+                partner_residue = near.get_parent()
+                key = (partner_residue.get_parent().id, partner_residue.id[1])
+                entry = per_partner.get(key)
+                if entry is None or distance < entry[0]:
+                    per_partner[key] = (distance, atom.get_id(), near.get_id(),
+                                        partner_residue,
+                                        (entry[4] + 1) if entry else 1)
+                else:
+                    per_partner[key] = entry[:4] + (entry[4] + 1,)
+        receptor_aa = THREE_TO_ONE.get(residue.get_resname(), "X")
+        for (chain_id, partner_resnum), entry in per_partner.items():
+            distance, receptor_atom, partner_atom, partner_residue, n = entry
+            pairs.append(dict(
+                receptor_pos=receptor_pos, receptor_resnum=residue.id[1],
+                receptor_aa=receptor_aa, partner_chain=chain_id,
+                partner_resnum=partner_resnum,
+                partner_aa=THREE_TO_ONE.get(partner_residue.get_resname(), "X"),
+                min_dist=distance, receptor_atom=receptor_atom,
+                partner_atom=partner_atom, atom_pairs=n))
+    pairs.sort(key=lambda p: (p["receptor_pos"], p["partner_chain"],
+                             p["partner_resnum"]))
+    return pairs
+
+
+def contacts_to_partner(model, receptor_chain_id, partner_chain_ids, numbering,
+                        cutoff=CONTACT_CUTOFF, restrict_to=None):
+    """Which receptor residues touch the given partner chains, one row each.
+
+    Returns {our residue number: {aa, pdb_resnum, min_dist, partner_chain,
+    receptor_atom, partner_atom}}, where min_dist is the closest approach in
+    angstroms to any of the partner chains.
+
+    A summary of `contact_pairs` above rather than a second calculation: it keeps
+    only the closest partner for each receptor residue. Steps 04 and 06 use this
+    because the question they ask is "which of our residues does the antibody
+    touch". Step 10 uses `contact_pairs` because the question it asks is which
+    residue faces which, and a summary cannot answer that.
+    """
+    found = {}
+    for pair in contact_pairs(model, receptor_chain_id, partner_chain_ids,
+                              numbering, cutoff, restrict_to):
+        existing = found.get(pair["receptor_pos"])
+        if existing is not None and existing["min_dist"] <= pair["min_dist"]:
+            continue
+        found[pair["receptor_pos"]] = dict(
+            aa=pair["receptor_aa"], pdb_resnum=pair["receptor_resnum"],
+            min_dist=pair["min_dist"], partner_chain=pair["partner_chain"],
+            receptor_atom=pair["receptor_atom"],
+            partner_atom=pair["partner_atom"])
     return found
 
 
