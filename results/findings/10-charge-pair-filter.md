@@ -105,7 +105,29 @@ through untouched so they can be used to pick downward.
      [PASS] unresolved_pairs: 1
      [PASS] verdict: below the pair target
 
-   6 cases, all passed.
+   e424-pair-among-four
+     Four correct pairs, one of them on E424, which sits 6.6 angstroms from the cut in the trimmed target. Still meets the pair target, because the pair is correct, but only three of the four count as supported, so it ranks below the four-correct-pairs case that reaches the same count without E424.
+     contacts: E344 faced by binder H, D368 faced by binder H, H370 faced by binder E, E424 faced by binder H
+     [PASS] correct_pairs: 4
+     [PASS] edge_reliant_pairs: 1
+     [PASS] forbidden_contacts: 0
+     [PASS] his_his_pairs: 0
+     [PASS] supported_pairs: 3
+     [PASS] unresolved_pairs: 0
+     [PASS] verdict: meets the pair target
+
+   renumbered-target
+     Four correct pairs, but the target in the returned file is numbered one place off from the structure the run was handed, which is what a design run that cropped and renumbered its target would return. Every pair would still look right, read against the wrong residues, so the candidate is refused rather than scored.
+     contacts: E344 faced by binder H, D368 faced by binder H, H370 faced by binder E, H358 faced by binder D
+     [PASS] correct_pairs: 0
+     [PASS] numbering_status: does not match the input
+     [PASS] verdict: not scored
+     reasons given: target numbering cannot be reconciled with the input: target numbering does not match the input: no returned chain resembles the input target by number or by sequence
+
+   Ranking: four correct pairs without E424 against four with it
+     [PASS] order: four-correct-pairs then e424-pair-among-four
+
+   8 cases, all passed.
 
 2. Reading a campaign folder, end to end
 

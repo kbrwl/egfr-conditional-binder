@@ -129,6 +129,7 @@ from Bio.PDB.Structure import Structure
 from Bio.PDB.mmcifio import MMCIFIO
 
 import egfr_common as common
+import target_numbering
 
 ROOT = Path(__file__).resolve().parents[1]
 DERIVED = common.DERIVED
@@ -140,6 +141,16 @@ CANDIDATES = ROOT / "results" / "candidates"
 # binder touching it risks behaving differently in the two species at the one
 # position where they differ. Standing rule in docs/decisions-log.md.
 FORBIDDEN_POSITIONS = {442}
+
+# Positions whose pairs are ranked as less supported, without rejecting the
+# candidate. E424 is 6.6 angstroms from the C-terminal cut of the trimmed target
+# (results/findings/09-trimmed-target.md); every other anchor is 12.3 or further.
+# A trimmed model is least reliable at its ends, so a design that leans on E424 is
+# leaning on the part of the target most likely to be wrong. A pair there still
+# counts as correct for the verdict, but a design that reaches the same count
+# without it ranks above one that needs it. A note in a findings file does not
+# survive contact with a shortlist, which is why this is a term in the ranking.
+EDGE_RELIANT_POSITIONS = {424}
 
 # How many correct pairs a candidate needs. The switch is partial rather than
 # all-or-nothing at pH 6.5 -- only a fraction of a histidine's copies carry the
@@ -196,11 +207,26 @@ BREAKABLE_RULES = {
         "unresolved-side-chain",
         "a charge pair with no evidence its charged groups exist would be "
         "counted as correct, inflating every pair count"),
+    "numbering-reconcile": (
+        "renumbered-target",
+        "a candidate whose target was renumbered by the design run would be "
+        "scored on the returned numbers, giving confident verdicts about the "
+        "wrong residues"),
+    "edge-reliance": (
+        "e424-pair-among-four",
+        "a design leaning on E424, 6.6 angstroms from the cut in a trimmed "
+        "model, would rank level with an equivalent design that does not"),
 }
 
 VERDICT_REJECTED = "rejected"
 VERDICT_MEETS = "meets the pair target"
 VERDICT_BELOW = "below the pair target"
+VERDICT_UNSCORABLE = "not scored"
+
+# The structure file the design run was handed, which is what a returned target
+# chain is compared against. Written by analysis/09; not tracked, because it is
+# regenerable.
+INPUT_TARGET = common.STRUCT_DIR / "6aru_domain3.pdb"
 
 
 # ---------------------------------------------------------------------------
@@ -309,8 +335,21 @@ def identify_chains(model, numbering, human, emit):
     return target, binders, evidence
 
 
+def unscored(name, path, reason, numbering_status, numbering_detail):
+    """The result for a candidate this script refuses to score. Every field a
+    scored result has is present and zero, so nothing downstream has to special
+    case it, and the reason is carried where a reader will see it."""
+    return dict(
+        design=name, path=path, pairs=[], verdict=VERDICT_UNSCORABLE,
+        reasons=[reason], correct_pairs=0, correct_pairs_tight=0,
+        edge_reliant_pairs=0, supported_pairs=0, unresolved_pairs=0,
+        his_his_pairs=0, forbidden_contacts=0, neutral_pairs=0, total_pairs=0,
+        target_positions=[], anchors_paired=[],
+        numbering_status=numbering_status, numbering_detail=numbering_detail)
+
+
 def analyse_candidate(name, path, numbering, human, target_chain=None,
-                      binder_chains=None, translate=True):
+                      binder_chains=None, translate=True, input_target=None):
     """Every contact pair in one candidate, classified, and the verdict.
 
     The contact calculation is not implemented here. It is
@@ -319,6 +358,25 @@ def analyse_candidate(name, path, numbering, human, target_chain=None,
     calculation and disagreed for months, which is why there is now one copy.
     """
     model = load_complex(path)
+
+    # Before anything is scored: is the target in this file numbered the way the
+    # structure the run was handed is numbered? Everything below translates the
+    # returned numbers into ours by an offset measured for the input, so a target
+    # the run renumbered would be read as different residues, and the verdicts
+    # would come out confident and wrong. A candidate that cannot be reconciled is
+    # refused, not scored on the assumption that nothing moved.
+    numbering_status, numbering_detail = "not checked", ""
+    if input_target is not None and translate and BROKEN_RULE != "numbering-reconcile":
+        check = target_numbering.check_complex(input_target, path)
+        numbering_status = check["status"]
+        numbering_detail = check["detail"]
+        if not check["ok"]:
+            return unscored(
+                name, path,
+                "target numbering cannot be reconciled with the input: "
+                + target_numbering.describe(check),
+                numbering_status, numbering_detail)
+
     pairs = common.contact_pairs(
         model, target_chain, binder_chains,
         numbering=numbering if translate else None)
@@ -372,6 +430,9 @@ def analyse_candidate(name, path, numbering, human, target_chain=None,
     his_his = [r for r in rows if r["classification"] == "his-his"]
     forbidden = [r for r in rows if r["forbidden"]]
     tight = [r for r in correct if r["charge_groups_reach"]]
+    edge_reliant = ([] if BROKEN_RULE == "edge-reliance"
+                    else [r for r in correct
+                          if r["target_pos"] in EDGE_RELIANT_POSITIONS])
 
     reasons = []
     if his_his:
@@ -396,12 +457,15 @@ def analyse_candidate(name, path, numbering, human, target_chain=None,
         design=name, path=path, pairs=rows, verdict=verdict,
         reasons=reasons, correct_pairs=len(correct),
         correct_pairs_tight=len(tight),
+        edge_reliant_pairs=len(edge_reliant),
+        supported_pairs=len(correct) - len(edge_reliant),
         unresolved_pairs=len(unresolved), his_his_pairs=len(his_his),
         forbidden_contacts=len(forbidden),
         neutral_pairs=sum(1 for r in rows if r["classification"] == "neutral"),
         total_pairs=len(rows),
         target_positions=sorted({r["target_pos"] for r in rows}),
         anchors_paired=sorted({r["target_pos"] for r in correct}),
+        numbering_status=numbering_status, numbering_detail=numbering_detail,
     )
 
 
@@ -471,7 +535,7 @@ def build_residue(resnum, aa, atoms, x, y_anchor, direction, serial):
     return residue, serial
 
 
-def build_test_complex(path, contacts, human):
+def build_test_complex(path, contacts, human, target_shift=0):
     """Write one synthetic candidate complex.
 
     `contacts` is a list of (target uniprot position, binder amino acid,
@@ -497,7 +561,9 @@ def build_test_complex(path, contacts, human):
         # The target keeps the numbering the trimmed target file has, which is
         # ours minus the offset analysis/02 measured, so the translation back is
         # exercised rather than bypassed.
-        target_resnum = pos - common.SIGNAL_PEPTIDE_LEN
+        # `target_shift` renumbers the target on purpose, which is how a design
+        # run that renumbered its target would look.
+        target_resnum = pos - common.SIGNAL_PEPTIDE_LEN + target_shift
         residue, serial = build_residue(target_resnum, target_aa, target_atoms,
                                         x, 0.0, +1.0, serial)
         target_chain.add(residue)
@@ -593,7 +659,46 @@ def test_cases(human):
                         his_his_pairs=0, forbidden_contacts=0,
                         unresolved_pairs=1),
         ),
+        dict(
+            name="e424-pair-among-four",
+            why="Four correct pairs, one of them on E424, which sits 6.6 "
+                "angstroms from the cut in the trimmed target. Still meets the "
+                "pair target, because the pair is correct, but only three of "
+                "the four count as supported, so it ranks below the "
+                "four-correct-pairs case that reaches the same count without "
+                "E424.",
+            contacts=[(344, "H", True), (368, "H", True),
+                      (370, "E", True), (424, "H", True)],
+            expect=dict(verdict=VERDICT_MEETS, correct_pairs=4,
+                        edge_reliant_pairs=1, supported_pairs=3,
+                        his_his_pairs=0, forbidden_contacts=0,
+                        unresolved_pairs=0),
+        ),
+        dict(
+            name="renumbered-target",
+            why="Four correct pairs, but the target in the returned file is "
+                "numbered one place off from the structure the run was handed, "
+                "which is what a design run that cropped and renumbered its "
+                "target would return. Every pair would still look right, read "
+                "against the wrong residues, so the candidate is refused rather "
+                "than scored.",
+            contacts=[(344, "H", True), (368, "H", True),
+                      (370, "E", True), (358, "D", True)],
+            target_shift=1,
+            expect=dict(verdict=VERDICT_UNSCORABLE, correct_pairs=0,
+                        numbering_status=target_numbering.MISMATCH),
+        ),
     ]
+
+
+def input_target_path():
+    """The structure the design run is handed, which returned targets are checked
+    against. Stops with the way to make it if it is missing, because a check that
+    quietly skips itself when its reference is absent protects nothing."""
+    if not INPUT_TARGET.exists():
+        raise SystemExit(f"{INPUT_TARGET} is missing. Run "
+                         f"analysis/09_trim_target.py to write it.")
+    return INPUT_TARGET
 
 
 def run_tests(numbering, human, emit):
@@ -612,9 +717,11 @@ def run_tests(numbering, human, emit):
     with tempfile.TemporaryDirectory() as tmpdir:
         for case in test_cases(human):
             path = build_test_complex(
-                Path(tmpdir) / f"{case['name']}.cif", case["contacts"], human)
+                Path(tmpdir) / f"{case['name']}.cif", case["contacts"], human,
+                target_shift=case.get("target_shift", 0))
             result = analyse_candidate(case["name"], path, numbering, human,
-                                       target_chain="A", binder_chains=["B"])
+                                       target_chain="A", binder_chains=["B"],
+                                       input_target=input_target_path())
             results.append((case, result))
             emit(f"   {case['name']}")
             emit(f"     {case['why']}")
@@ -633,6 +740,16 @@ def run_tests(numbering, human, emit):
             if result["reasons"]:
                 emit("     reasons given: " + "; ".join(result["reasons"]))
             emit()
+    by_name = {case["name"]: result for case, result in results}
+    ordered = [s["design"] for s in rank(
+        [by_name["e424-pair-among-four"], by_name["four-correct-pairs"]])]
+    ok = ordered[0] == "four-correct-pairs"
+    emit("   Ranking: four correct pairs without E424 against four with it")
+    emit(f"     [{'PASS' if ok else 'FAIL'}] order: {' then '.join(ordered)}")
+    if not ok:
+        failures.append("e424 ranking: the design leaning on E424 ranked "
+                        "level with or above the equivalent one that does not")
+    emit()
     emit(f"   {len(test_cases(human))} cases, "
          f"{'all passed' if not failures else f'{len(failures)} assertion(s) failed'}.")
     emit()
@@ -860,9 +977,11 @@ def main(argv=None):
     elif summaries:
         meets = sum(1 for s in summaries if s["verdict"] == VERDICT_MEETS)
         rejected = sum(1 for s in summaries if s["verdict"] == VERDICT_REJECTED)
+        refused = sum(1 for s in summaries if s["verdict"] == VERDICT_UNSCORABLE)
         emit(f"RESULT: PASSED. {len(summaries)} candidates: {meets} meet the "
-             f"pair target, {rejected} rejected, "
-             f"{len(summaries) - meets - rejected} below the target and kept.")
+             f"pair target, {rejected} rejected, {refused} not scored "
+             f"(numbering), {len(summaries) - meets - rejected - refused} below "
+             f"the target and kept.")
     else:
         emit("RESULT: PASSED. The rule is exercised and correct on every test "
              "case; no real candidates were supplied.")
@@ -1072,7 +1191,8 @@ def run_self_test():
     return 1 if failures else 0
 
 
-def process_campaign(folder, numbering, human, parse_only, emit):
+def process_campaign(folder, numbering, human, parse_only, emit,
+                     input_target=None):
     """Every accepted design in a campaign folder, classified."""
     failures = []
     structures, where = find_candidate_structures(folder)
@@ -1139,12 +1259,24 @@ def process_campaign(folder, numbering, human, parse_only, emit):
         emit("   prove this script can read what the pipeline emits.")
         emit()
 
+    if not parse_only:
+        input_target = input_target or input_target_path()
+        first_check = target_numbering.check_complex(input_target, structures[0])
+        emit("   Target numbering, first candidate against the structure the run")
+        emit(f"   was handed ({Path(input_target).name}):")
+        emit(f"   {target_numbering.describe(first_check)}.")
+        emit("   Every candidate is checked the same way, and one that cannot be")
+        emit("   reconciled is refused rather than scored.")
+        emit()
+    else:
+        input_target = None
+
     summaries, all_pairs = [], []
     for path in structures:
         result = analyse_candidate(
             path.stem, path, numbering, human,
             target_chain=target_chain, binder_chains=binder_chains,
-            translate=not parse_only)
+            translate=not parse_only, input_target=input_target)
         row = join_metrics(path.stem, metrics)
         result["metrics"] = row
         checked = cross_check_interface(result, row, emit) if row else None
@@ -1198,10 +1330,15 @@ def report_results(summaries, emit):
     meets = [s for s in ranked if s["verdict"] == VERDICT_MEETS]
     rejected = [s for s in ranked if s["verdict"] == VERDICT_REJECTED]
     below = [s for s in ranked if s["verdict"] == VERDICT_BELOW]
+    unscored_list = [s for s in ranked if s["verdict"] == VERDICT_UNSCORABLE]
     at_target = [s for s in meets if s["correct_pairs"] >= PAIR_TARGET]
     emit(f"   {len(meets)} candidates reach {MIN_CORRECT_PAIRS} correct pairs, "
          f"of which {len(at_target)} reach {PAIR_TARGET}.")
     emit(f"   {len(rejected)} rejected for breaking a hard rule.")
+    emit(f"   {len(unscored_list)} not scored, because the target numbering "
+         f"could not be reconciled with the input.")
+    for s in unscored_list:
+        emit(f"     {s['design']}: {s['numbering_detail']}")
     emit(f"   {len(below)} below the pair target, kept and ranked last rather")
     emit("   than discarded.")
     emit()
@@ -1216,14 +1353,16 @@ def report_results(summaries, emit):
 def rank(summaries):
     """Order the candidates. The one place the ranking rule lives.
 
-    By correct pairs, then by how many of those have their charged groups within
-    reach, then by how many distinct target positions are involved, then by name
+    By supported pairs, meaning correct pairs not resting on a position near the
+    trimmed target's cut edge (E424), then by all correct pairs, then by how many
+    of those have their charged groups within reach, then by how many distinct target positions are involved, then by name
     so the order is stable between runs. No term here is a binding-strength
     metric, and that is the point: the pipeline already ranks by interface
     confidence and this replaces that ordering.
     """
     return sorted(summaries,
-                  key=lambda s: (-s["correct_pairs"],
+                  key=lambda s: (-s["supported_pairs"],
+                                 -s["correct_pairs"],
                                  -s["correct_pairs_tight"],
                                  -len(s["anchors_paired"]),
                                  s["design"]))
@@ -1254,9 +1393,11 @@ def write_outputs(summaries, all_pairs, emit, parse_only, had_candidates):
             if column not in metric_columns:
                 metric_columns.append(column)
     summary_columns = ["design", "verdict", "reasons", "correct_pairs",
+                       "supported_pairs", "edge_reliant_pairs",
                        "correct_pairs_in_reach", "unresolved_pairs",
                        "his_his_pairs", "forbidden_contacts", "neutral_pairs",
-                       "total_pairs", "target_positions_paired",
+                       "total_pairs", "target_numbering",
+                       "target_positions_paired",
                        "target_positions_contacted"]
     with (DERIVED / "10-candidate-summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(
@@ -1270,7 +1411,8 @@ def write_outputs(summaries, all_pairs, emit, parse_only, had_candidates):
     # at 442, never for binding weakly, because the requirement is a detection
     # threshold rather than a ratio and a weak clear switch is the better
     # submission.
-    survivors = [s for s in rank(summaries) if s["verdict"] != VERDICT_REJECTED]
+    survivors = [s for s in rank(summaries)
+                 if s["verdict"] not in (VERDICT_REJECTED, VERDICT_UNSCORABLE)]
     with (CANDIDATES / "shortlist.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(
             handle, fieldnames=["rank", "meets_pair_target"] + summary_columns
@@ -1309,12 +1451,15 @@ def summary_row(summary):
         verdict=summary["verdict"],
         reasons="; ".join(summary["reasons"]),
         correct_pairs=summary["correct_pairs"],
+        supported_pairs=summary["supported_pairs"],
+        edge_reliant_pairs=summary["edge_reliant_pairs"],
         correct_pairs_in_reach=summary["correct_pairs_tight"],
         unresolved_pairs=summary["unresolved_pairs"],
         his_his_pairs=summary["his_his_pairs"],
         forbidden_contacts=summary["forbidden_contacts"],
         neutral_pairs=summary["neutral_pairs"],
         total_pairs=summary["total_pairs"],
+        target_numbering=summary.get("numbering_status", "not checked"),
         target_positions_paired=" ".join(str(p)
                                          for p in summary["anchors_paired"]),
         target_positions_contacted=" ".join(str(p) for p
