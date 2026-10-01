@@ -874,11 +874,26 @@ dropping regardless. Nothing to gain, and a real contamination risk.
 Steps 1–4 of the previous list are done — see Settled, "The structure check
 passed". Reproducible via `analysis/00`–`06`.
 
-1. **Resolve the H418 question.** Highest value per unit effort of anything
-   outstanding: it decides between a 4-anchor cluster and a 5-anchor cluster that
-   carries the method-novelty claim with no cetuximab overlap. Check further EGFR
-   structures and examine side-chain rotamers. Do not settle it by preferring the
-   more convenient reading.
+1. **Resolve the H418 question — now a fallback question, not the critical path.**
+   It used to be ranked highest because it was said to carry the method-novelty
+   claim. That claim is withdrawn, and 415–466 is no longer the primary epitope, so
+   the item is rewritten rather than retired: it still decides something, but less.
+
+   What it decides now: whether the fallback epitope offers a four-anchor cluster
+   with no target histidine (D416, E421, E424, E455) or a five-anchor one with a
+   target histidine and no cetuximab overlap (D416, H418, E421, E424, E455, span
+   24.0 Å). That matters only if the H370 patch fails later.
+
+   One thing worth knowing and untested: the same buried reading in 6ARU that
+   excluded H418 from 415–466 also excluded it from the H370 candidate set at step
+   08's third filter. If H418 is usable it becomes a seventeenth candidate there,
+   and whether it would join or extend the eight-anchor cluster has not been
+   computed. That is the only route by which this question touches the primary
+   epitope.
+
+   Resolve by checking further EGFR structures and examining side-chain rotamers,
+   not by preferring whichever reading is more convenient. Ranked below the
+   pipeline either way, under the hard rule above.
 2. **Choose the anchor cluster and record the reasoning.** Use the trade-off table
    in Open. This is a judgement call between novelty and cleanliness, and the
    write-up is stronger for showing it was made deliberately.
@@ -899,12 +914,22 @@ passed". Reproducible via `analysis/00`–`06`.
    `CLAUDE.md` before filtering candidates, because the pipeline's default
    objective will fight it.
 8. Novelty check, rank, submit up to 20 with written reasoning.
-9. **Rewrite `docs/explainers/04-design-pipeline.md` after the first real pipeline
+9. **Have the smoke run record wall-clock time per trajectory and peak GPU
+   memory**, and write both into a findings file. Explainer 04 originally quoted a
+   250-residue trajectory at five minutes, a 900-residue one at two to three hours,
+   and a 32 GB minimum video memory. All three came from BindCraft v1's
+   documentation and were removed, because BindCraft2's documentation states
+   neither a runtime per design nor a minimum video memory. They are the numbers
+   the trimming decision and the card
+   choice actually rest on, so they come back as measurements from our own run or
+   not at all. Time one trajectory on the untrimmed target and one on domain III,
+   so the ratio is measured rather than reasoned.
+10. **Rewrite `docs/explainers/04-design-pipeline.md` after the first real pipeline
    run**, with what actually happened in place of what was planned. Its figures are
    external, read from the web on 1 October 2026, and are a placeholder for
    measurements we have not taken. Any figure that still matters afterwards moves
    into a findings file produced by a script in `analysis/`, so it is reproducible
    like every other number here.
-10. **Test how much of domain III the trim can leave out**, which is the unverified
+11. **Test how much of domain III the trim can leave out**, which is the unverified
     decision recorded below. It controls both run time and whether the designs mean
     anything, and nothing has measured it.

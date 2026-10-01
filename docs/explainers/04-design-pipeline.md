@@ -67,16 +67,17 @@ If the prediction disagrees with the design, the design is discarded. This is a
 evidence about whether the binder works in a tube, and it is good at catching
 obvious nonsense, which is what it is for.
 
-### BindCraft bundles all three
+### BindCraft2 bundles all three
 
-**BindCraft** runs those three steps in one automated loop, repeatedly. That is why
+**BindCraft2** runs those three steps in one automated loop, repeatedly. That is why
 this project chose it over wiring three tools together by hand with three days
-available.
+available. The version matters: statements about BindCraft **v1** do not all carry
+over, and this document means v2 wherever it says BindCraft2.
 
 One attempt through the loop is a **trajectory**. Most trajectories produce nothing:
 they get rejected at one of the checks. In a published sample run against the test
 target PD-L1, a trajectory that finished in under five minutes still ended with no
-accepted designs (BindCraft run log published by the US National Institutes of
+accepted designs (BindCraft v1 run log published by the US National Institutes of
 Health high-performance computing group, read 1 October 2026). Many trajectories are
 run to get a few survivors.
 
@@ -89,11 +90,17 @@ processing unit, a **GPU** — not for drawing anything, but because the chips b
 render game frames happen to be good at the matrix arithmetic that neural networks
 are made of.
 
-BindCraft requires an NVIDIA card with CUDA support (CUDA is NVIDIA's programming
-interface for using the card for general computation). Its documentation gives a
-minimum of 32 GB of video memory and recommends 48 GB, naming the L40S, V100, A100
-and H100 cards (BindCraft project wiki, read 1 October 2026). These are data-centre
-cards. A laptop has nothing comparable, so the card is rented by the hour.
+BindCraft2 requires an NVIDIA card with CUDA support (CUDA is NVIDIA's programming
+interface for using the card for general computation). How much memory that card
+needs is not stated anywhere: the check recorded in `docs/decisions-log.md` found no
+minimum video memory in BindCraft2's documentation, and the entry is marked
+unverified. The card choice is therefore a judgement rather than a requirement.
+
+`design/modal/bindcraft2_smoke.py` defaults to an A100 with 40 GB on the reasoning
+that the folding step is the memory-hungry part, and that a run failing for want of
+memory costs more time than a larger card costs money. It drops to a cheaper card
+once something is known to work. A laptop has nothing comparable to any of these, so
+the card is rented by the hour either way.
 
 ---
 
@@ -106,7 +113,8 @@ that GPU attached, runs the job, returns the results, and shuts it down. Billing
 per second of actual execution.
 
 The file is short, and roughly says: build an image with these Python packages,
-attach an L40S GPU, run this function, write output to this storage volume.
+attach a GPU of a named type, run this function, write output to this storage
+volume. `design/modal/bindcraft2_smoke.py` is that file for this project.
 
 Why Modal over the alternatives:
 
@@ -130,10 +138,15 @@ Why Modal over the alternatives:
    as of 1 October 2026: about $5 per month in credits with no card attached, $30 per
    month with one. Setting the limit at $30 makes overspending impossible rather than
    unlikely. Do this before the first run.
-3. Get BindCraft running through a prepared Modal wrapper rather than from the raw
-   repository. BindCraft depends on ColabDesign, ProteinMPNN and PyRosetta, and
-   PyRosetta in particular is slow to install correctly.
-4. **Smoke run on the shipped example first.** BindCraft includes a PD-L1 example
+3. Build the image from BindCraft2's own installer, once, and let it cache.
+   `design/modal/bindcraft2_smoke.py` in this repository already does this: it
+   clones BindCraft2, runs its `install.sh` at image build time so the work is not
+   repeated on every run, and fetches model weights into a separate volume so a
+   rebuild does not re-download them. BindCraft2 ships container recipes but no
+   prebuilt image in a registry, so the image has to be built. Note that
+   BindCraft **v1** depends on PyRosetta, which is slow to install and carries a
+   licence; BindCraft2 does not mention it anywhere, so that obstacle is gone.
+4. **Smoke run on the shipped example first.** BindCraft2 includes a PD-L1 example
    target. Run it unmodified and get one design out. A **smoke run** is a test that
    proves the chain works end to end — authentication, image build, GPU allocation,
    file output — before any of our own choices enter it. Pointing it at EGFR first
@@ -145,18 +158,25 @@ Why Modal over the alternatives:
 ## The decision that controls cost and time
 
 Run time depends on the size of the whole complex: target residues plus binder
-residues. BindCraft's own documentation gives a 250-residue trajectory at about five
-minutes on an H100 card, and a 900-residue trajectory at two to three hours
-(BindCraft project wiki, read 1 October 2026).
+residues. There is no published figure to plan against. BindCraft2's documentation
+does not state a runtime per design, which `docs/decisions-log.md` records as
+unverified, so what follows is reasoning about direction and scale rather than
+arithmetic.
 
 The full EGFR extracellular region is about 620 residues. With an 80-residue binder
-that is roughly 700, which sits in the multi-hour range and exhausts a month of free
-credit in a handful of attempts.
+that is roughly 700. Domain III is 171 residues, so trimming to it and adding the
+same binder gives about 250 — under four tenths of the size. Because the cost is
+driven by the size of the whole complex rather than by the binder alone, that is a
+large reduction in run time.
 
-**So trim the target.** Give BindCraft only the part of EGFR around our patch.
-Domain III is roughly 170 residues and contains or neighbours all eight anchors.
-170 plus 80 is 250, which is the five-minute case. On the same budget that is the
-difference between a dozen attempts and several hundred.
+**How large is unknown.** It is the difference between a budget that covers this
+exercise and one that does not, and no number here establishes which. The smoke run
+is what produces it: time one trajectory on the untrimmed target and one on the
+trimmed one, and the ratio stops being a guess.
+
+**So trim the target.** Give BindCraft2 only the part of EGFR around our patch.
+Domain III contains or neighbours all eight anchors, which makes it the natural
+unit to keep.
 
 The trim is a real decision with a real failure mode. Cut too tight and the fragment
 will not hold its shape in the model, and the design will have been made against a
@@ -167,7 +187,7 @@ carving out the eight anchors.
 
 ## Where the epitope work is consumed
 
-BindCraft takes **hotspots**: the residues on the target it is told to aim at. That
+BindCraft2 takes **hotspots**: the residues on the target it is told to aim at. That
 input is the output of `analysis/08`, written out:
 
 > **E344, H358, D368, H370, E391, E400, E421, E424**
@@ -182,7 +202,7 @@ without saying why.
 
 ## What the pipeline will not do
 
-BindCraft does not design for pH. The check recorded in `docs/decisions-log.md`
+BindCraft2 does not design for pH. The check recorded in `docs/decisions-log.md`
 found that it reports binder charge at a hard-coded pH 7.4 as a suppressed readout —
 `bindcraft/filters.py`, `REPORTED_PH = 7.4`, the metrics `Binder_pI` and
 `Binder_Net_Charge` — with no pH term in its objective and no pH setting in its
@@ -203,7 +223,7 @@ first half of the work and the second half is ours:
 - reject any candidate with a histidine on the binder facing a histidine on the
   target
 - then deliberately weaken the survivors, because the requirement is no *detectable*
-  binding at pH 7.4 and BindCraft's built-in objective pushes the opposite way
+  binding at pH 7.4 and BindCraft2's built-in objective pushes the opposite way
 
 That filtering and rescoring step is where the submission is decided. It needs
 candidates to operate on, which is why the pipeline is the blocker rather than a
@@ -220,15 +240,25 @@ All external, all read 1 October 2026, none verified against our own runs.
 | Modal free credits, card attached | $30 per month | Modal pricing pages, as reported by several pricing trackers |
 | Modal free credits, no card | about $5 per month | same |
 | Concurrent GPU jobs on the free tier | 10 | same |
-| BindCraft minimum video memory | 32 GB, 48 GB recommended | BindCraft documentation |
-| 250-residue trajectory | about 5 minutes on an H100 | BindCraft project wiki |
-| 900-residue trajectory | 2 to 3 hours on an H100 | BindCraft project wiki |
 | Cost per accepted design | about $2.90 | Adaptyv's own published tool comparison, averaged over 7 targets |
 
+**What this table got wrong, and in which direction.** It originally carried three
+more rows: a minimum of 32 GB of video memory with 48 GB recommended, a 250-residue
+trajectory at about five minutes on an H100, and a 900-residue trajectory at two to
+three hours. All three were removed on 1 October 2026 after checking them against
+`docs/decisions-log.md`. Each was quoted from BindCraft **v1**'s documentation while
+this project uses **BindCraft2**, whose documentation states neither a minimum video
+memory nor a runtime per design — both already recorded there as unverified. The
+error ran one way: it made the hardware requirement look like a fixed threshold and
+the trimming decision look like arithmetic, when the first is a judgement and the
+second is a direction of unknown magnitude. The rows left above survived the check.
+The removed figures come back only as measurements from our own smoke run.
+
 Two consequences worth stating. Twenty designs sits comfortably inside $30 with a
-trimmed target and outside it without one. And BindCraft cannot split a single job
-across several cards, though several jobs can run at once writing into the same
-output folder, which is how wall-clock time is compressed on the free tier.
+trimmed target, and the untrimmed case is unknown rather than merely worse. And
+BindCraft2 cannot split a single job across several cards, though several jobs can
+run at once writing into the same output folder, which is how wall-clock time is
+compressed on the free tier.
 
 ---
 
@@ -236,7 +266,7 @@ output folder, which is how wall-clock time is compressed on the free tier.
 
 - None of the figures above has been reproduced here. The first real run replaces
   them.
-- The self-consistency checks inside BindCraft say whether a design is internally
+- The self-consistency checks inside BindCraft2 say whether a design is internally
   coherent. They say nothing about whether it binds in the assay.
 - Nothing in this pipeline addresses the pH requirement, which is the objective the
   competition ranks first.
@@ -247,6 +277,6 @@ output folder, which is how wall-clock time is compressed on the free tier.
 
 ## Terms introduced here
 
-For `docs/glossary.md`: AlphaFold2, backbone, BindCraft, binder, CUDA, GPU, hotspot,
+For `docs/glossary.md`: AlphaFold2, backbone, BindCraft2, binder, CUDA, GPU, hotspot,
 inverse folding, Modal, ProteinMPNN, RFdiffusion, self-consistency check, serverless,
 smoke run, trajectory.
