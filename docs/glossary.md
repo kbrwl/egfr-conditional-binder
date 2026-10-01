@@ -41,6 +41,24 @@ evidence its charge reaches anything, which is why
 `analysis/10_charge_pair_filter.py` counts those separately rather than as correct
 pairs.
 
+**Fragment** — a piece cut out of a larger protein structure and used on its own.
+Here it means the 171 residues of domain III (our 310 to 480) that
+`analysis/09_trim_target.py` cuts out of EGFR's outer region and hands to the design
+tool, because the tool's run time grows with the size of what it is given. Cutting
+creates two problems that the full protein does not have: residue numbers change, and
+a disulfide bond can lose one of its two ends.
+
+**Structure file** — a plain text list of the x, y and z coordinates of every atom in
+a protein, as measured in a laboratory or predicted by a program. The file records
+what each atom is and where it sits, and nothing in it says which numbering
+convention its residue numbers follow. Common formats are PDB and mmCIF.
+
+**Complex** — two or more molecules held together, saved as one structure file. Here
+it means a designed binder together with the target in the position the design tool
+predicts they would sit. Each returned candidate is a complex file, and
+`analysis/10_charge_pair_filter.py` works out the pairing between binder and target
+residues from its coordinates.
+
 **Domain** — a chunk of a protein that folds into its own self-contained blob.
 One protein chain can contain several, strung together like beads.
 
