@@ -1,0 +1,4 @@
+candidate,first,last,length,substitutions,rmsd_whole_fragment_a,rmsd_common_core_a,core_residues_compared,anchor_rmsd_core_fit_a,anchor_face_rmsd_a,e424_deviation_a,e424_charge_group_shift_a,e424_neighbourhood_rmsd_a,own_c_edge_rmsd_a,own_c_edge_first,own_c_edge_last,shared_edge_471_480_rmsd_a,staple_sg_distance_a,plddt_mean,plddt_anchors,plddt_e424,plddt_own_c_edge,prediction_file
+310-480,310,480,171,none,4.997,4.997,171,2.526,0.640,2.358,0.895,3.471,4.348,471,480,4.348,,80.6,82.9,83.4,54.4,310-480-9a4420affbbd892b.pdb
+310-480-C470S,310,480,171,470S,4.969,4.969,171,2.498,0.642,2.323,0.904,3.439,4.452,471,480,4.452,,80.5,82.9,83.3,53.1,310-480-C470S-bb3359b0258d4352.pdb
+310-499,310,499,190,none,4.903,4.971,171,2.571,0.655,2.712,0.902,3.740,3.740,490,499,2.949,2.225,84.4,84.7,87.4,78.2,310-499-f7b8972f0b42c00d.pdb

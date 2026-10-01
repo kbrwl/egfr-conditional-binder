@@ -442,6 +442,22 @@ another as closely as possible, so the two can be compared. Necessary because
 coordinates are arbitrary: the same protein solved twice can be described by
 completely different numbers in the file.
 
+**ESMFold** — a protein structure predictor that works from a single sequence,
+with no multiple sequence alignment, meaning no column of related proteins from
+other species to read conservation out of. That makes it far cheaper to run than
+AlphaFold2 and less accurate in absolute terms. `analysis/11_trim_boundary.py`
+uses it through a public web interface because it needs no graphics card or account
+and the project's graphics-card access was still blocked. Its absolute error is
+unknown here, so the script reads differences between candidates predicted the same
+way and not any single number.
+
+**pLDDT (predicted local distance difference test)** — a predictor's own
+confidence in each residue's position, from 0 to 100. Above about 70 is usually
+read as a reliable backbone and below about 50 as essentially no information; those
+are the field's conventions, not something measured here. It is the model's opinion
+of itself, so a prediction can be confident and wrong, and it is reported beside the
+comparison against the measured structure and never in place of it.
+
 **RMSD (root-mean-square deviation)** — the average distance left between
 corresponding atoms after superposition, in ångströms. It is the standard measure
 of how well two structures match. Low means they agree; a couple of ångströms
