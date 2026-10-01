@@ -133,8 +133,13 @@ def check():
          "print('devices', jax.devices()); "
          "print('default backend', jax.default_backend())"
          '"')
-    _run("bindcraft --help || bindcraft design --help")
-    _run("bindcraft --list-targets || true")
+    # The subcommands and listing flags below are BindCraft2's own, read from its
+    # cli.py on 1 October 2026. `--list-targets` is a flag of `design` rather
+    # than of `bindcraft` itself, which the earlier version of this file had
+    # wrong and which would have burned a GPU minute finding out.
+    _run("bindcraft design --help")
+    _run("bindcraft design --list-targets || true")
+    _run("bindcraft design --list-settings | head -40 || true")
     print("\nIf 'default backend' above is not 'gpu', stop and fix that first.")
 
 
@@ -158,24 +163,57 @@ def smoke(target: str = "examples/pdl1.json"):
 
     # Copy anything that looks like output back into the volume, then report any
     # sequences found, because a sequence is the thing that proves the chain.
+    #
+    # TWO THINGS HERE WERE WRONG AND ARE THE REASON THIS BLOCK IS COMMENTED.
+    #
+    # The patterns did not include *.cif. BindCraft2 writes its designed
+    # complexes as mmCIF, not PDB -- `3_Ranked/<design>_seq<n>[_<target>].cif` --
+    # so the old list copied back every summary table and none of the structures.
+    # That matters more than it looks: BindCraft2 does not record which binder
+    # residue faces which target residue anywhere in its CSVs, under any setting.
+    # It writes two separate residue lists. The pairing the charge-pair filter in
+    # analysis/10 runs on has to be recomputed from the complex itself, so losing
+    # the .cif files means losing the run and paying to generate it again.
+    #
+    # The copy also flattened everything into one directory. analysis/10 finds
+    # candidates by looking in 3_Ranked/ and skipping the *_monomer.cif files
+    # that hold the binder alone, and flattening both destroys that and lets two
+    # files with the same base name overwrite each other.
     out = pathlib.Path("/results/pdl1-smoke")
     out.mkdir(parents=True, exist_ok=True)
     produced = []
-    for pattern in ("*.csv", "*.fasta", "*.fa", "*.pdb", "*.json", "*.log"):
-        for path in pathlib.Path(INSTALL_DIR).rglob(pattern):
+    source = pathlib.Path(INSTALL_DIR)
+    for pattern in ("*.csv", "*.cif", "*.fasta", "*.fa", "*.pdb", "*.json",
+                    "*.log", "*.txt"):
+        for path in source.rglob(pattern):
             if ".venv" in str(path) or "/examples/" in str(path):
                 continue
+            relative = path.relative_to(source)
+            destination = out / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
             try:
-                shutil.copy2(path, out / path.name)
-                produced.append(path.name)
+                shutil.copy2(path, destination)
+                produced.append(str(relative))
             except Exception as exc:                     # noqa: BLE001
                 print(f"could not copy {path}: {exc}")
     results.commit()
 
-    print(f"\nFiles copied to the volume: {sorted(set(produced)) or 'none'}")
-    for path in sorted(out.glob("*.csv")):
+    print(f"\nFiles copied to the volume: {len(produced)}")
+    for name in sorted(set(produced)):
+        print(f"  {name}")
+
+    complexes = [p for p in out.rglob("*.cif")
+                 if not p.stem.endswith("_monomer")]
+    print(f"\nDesigned complexes (what analysis/10 reads): {len(complexes)}")
+    if not complexes:
+        print("  NONE. Without these the charge-pair filter has nothing to run")
+        print("  on, because the pairing it needs is in the structures and not")
+        print("  in any table BindCraft2 writes. Find out where they went before")
+        print("  spending anything on a real campaign.")
+
+    for path in sorted(out.rglob("*.csv")):
         text = path.read_text(errors="replace").splitlines()
-        print(f"\n--- {path.name}, first 5 lines ---")
+        print(f"\n--- {path.relative_to(out)}, first 5 lines ---")
         for line in text[:5]:
             print(line)
     return sorted(set(produced))
