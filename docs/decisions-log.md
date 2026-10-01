@@ -140,7 +140,7 @@ submissions. Not stated anywhere. Ask in the Proteinbase Slack channel.
 
 **What we are actually doing, honestly stated.** Replaces an earlier section that
 claimed we were competing where no established method exists. That claim was
-withdrawn on 2 October 2026 after a prior-art search; see Ruled out.
+withdrawn on 2 October 2026 after a search of the existing literature; see Ruled out.
 
 1. An epitope chosen by computed human/mouse sequence identity, with the constraint
    against contacting position 442 derived from cetuximab's measured contact set
@@ -198,7 +198,7 @@ throughout for that reason.)
 
 **The novelty claim is withdrawn (1 October 2026).** This entry used to say that
 using the target's own H418 and H433 as anchors for acidic residues on our side was
-a method differentiator that no standard pipeline does. A prior-art search shows the
+a method differentiator that no standard pipeline does. The literature search shows the
 idea is published, including on EGFR and on H433 specifically. Details under
 Resolved. What replaces it is in "How to describe the method honestly" below.
 

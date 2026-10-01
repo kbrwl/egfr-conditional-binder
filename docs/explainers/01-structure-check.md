@@ -315,7 +315,7 @@ result.
 A separate point, found later and more important: **this arrangement is published,
 and on H433 specifically.** Liu et al. 2022 mapped EGFR's own H370 and H433 as the
 residues responsible for pH-dependent antibody binding, then deliberately put an
-acidic residue against H433. See "What the prior-art check found" below.
+acidic residue against H433. See "What the literature search found" below.
 
 **What this does not establish.** Geometric reachability is necessary and not
 sufficient. It does not show that a foldable binder exists which presents the
@@ -542,7 +542,7 @@ corrupting the input on purpose and confirming it fails.
 
 ---
 
-## What the prior-art check found
+## What the literature search found
 
 Before claiming the method was new, we searched for whether it already existed. It
 does. This is the most consequential thing in this document.
@@ -610,7 +610,7 @@ to closed in the assay buffer, which is the number that would actually matter.
 **Withdrawn.** The claim that the method was novel, entirely rather than narrowed.
 See `02-what-was-already-published.md`, which covers the search, what it found and what it gave back.
 
-**Superseded.** 415-466 is no longer the primary epitope. The prior-art search named
+**Superseded.** 415-466 is no longer the primary epitope. The literature search named
 EGFR's H370 as the other experimentally implicated histidine, and evaluating it
 produced a better epitope on every measure we have: eight conserved reachable anchors
 on one face instead of four, two target histidines instead of one, no overlap with

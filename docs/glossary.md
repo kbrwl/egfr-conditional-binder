@@ -235,10 +235,6 @@ to be used again. A well-known application of pH-dependent binding running in th
 opposite direction to ours: release when acidic, rather than grip when acidic.
 Igawa et al. 2010.
 
-**Prior art** — anything already published that covers an idea you were about to
-claim as your own. Checking for it before claiming novelty is the difference between
-a submission that cites the field and one that a reader can refute from memory.
-
 **Imidazole ring** — the five-membered ring at the end of a histidine side chain,
 containing two nitrogen atoms. It is the part that picks up or loses a positive
 charge as pH changes, so it is the actual working component of the pH switch. The
