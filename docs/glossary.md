@@ -30,8 +30,31 @@ in others, which is why `analysis/02` writes a receptor-only file before measuri
 anything: a surface measured with the antibody still attached reads as buried where
 the antibody is sitting.
 
+**Side chain** — the part of a residue that hangs off the backbone and makes one
+amino acid different from another. The backbone is identical in all twenty; the side
+chain is what carries the charge, the water-avoiding bulk or the hydrogen-bonding
+group, so it is the part that does the chemistry. It matters for the charge-pair
+rule that a side chain can be absent from a structure file while the backbone is
+present: the atoms were not resolved, meaning the measurement was not sharp enough
+to place them. A histidine with no side chain in the file is a histidine with no
+evidence its charge reaches anything, which is why
+`analysis/10_charge_pair_filter.py` counts those separately rather than as correct
+pairs.
+
 **Domain** — a chunk of a protein that folds into its own self-contained blob.
 One protein chain can contain several, strung together like beads.
+
+**Residue numbering** — which number each position in a protein is called. There is
+no single answer, which is the problem: a sequence archive numbers from the first
+amino acid the gene encodes, while a structure file carries whatever numbering its
+depositors chose, often counting from the start of the mature protein after the
+leader sequence is cut off, and nothing inside the file records which convention it
+follows. This project's numbering is positions in the full human UniProt record
+P00533; both structures used here are offset by 24 from it. Getting an offset wrong
+raises no error and returns a plausible residue in the wrong place, so the offset is
+measured by aligning sequences and then checked by asking what amino acid each
+position turns out to be. See `analysis/00_numbering_check.py` and the "Residue
+numbering" section of `CLAUDE.md`.
 
 **Sequence identity** — the percentage of positions where two proteins have the
 same amino acid, after lining them up. 87% identity means they agree at 87
@@ -93,6 +116,15 @@ Thirty weak contacts at once makes a grip that lasts.
 
 **Binder** — any protein designed to stick to a chosen target. What we are
 designing.
+
+**Interface** — the pair of surfaces where two proteins touch, counted as the
+residues of each that come within a chosen distance of the other. The distance is a
+convention rather than a physical boundary, so an interface is only defined once the
+cutoff is stated: this project uses 4.5 angstroms between non-hydrogen atoms, the
+choice steps 04, 06 and 10 all share, and BindCraft2 reports its own at 4.0. The
+looser cutoff gives the larger set, so our interface should contain BindCraft2's
+rather than match it, and `analysis/10_charge_pair_filter.py` checks that
+relationship rather than expecting the two to agree.
 
 **Affinity / K_D (dissociation constant)** — how tightly a binder grips,
 measured as a concentration, where a lower number means a tighter grip.

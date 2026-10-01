@@ -193,6 +193,12 @@ says what it changed about the design. Naming the technical term is the point â€
 knowing that a measurement is called relative solvent accessibility is what makes it
 possible to read other people's work later.
 
+A finished artefact gets an explainer even when the phase around it is still open,
+if the reader will otherwise have to trust its output without understanding it. A
+tool is understood before its results are believed, not after. Such an explainer
+states in its own opening that it covers work with no results yet, and is rewritten
+when there are.
+
 Explainers quote numbers from `results/findings/`. Where the two disagree, the
 findings files are correct and the explainer needs updating. Update the relevant
 explainer whenever a finding it quotes changes.
