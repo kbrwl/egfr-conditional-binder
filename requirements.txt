@@ -1,4 +1,4 @@
-# Python dependencies for the analysis pipeline (analysis/00 - analysis/06).
+# Python dependencies for the analysis pipeline (analysis/00 - analysis/08).
 # Versions are the ones the committed results were actually computed with, on
 # Python 3.13.2 / macOS. Pinned rather than floated so a rerun reproduces the
 # numbers rather than approximately reproducing them.

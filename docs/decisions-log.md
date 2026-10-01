@@ -2,7 +2,7 @@
 
 Read this first in any new chat. Update it when something moves between sections.
 
-Last updated: 30 September 2026 (numbering convention, structure-check results)
+Last updated: 1 October 2026 (H370 epitope, design pipeline, corrections to the novelty record)
 
 ---
 
@@ -140,7 +140,7 @@ submissions. Not stated anywhere. Ask in the Proteinbase Slack channel.
 
 **What we are actually doing, honestly stated.** Replaces an earlier section that
 claimed we were competing where no established method exists. That claim was
-withdrawn on 2 October 2026 after a search of the existing literature; see Ruled out.
+withdrawn on 1 October 2026 after a search of the existing literature; see Ruled out.
 
 1. An epitope chosen by computed human/mouse sequence identity, with the constraint
    against contacting position 442 derived from cetuximab's measured contact set
@@ -148,8 +148,8 @@ withdrawn on 2 October 2026 after a search of the existing literature; see Ruled
 2. A target histidine chosen using the published experimental mapping of EGFR's
    pH-dependence determinants (Liu et al. 2022, Molecular Therapy — Oncolytics
    27:256–269), which identified H370 and H433 by histidine-to-alanine mutagenesis.
-   Most entrants will be guessing which histidine produces real pH dependence. We are
-   using a measurement.
+   Our target histidine therefore rests on a published measurement rather than on
+   reasoning about which histidine looks promising.
 3. A positional charge-pairing rule with an explicit rejection criterion — never a
    histidine on the binder facing a histidine on the target — which has published
    experimental support: Liu et al. tried that arrangement and it produced no effect,
@@ -662,7 +662,7 @@ Open as a variance source rather than a blocker.
 
 ## Ruled out
 
-**Strategy: "compete where no established method exists" — withdrawn 2 October
+**Strategy: "compete where no established method exists" — withdrawn 1 October
 2026.** The section read:
 
 > Affinity optimisation is a solved-ish problem that well-resourced labs will win.

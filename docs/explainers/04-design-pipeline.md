@@ -194,9 +194,9 @@ input is the output of `analysis/08`, written out:
 
 Everything in explainer 03 exists to produce that one line of configuration. The
 funnel from 154 residues to 16 to 8, the face test, the conservation filter — all of
-it was deciding what goes in that field. Hotspot choice is also where binder
-campaigns commonly fail, because a badly chosen set gets every trajectory rejected
-without saying why.
+it was deciding what goes in that field. Getting it wrong fails quietly: a set that
+cannot be gripped by one face produces trajectories that are rejected without
+reporting a reason, so the cost arrives as wasted runs rather than as an error.
 
 ---
 
