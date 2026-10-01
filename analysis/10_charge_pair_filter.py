@@ -1,0 +1,1326 @@
+#!/usr/bin/env python3
+"""
+10_charge_pair_filter.py — the step that turns generic binders into pH-conditional
+ones.
+
+WHAT THIS IS FOR
+----------------
+The design pipeline has no concept of pH. BindCraft2 reports the binder's charge
+at a hard-coded pH 7.4 as a readout it does not act on -- `REPORTED_PH = 7.4` in
+its `bindcraft/filters.py`, surfaced as the metrics `Binder_pI` and
+`Binder_Net_Charge` -- and has no pH term in its objective. It will return several
+hundred well-folded, strongly binding, completely pH-blind candidates. Under this
+project's objective ordering, where pH selectivity comes first, that is a failing
+submission.
+
+This script is what converts those candidates into pH-conditional ones. It is the
+part of the method that is actually ours.
+
+Abbreviations, expanded here because this file gets read on its own:
+  EGFR     epidermal growth factor receptor, the protein we design against.
+  UniProt  the public protein sequence archive. Every residue number in this
+           project is a position in its human record P00533.
+  PDB      the Protein Data Bank, the public archive of measured
+           three-dimensional structures. Also a file format.
+  mmCIF    the newer structure file format, which is what the design pipeline
+           writes. Same information, different syntax.
+  pH       how acidic something is. Lower means more acidic. Tumour tissue sits
+           around 6.5 and blood around 7.4, which is the difference the design
+           has to detect.
+  aa       amino acids, the building blocks a protein chain is made of.
+
+THE RULE BEING APPLIED
+----------------------
+Histidine is the only amino acid that changes charge between pH 7.4 and pH 6.5:
+neutral above, positive below, because the pH at which half of its copies carry
+the extra charge sits around 6.0 to 6.5. So a charge pair that uses a histidine
+switches on as the surroundings turn acidic, and one that does not, does not.
+
+  | On the target        | On the binder | Verdict                             |
+  |----------------------|---------------|-------------------------------------|
+  | D or E, acidic       | histidine     | correct -- switches on as pH falls  |
+  | histidine            | D or E        | correct -- switches on as pH falls  |
+  | histidine            | histidine     | REJECT THE WHOLE CANDIDATE          |
+  | anything else        | anything      | neutral: counted, not scored        |
+
+The rejection applies to **any** target histidine the binder faces, not only the
+two in our anchor set. A binder histidine facing a target histidine we never
+listed is the same physical problem: both turn positive at pH 6.5 and push apart,
+which can cancel a correct pair elsewhere on the same face. That rule has
+published experimental support rather than resting on argument -- Liu et al. 2022
+tried exactly that arrangement on EGFR's H433 and it changed nothing, while the
+acidic pairing improved pH dependence substantially.
+
+A candidate contacting position 442 is also rejected, which is a standing rule in
+`docs/decisions-log.md`. S442G is the single human/mouse difference inside the
+original epitope and sits in cetuximab's measured contact set, so touching it
+risks species-specific behaviour at the one position where the species differ.
+
+WHY THIS RANKS BY PAIR COUNT AND DELIBERATELY NOT BY BINDING STRENGTH
+---------------------------------------------------------------------
+This is the easiest thing in the project to get backwards, and getting it
+backwards would spoil the submission without anything looking wrong.
+
+The requirement is no *detectable* binding at pH 7.4. That is a threshold and not
+a ratio: the pH 7.4 state has to fall below what the measuring instrument can see
+at all. A binder at 10 nanomolar at pH 6.5 and 200 nanomolar at pH 7.4 is
+twentyfold selective and fails, because 200 nanomolar is easily detected. A binder
+at 2 micromolar with nothing measurable at pH 7.4 passes, though it is a hundred
+times weaker and its ratio looks worse.
+
+So this script ranks by the number of correct charge pairs and nothing else. It
+carries the pipeline's own strength and confidence metrics through to its output
+untouched, so they can be used to pick *downward* among candidates that already
+switch. It does not fold them into a score, and it does not discard a candidate
+for being weak. The pipeline ranks its own output by `i_pDAE`, a measure of how
+confident it is in the interface; that ordering is replaced here, not adjusted.
+
+Note what is not claimed. Counting pairs says a switch is built, not that it
+works. How far a histidine's flipping point moves depends on its neighbours,
+which is much of why pH selectivity resists reliable prediction, and nothing here
+measures whether a switch clears an assay detection floor we have not been told.
+
+TESTING WITH NO CANDIDATES IN EXISTENCE
+----------------------------------------
+This script was written before any candidate existed, deliberately. Writing the
+consumer first means the generation step can be configured to produce exactly
+what the consumer needs, rather than discovering after a paid run that a
+measurement was never saved.
+
+So the test cases are built by hand and run every time, not only when real output
+is around. Each is a small synthetic complex written in the same mmCIF format the
+pipeline emits, constructed to exercise one branch: four correct pairs, a binder
+histidine facing a listed target histidine, a binder histidine facing a target
+histidine we never listed, a candidate contacting 442, a candidate with no correct
+pairs, and one whose side chain is unresolved. The expected verdict for each is
+asserted.
+
+Outputs:
+  results/findings/10-charge-pair-filter.md
+  data/derived/10-candidate-pairs.csv     one row per contact pair
+  data/derived/10-candidate-summary.csv   one row per candidate
+  results/candidates/shortlist.csv        the ranked survivors, the one file
+                                          under results/candidates/ that
+                                          .gitignore admits
+
+Run standalone:  python analysis/10_charge_pair_filter.py
+                 python analysis/10_charge_pair_filter.py --candidates DIR
+                 python analysis/10_charge_pair_filter.py --candidates DIR --parse-only
+
+`--candidates` points at a campaign folder from the design run. `--parse-only` is
+for the smoke run against the pipeline's own PD-L1 example: the verdicts there are
+meaningless, because PD-L1 is not our target, but it proves the script can read
+what the pipeline actually emits, which is the part most likely to be wrong.
+"""
+
+import argparse
+import csv
+import sys
+import tempfile
+from pathlib import Path
+
+import numpy as np
+from Bio.PDB import MMCIFParser, PDBParser
+from Bio.PDB.Atom import Atom
+from Bio.PDB.Chain import Chain
+from Bio.PDB.Model import Model
+from Bio.PDB.Residue import Residue
+from Bio.PDB.Structure import Structure
+from Bio.PDB.mmcifio import MMCIFIO
+
+import egfr_common as common
+
+ROOT = Path(__file__).resolve().parents[1]
+DERIVED = common.DERIVED
+FINDINGS = common.FINDINGS
+CANDIDATES = ROOT / "results" / "candidates"
+
+# Positions no candidate may contact. 442 is the single human/mouse difference
+# inside the original epitope and is in cetuximab's measured contact set, so a
+# binder touching it risks behaving differently in the two species at the one
+# position where they differ. Standing rule in docs/decisions-log.md.
+FORBIDDEN_POSITIONS = {442}
+
+# How many correct pairs a candidate needs. The switch is partial rather than
+# all-or-nothing at pH 6.5 -- only a fraction of a histidine's copies carry the
+# extra charge at any moment -- so one pair produces a weak effect and three or
+# four have to be stacked. Three is the floor, four is the design target.
+MIN_CORRECT_PAIRS = 3
+PAIR_TARGET = 4
+
+# The atoms that actually carry the charge. For aspartic and glutamic acid that
+# is the two oxygens of the carboxylate group at the end of the side chain; for
+# histidine the two nitrogens of the five-membered imidazole ring. A pair is only
+# counted as correct when both residues have these atoms resolved, because
+# without them there is no evidence the charges reach each other.
+CHARGE_ATOMS = {"D": ("OD1", "OD2"), "E": ("OE1", "OE2"),
+                "H": ("ND1", "NE2")}
+ACIDIC = ("D", "E")
+
+# Two charged groups further apart than this are reported separately. A salt
+# bridge -- two opposite charges holding each other -- is usually taken to need
+# about 4 angstroms between the charged groups. 6 is deliberately loose, because
+# a predicted structure places side chains less reliably than a measured one.
+# This is a reported second opinion, not the headline test, and the findings file
+# gives both numbers so neither is hidden.
+CHARGE_GROUP_REACH = 6.0
+
+# The design pipeline's own interface cutoff, read from its source on 1 October
+# 2026: `cutoff: float = 4.0` in bindcraft/filters.py. Ours is 4.5, the usual
+# choice in the literature and the one steps 04 and 06 already use. Ours is the
+# looser of the two, so our contact set should contain the pipeline's rather than
+# equal it, and the cross-check below is written that way.
+PIPELINE_CUTOFF = 4.0
+
+# Set by --break-rule, which disables one branch of the rule on purpose so the
+# self-test can confirm the test cases above actually catch it. A check that has
+# never been seen to fail is not known to work, and that applies to a test case
+# as much as to an assertion: a test that would pass with the rule removed is
+# testing nothing.
+BROKEN_RULE = None
+
+# Each entry is a branch of the rule, the test case that is supposed to catch it
+# being removed, and what goes wrong if nothing does.
+BREAKABLE_RULES = {
+    "his-his": (
+        "binder-his-faces-listed-target-his",
+        "a binder histidine facing a target histidine would be scored as "
+        "harmless, and candidates whose switch cancels itself would reach the "
+        "shortlist"),
+    "forbidden-position": (
+        "contacts-442",
+        "a candidate touching position 442 would be kept, risking "
+        "species-specific behaviour at the one position where human and mouse "
+        "differ inside the epitope"),
+    "unresolved-counts": (
+        "unresolved-side-chain",
+        "a charge pair with no evidence its charged groups exist would be "
+        "counted as correct, inflating every pair count"),
+}
+
+VERDICT_REJECTED = "rejected"
+VERDICT_MEETS = "meets the pair target"
+VERDICT_BELOW = "below the pair target"
+
+
+# ---------------------------------------------------------------------------
+# the rule itself
+# ---------------------------------------------------------------------------
+
+def classify(target_aa, binder_aa):
+    """One contact pair, classified by the rule in CLAUDE.md.
+
+    Returns one of "correct", "his-his", "neutral".
+    """
+    if target_aa == "H" and binder_aa == "H":
+        if BROKEN_RULE == "his-his":
+            return "neutral"
+        return "his-his"
+    if target_aa in ACIDIC and binder_aa == "H":
+        return "correct"
+    if target_aa == "H" and binder_aa in ACIDIC:
+        return "correct"
+    return "neutral"
+
+
+def charge_group_distance(residue_a, aa_a, residue_b, aa_b):
+    """Closest approach between the two residues' charge-carrying atoms.
+
+    Returns (distance, both resolved). When either side's charge atoms are
+    missing from the structure the distance is None and the flag is False, and
+    the pair is never counted as correct on that basis -- an unresolved side
+    chain is a thing we do not know, not a thing we know to be fine.
+    """
+    wanted_a = CHARGE_ATOMS.get(aa_a)
+    wanted_b = CHARGE_ATOMS.get(aa_b)
+    if not wanted_a or not wanted_b:
+        return None, False
+    atoms_a = [residue_a[name] for name in wanted_a if name in residue_a]
+    atoms_b = [residue_b[name] for name in wanted_b if name in residue_b]
+    if len(atoms_a) != len(wanted_a) or len(atoms_b) != len(wanted_b):
+        return None, False
+    best = min(float(np.linalg.norm(a.coord - b.coord))
+               for a in atoms_a for b in atoms_b)
+    return best, True
+
+
+# ---------------------------------------------------------------------------
+# reading one candidate complex
+# ---------------------------------------------------------------------------
+
+def load_complex(path):
+    """Parse a candidate structure, whichever of the two formats it is in.
+
+    The design pipeline writes mmCIF. The synthetic test cases are written in the
+    same format for that reason, so the tests exercise the parser that real
+    output will go through rather than a different one.
+    """
+    suffix = path.suffix.lower()
+    parser = MMCIFParser(QUIET=True) if suffix == ".cif" else PDBParser(QUIET=True)
+    return parser.get_structure(path.stem, str(path))[0]
+
+
+def identify_chains(model, numbering, human, emit):
+    """Which chain is the target and which is the designed binder, by measurement.
+
+    The design pipeline sorts its output chains so that the target takes A and the
+    binder takes the next letter. That is the opposite of BindCraft version 1,
+    where the designed binder was chain A, so a parser that assumes a letter will
+    read the wrong molecule and report a full set of plausible nonsense.
+
+    So the letter is not trusted. Each chain is scored by how many of its residues
+    translate through the numbering analysis/02 measured and then read as the
+    amino acid the human EGFR sequence has at that position. The target chain
+    scores near one; a designed binder, whose residue numbers are positions in a
+    sequence that exists nowhere, scores near zero.
+
+    Returns (target chain id, [binder chain ids], evidence rows), or
+    (None, [], evidence) when no chain looks like EGFR.
+    """
+    evidence = []
+    for chain in model:
+        residues = common.protein_residues(chain)
+        if not residues:
+            continue
+        translatable = matching = 0
+        for residue in residues:
+            pos = numbering.uniprot_of(residue.id[1])
+            if pos is None or pos > len(human):
+                continue
+            translatable += 1
+            if human[pos - 1] == common.THREE_TO_ONE.get(residue.get_resname()):
+                matching += 1
+        share = matching / translatable if translatable else 0.0
+        evidence.append(dict(chain=chain.id, residues=len(residues),
+                             translatable=translatable, matching=matching,
+                             share=share))
+
+    emit("   | chain | residues | translate | read as human EGFR | share |")
+    emit("   |---|---|---|---|---|")
+    for row in evidence:
+        emit(f"   | {row['chain']} | {row['residues']} | {row['translatable']} | "
+             f"{row['matching']} | {row['share']:.2f} |")
+
+    ranked = sorted(evidence, key=lambda r: -r["share"])
+    if not ranked or ranked[0]["share"] < 0.8 or ranked[0]["matching"] < 3:
+        return None, [], evidence
+    target = ranked[0]["chain"]
+    binders = [row["chain"] for row in evidence if row["chain"] != target]
+    return target, binders, evidence
+
+
+def analyse_candidate(name, path, numbering, human, target_chain=None,
+                      binder_chains=None, translate=True):
+    """Every contact pair in one candidate, classified, and the verdict.
+
+    The contact calculation is not implemented here. It is
+    `egfr_common.contact_pairs`, which steps 04 and 06 also reach, at the same
+    4.5 angstrom cutoff. Steps 04 and 06 once each kept their own copy of that
+    calculation and disagreed for months, which is why there is now one copy.
+    """
+    model = load_complex(path)
+    pairs = common.contact_pairs(
+        model, target_chain, binder_chains,
+        numbering=numbering if translate else None)
+
+    target_residues = {r.id[1]: r for r in common.protein_residues(
+        model[target_chain])}
+    binder_residues = {}
+    for cid in binder_chains:
+        for residue in common.protein_residues(model[cid]):
+            binder_residues[(cid, residue.id[1])] = residue
+
+    rows = []
+    for pair in pairs:
+        target_aa, binder_aa = pair["receptor_aa"], pair["partner_aa"]
+        verdict = classify(target_aa, binder_aa)
+        distance, resolved = charge_group_distance(
+            target_residues[pair["receptor_resnum"]], target_aa,
+            binder_residues[(pair["partner_chain"], pair["partner_resnum"])],
+            binder_aa)
+        rows.append(dict(
+            design=name,
+            target_pos=pair["receptor_pos"],
+            target_resnum=pair["receptor_resnum"],
+            target_aa=target_aa,
+            binder_chain=pair["partner_chain"],
+            binder_pos=pair["partner_resnum"],
+            binder_aa=binder_aa,
+            min_dist=pair["min_dist"],
+            atom_pairs=pair["atom_pairs"],
+            classification=verdict,
+            charge_group_dist=distance,
+            charge_atoms_resolved=resolved,
+            charge_groups_reach=(resolved and distance <= CHARGE_GROUP_REACH),
+            forbidden=(translate and BROKEN_RULE != "forbidden-position"
+                       and pair["receptor_pos"] in FORBIDDEN_POSITIONS),
+        ))
+
+    if BROKEN_RULE == "unresolved-counts":
+        # The broken version counts a pair whose charge atoms are missing as if
+        # they had been seen. This is what the unresolved-side-chain test case
+        # exists to catch.
+        correct = [r for r in rows if r["classification"] == "correct"]
+        unresolved = []
+    else:
+        correct = [r for r in rows
+                   if r["classification"] == "correct"
+                   and r["charge_atoms_resolved"]]
+        unresolved = [r for r in rows
+                      if r["classification"] == "correct"
+                      and not r["charge_atoms_resolved"]]
+    his_his = [r for r in rows if r["classification"] == "his-his"]
+    forbidden = [r for r in rows if r["forbidden"]]
+    tight = [r for r in correct if r["charge_groups_reach"]]
+
+    reasons = []
+    if his_his:
+        reasons.append(
+            "binder histidine faces target histidine "
+            + ", ".join(f"H{r['target_pos']}" for r in sorted(
+                his_his, key=lambda r: r["target_pos"])))
+    if forbidden:
+        reasons.append(
+            "contacts "
+            + ", ".join(str(r["target_pos"]) for r in sorted(
+                forbidden, key=lambda r: r["target_pos"])))
+
+    if reasons:
+        verdict = VERDICT_REJECTED
+    elif len(correct) >= MIN_CORRECT_PAIRS:
+        verdict = VERDICT_MEETS
+    else:
+        verdict = VERDICT_BELOW
+
+    return dict(
+        design=name, path=path, pairs=rows, verdict=verdict,
+        reasons=reasons, correct_pairs=len(correct),
+        correct_pairs_tight=len(tight),
+        unresolved_pairs=len(unresolved), his_his_pairs=len(his_his),
+        forbidden_contacts=len(forbidden),
+        neutral_pairs=sum(1 for r in rows if r["classification"] == "neutral"),
+        total_pairs=len(rows),
+        target_positions=sorted({r["target_pos"] for r in rows}),
+        anchors_paired=sorted({r["target_pos"] for r in correct}),
+    )
+
+
+# ---------------------------------------------------------------------------
+# building the test cases
+# ---------------------------------------------------------------------------
+#
+# Each synthetic complex is two chains written in the same mmCIF format the
+# design pipeline emits. The target chain holds real EGFR residues at real
+# positions, numbered the way the trimmed target is numbered, so the test also
+# exercises the translation back into our numbering rather than only the
+# classification. The binder chain holds whatever residue the case needs,
+# numbered from 1.
+#
+# Geometry is built rather than taken from anywhere: each target residue sits on
+# a line, its side chain pointing one way, and its partner sits facing it with
+# the gap set so the two side-chain tips are 3 angstroms apart. Target residues
+# are spaced far enough apart that no binder residue reaches a neighbour it was
+# not meant to face, which is checked by the pair counts the tests assert.
+
+# (atom name, element, how far out along the side chain, sideways offset)
+BACKBONE = [("N", "N", -1.2, -1.2), ("CA", "C", 0.0, 0.0),
+            ("C", "C", -1.2, 1.2), ("O", "O", -1.6, 1.8)]
+SIDE_CHAINS = {
+    "D": [("CB", "C", 1.0, 0.0), ("CG", "C", 2.0, 0.0),
+          ("OD1", "O", 2.8, 0.6), ("OD2", "O", 2.8, -0.6)],
+    "E": [("CB", "C", 1.0, 0.0), ("CG", "C", 2.0, 0.0), ("CD", "C", 2.8, 0.0),
+          ("OE1", "O", 3.6, 0.6), ("OE2", "O", 3.6, -0.6)],
+    "H": [("CB", "C", 1.0, 0.0), ("CG", "C", 2.0, 0.0),
+          ("ND1", "N", 2.8, 0.7), ("CD2", "C", 2.8, -0.7),
+          ("CE1", "C", 3.6, 0.5), ("NE2", "N", 3.6, -0.5)],
+    "S": [("CB", "C", 1.0, 0.0), ("OG", "O", 2.0, 0.0)],
+    "T": [("CB", "C", 1.0, 0.0), ("OG1", "O", 2.0, 0.5),
+          ("CG2", "C", 2.0, -0.5)],
+    "L": [("CB", "C", 1.0, 0.0), ("CG", "C", 2.0, 0.0),
+          ("CD1", "C", 2.8, 0.7), ("CD2", "C", 2.8, -0.7)],
+    "I": [("CB", "C", 1.0, 0.0), ("CG1", "C", 2.0, 0.6),
+          ("CG2", "C", 2.0, -0.6), ("CD1", "C", 2.8, 0.9)],
+    "A": [("CB", "C", 1.0, 0.0)],
+    "V": [("CB", "C", 1.0, 0.0), ("CG1", "C", 2.0, 0.6),
+          ("CG2", "C", 2.0, -0.6)],
+}
+ONE_TO_THREE = {"A": "ALA", "D": "ASP", "E": "GLU", "H": "HIS", "I": "ILE",
+                "L": "LEU", "S": "SER", "T": "THR", "V": "VAL"}
+
+TARGET_SPACING = 14.0      # angstroms between neighbouring target residues
+TIP_SEPARATION = 3.0       # angstroms between the two facing side-chain tips
+
+
+def side_chain_for(aa, with_side_chain=True):
+    if not with_side_chain:
+        return [("CB", "C", 1.0, 0.0)]
+    return SIDE_CHAINS.get(aa, [("CB", "C", 1.0, 0.0)])
+
+
+def reach_of(atoms):
+    return max(depth for _name, _el, depth, _lat in atoms)
+
+
+def build_residue(resnum, aa, atoms, x, y_anchor, direction, serial):
+    residue = Residue((" ", resnum, " "), ONE_TO_THREE[aa], " ")
+    for name, element, depth, lateral in atoms:
+        coord = np.array([x + lateral, y_anchor + direction * depth, 0.0],
+                         dtype=float)
+        residue.add(Atom(name, coord, 30.0, 1.0, " ", name, serial, element))
+        serial += 1
+    return residue, serial
+
+
+def build_test_complex(path, contacts, human):
+    """Write one synthetic candidate complex.
+
+    `contacts` is a list of (target uniprot position, binder amino acid,
+    binder has its side chain). The target residue's own amino acid is read out
+    of the human sequence rather than supplied, so a test cannot assert a verdict
+    against a residue identity that is not real.
+    """
+    structure = Structure("test")
+    model = Model(0)
+    structure.add(model)
+    target_chain, binder_chain = Chain("A"), Chain("B")
+    model.add(target_chain)
+    model.add(binder_chain)
+
+    serial = 1
+    for index, (pos, binder_aa, binder_side_chain) in enumerate(contacts):
+        target_aa = human[pos - 1]
+        x = index * TARGET_SPACING
+        target_atoms = BACKBONE + side_chain_for(target_aa)
+        binder_atoms = BACKBONE + side_chain_for(binder_aa, binder_side_chain)
+        gap = reach_of(target_atoms) + reach_of(binder_atoms) + TIP_SEPARATION
+
+        # The target keeps the numbering the trimmed target file has, which is
+        # ours minus the offset analysis/02 measured, so the translation back is
+        # exercised rather than bypassed.
+        target_resnum = pos - common.SIGNAL_PEPTIDE_LEN
+        residue, serial = build_residue(target_resnum, target_aa, target_atoms,
+                                        x, 0.0, +1.0, serial)
+        target_chain.add(residue)
+        residue, serial = build_residue(index + 1, binder_aa, binder_atoms,
+                                        x, gap, -1.0, serial)
+        binder_chain.add(residue)
+
+    io = MMCIFIO()
+    io.set_structure(structure)
+    io.save(str(path))
+    return path
+
+
+def test_cases(human):
+    """Every branch of the rule, one case each, with the verdict asserted.
+
+    `contacts` entries are (target position, binder amino acid, binder side chain
+    resolved). Expected values are written out rather than computed, so a change
+    in the rule shows up as a failing test rather than as a quietly different
+    answer.
+    """
+    return [
+        dict(
+            name="four-correct-pairs",
+            why="The design target: four pairs that all switch the right way. "
+                "Two acidic target residues faced by binder histidines, and two "
+                "target histidines faced by binder acidic residues.",
+            contacts=[(344, "H", True), (368, "H", True),
+                      (370, "E", True), (358, "D", True)],
+            expect=dict(verdict=VERDICT_MEETS, correct_pairs=4,
+                        his_his_pairs=0, forbidden_contacts=0,
+                        unresolved_pairs=0),
+        ),
+        dict(
+            name="binder-his-faces-listed-target-his",
+            why="A binder histidine facing H370, one of the two target "
+                "histidines in our anchor set. Both turn positive at pH 6.5 and "
+                "push apart, which can cancel a correct pair elsewhere on the "
+                "same face. Rejected rather than scored, even though two correct "
+                "pairs are present.",
+            contacts=[(344, "H", True), (368, "H", True), (370, "H", True)],
+            expect=dict(verdict=VERDICT_REJECTED, correct_pairs=2,
+                        his_his_pairs=1, forbidden_contacts=0,
+                        unresolved_pairs=0),
+        ),
+        dict(
+            name="binder-his-faces-unlisted-target-his",
+            why="The same fault against H418, a target histidine that is not in "
+                "our anchor set at all. The rejection has to apply to any target "
+                "histidine, not only the ones we listed, because the physical "
+                "problem is identical.",
+            contacts=[(344, "H", True), (418, "H", True)],
+            expect=dict(verdict=VERDICT_REJECTED, correct_pairs=1,
+                        his_his_pairs=1, forbidden_contacts=0,
+                        unresolved_pairs=0),
+        ),
+        dict(
+            name="contacts-442",
+            why="Four correct pairs, and one contact at position 442. That is "
+                "the single human/mouse difference inside the original epitope "
+                "and sits in cetuximab's contact set, so the candidate is "
+                "rejected despite having everything else right. This is the case "
+                "that proves a good pair count cannot buy its way past a hard "
+                "rule.",
+            contacts=[(344, "H", True), (368, "H", True), (391, "H", True),
+                      (400, "H", True), (442, "A", True)],
+            expect=dict(verdict=VERDICT_REJECTED, correct_pairs=4,
+                        his_his_pairs=0, forbidden_contacts=1,
+                        unresolved_pairs=0),
+        ),
+        dict(
+            name="no-correct-pairs",
+            why="A well-formed interface with no charge pair anywhere in it. "
+                "Not rejected, because nothing forbidden happens: it is kept, "
+                "reported, and ranked last. A candidate is discarded for "
+                "breaking a rule, never for being weak.",
+            contacts=[(365, "A", True), (369, "L", True), (371, "V", True),
+                      (372, "A", True)],
+            expect=dict(verdict=VERDICT_BELOW, correct_pairs=0,
+                        his_his_pairs=0, forbidden_contacts=0,
+                        unresolved_pairs=0),
+        ),
+        dict(
+            name="unresolved-side-chain",
+            why="Three pairs that would all be correct, but one binder "
+                "histidine has no side chain in the structure, so there is no "
+                "evidence its charge reaches anything. It is counted separately "
+                "and not as correct, which drops the candidate from three "
+                "correct pairs to two and below the target. If an unresolved "
+                "side chain were quietly counted, this case would pass.",
+            contacts=[(344, "H", True), (391, "H", True), (368, "H", False)],
+            expect=dict(verdict=VERDICT_BELOW, correct_pairs=2,
+                        his_his_pairs=0, forbidden_contacts=0,
+                        unresolved_pairs=1),
+        ),
+    ]
+
+
+def run_tests(numbering, human, emit):
+    """Build every test case, classify it, and compare against the expectation."""
+    emit("1. The test cases, built by hand and run every time")
+    emit()
+    emit("   No candidate exists yet. These are synthetic complexes written in")
+    emit("   the same mmCIF format the design pipeline emits, each built to")
+    emit("   exercise one branch of the rule. The target residues are real EGFR")
+    emit("   residues at real positions, numbered the way the trimmed target is")
+    emit("   numbered, so the translation back into our numbering is exercised")
+    emit("   too rather than bypassed.")
+    emit()
+    failures = []
+    results = []
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for case in test_cases(human):
+            path = build_test_complex(
+                Path(tmpdir) / f"{case['name']}.cif", case["contacts"], human)
+            result = analyse_candidate(case["name"], path, numbering, human,
+                                       target_chain="A", binder_chains=["B"])
+            results.append((case, result))
+            emit(f"   {case['name']}")
+            emit(f"     {case['why']}")
+            emit("     contacts: " + ", ".join(
+                f"{human[p - 1]}{p} faced by binder {b}"
+                + ("" if side else " (side chain unresolved)")
+                for p, b, side in case["contacts"]))
+            for field, want in sorted(case["expect"].items()):
+                got = result[field]
+                ok = got == want
+                emit(f"     [{'PASS' if ok else 'FAIL'}] {field}: {got}"
+                     + ("" if ok else f", expected {want}"))
+                if not ok:
+                    failures.append(f"{case['name']}: {field} was {got}, "
+                                    f"expected {want}")
+            if result["reasons"]:
+                emit("     reasons given: " + "; ".join(result["reasons"]))
+            emit()
+    emit(f"   {len(test_cases(human))} cases, "
+         f"{'all passed' if not failures else f'{len(failures)} assertion(s) failed'}.")
+    emit()
+    if failures:
+        emit("   The rule and the tests disagree. Do not run this script against")
+        emit("   real candidates until they agree: a filter that is wrong about")
+        emit("   a synthetic case it was handed is wrong about a real one it was")
+        emit("   not.")
+        emit()
+    return failures, results
+
+
+# ---------------------------------------------------------------------------
+# reading a real campaign folder
+# ---------------------------------------------------------------------------
+
+def find_candidate_structures(folder):
+    """The accepted-design complexes in a campaign folder.
+
+    The design pipeline writes them to `3_Ranked/<design>_seq<n>[_<target>].cif`,
+    alongside `<design>_seq<n>_monomer.cif`, which is the binder on its own and
+    has no interface to measure. Read from its own output documentation on
+    1 October 2026.
+
+    If that folder is not there, every mmCIF below the path is taken instead and
+    the run says so, because an output layout that has moved should produce a
+    visible fallback rather than an empty result.
+    """
+    ranked = folder / "3_Ranked"
+    if ranked.is_dir():
+        found = sorted(p for p in ranked.glob("*.cif")
+                       if not p.stem.endswith("_monomer"))
+        if found:
+            return found, "3_Ranked/"
+    found = sorted(p for p in folder.rglob("*.cif")
+                   if not p.stem.endswith("_monomer"))
+    return found, "every mmCIF below the folder (3_Ranked/ not found)"
+
+
+def read_metrics_table(folder, emit):
+    """The pipeline's own per-design metrics, carried through untouched.
+
+    Looks for `3_Ranked/!_Ranked.csv`, which the pipeline ranks best-first by
+    `i_pDAE`. Every column is carried through to our output as-is. We do not
+    reorder by any of them and we do not recompute any of them: they are the
+    pipeline's answers, kept so a reader can pick downward among candidates that
+    already switch.
+
+    Returns ({design name: {column: value}}, column names, where it came from).
+    """
+    for candidate in (folder / "3_Ranked" / "!_Ranked.csv",
+                      folder / "3_Ranked" / "!_Refolded.csv",
+                      folder / "summary.csv"):
+        if candidate.is_file():
+            break
+    else:
+        matches = sorted(folder.rglob("*.csv"))
+        candidate = matches[0] if matches else None
+    if candidate is None or not candidate.is_file():
+        emit("   No metrics table found. The pipeline's own numbers will be")
+        emit("   absent from the output, which means a reader cannot pick")
+        emit("   downward among the survivors and has only the pair counts.")
+        return {}, [], None
+
+    with candidate.open(newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    if not rows:
+        return {}, [], candidate
+    columns = list(rows[0].keys())
+    key = next((c for c in ("design", "Design", "name") if c in columns), None)
+    if key is None:
+        emit(f"   {candidate.name} has no design-name column "
+             f"({columns[:6]}...), so its numbers cannot be joined to the")
+        emit("   structures. Carried through as nothing rather than guessed.")
+        return {}, columns, candidate
+    return ({row[key]: row for row in rows if row.get(key)},
+            columns, candidate)
+
+
+def join_metrics(name, metrics):
+    """Find the metrics row for a structure file.
+
+    The structure is named `<design>_seq<n>[_<target>].cif` and the table's design
+    column may hold either the whole thing or the part before the target suffix,
+    so an exact match is tried first and then the longest key that the file name
+    starts with. A wrong join would attach one candidate's numbers to another, so
+    an ambiguous one returns nothing rather than a guess.
+    """
+    if name in metrics:
+        return metrics[name]
+    prefixes = sorted((k for k in metrics if name.startswith(k)), key=len,
+                      reverse=True)
+    return metrics[prefixes[0]] if prefixes else {}
+
+
+def cross_check_interface(result, row, emit):
+    """Our contact set against the pipeline's own, for the same candidate.
+
+    The pipeline reports `Interface_Target_Residues` as a comma-separated list of
+    one-letter-plus-number tokens, measured at a 4.0 angstrom cutoff. Ours is
+    measured at 4.5, the cutoff steps 04 and 06 use. Ours is the looser of the
+    two, so our set should contain the pipeline's rather than equal it, and a
+    residue the pipeline reports that we do not is a real disagreement worth
+    stopping on.
+
+    Returns (verdict word, detail), or None when the column is absent.
+    """
+    raw = row.get("Interface_Target_Residues")
+    if not raw:
+        return None
+    theirs = set()
+    for token in raw.replace("/", ",").split(","):
+        token = token.strip()
+        if len(token) > 1 and token[1:].lstrip("-").isdigit():
+            theirs.add(int(token[1:]))
+    if not theirs:
+        return None
+    # Their numbers are the target structure's own, so translate ours back.
+    ours = {r["target_resnum"] for r in result["pairs"]}
+    missing = sorted(theirs - ours)
+    extra = sorted(ours - theirs)
+    if not missing:
+        return ("contains", f"{len(ours)} residues at 4.5 A, containing all "
+                            f"{len(theirs)} the pipeline reports at "
+                            f"{PIPELINE_CUTOFF} A"
+                            + (f", plus {len(extra)} the looser cutoff adds"
+                               if extra else ""))
+    return ("DISAGREES", f"the pipeline reports {missing} as interface residues "
+                         f"and we do not, although our cutoff is the looser one")
+
+
+# ---------------------------------------------------------------------------
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Score design candidates by pH-switching charge pairs.")
+    parser.add_argument("--candidates", type=Path, default=None, metavar="DIR",
+                        help="A campaign folder from the design run.")
+    parser.add_argument("--parse-only", action="store_true",
+                        help="Report contacts without translating numbering or "
+                             "issuing verdicts. For the smoke run against the "
+                             "pipeline's own example target, where the verdicts "
+                             "would be meaningless but the parsing is the point.")
+    parser.add_argument("--break-rule", choices=list(BREAKABLE_RULES),
+                        default=None,
+                        help="Disable one branch of the rule on purpose, so the "
+                             "test case covering it is seen to fail. Writes no "
+                             "output files.")
+    parser.add_argument("--self-test", action="store_true",
+                        help="Break each branch of the rule in turn and confirm "
+                             "the test cases catch it. A test that would pass "
+                             "with the rule removed is testing nothing.")
+    args = parser.parse_args(argv)
+
+    if args.self_test:
+        return run_self_test()
+
+    global BROKEN_RULE
+    BROKEN_RULE = args.break_rule
+
+    out = []
+
+    def emit(text=""):
+        print(text)
+        out.append(text)
+
+    emit("=" * 72)
+    emit("CHARGE-PAIR FILTER")
+    emit("=" * 72)
+    emit()
+    emit("Scores design candidates by how many of their contacts form a charge")
+    emit("pair that switches on as the surroundings turn acidic, and rejects the")
+    emit("ones that break a hard rule. Residue numbers are positions in the")
+    emit("human record P00533 in UniProt, the public sequence archive, unless a")
+    emit("line says they are the structure file's own.")
+    emit()
+    emit("Ranked by correct pairs and deliberately not by binding strength. The")
+    emit("requirement is no detectable binding at pH 7.4, which is a threshold")
+    emit("and not a ratio, so a weak binder that clearly switches beats a strong")
+    emit("one. The pipeline's own strength and confidence numbers are carried")
+    emit("through untouched so they can be used to pick downward.")
+    emit()
+
+    human = common.human_sequence()
+    numbering = common.load_numbering()
+
+    failures, _test_results = run_tests(numbering, human, emit)
+    failures.extend(run_campaign_test(numbering, human, emit))
+
+    summaries = []
+    all_pairs = []
+    if args.candidates is None:
+        emit("3. Real candidates")
+        emit()
+        emit("   None given. Run again with --candidates pointing at a campaign")
+        emit("   folder once the design run has produced one. The tests above")
+        emit("   are what can be checked before then, and they check the rule")
+        emit("   rather than the pipeline's output format.")
+        emit()
+    else:
+        folder = args.candidates
+        emit("3. Real candidates")
+        emit()
+        if not folder.is_dir():
+            emit(f"   {folder} is not a directory.")
+            failures.append(f"{folder} is not a directory")
+        else:
+            summaries, all_pairs, found_failures = process_campaign(
+                folder, numbering, human, args.parse_only, emit)
+            failures.extend(found_failures)
+
+    if BROKEN_RULE is None:
+        write_outputs(summaries, all_pairs, emit,
+                      parse_only=args.parse_only, had_candidates=bool(summaries))
+    else:
+        emit(f"   Running with --break-rule {BROKEN_RULE}, so no file is")
+        emit("   written. The point of this run is the failures above.")
+        emit()
+
+    emit("=" * 72)
+    if failures:
+        emit(f"RESULT: {len(failures)} FAILURE(S).")
+        for failure in failures:
+            emit(f"  - {failure}")
+    elif summaries:
+        meets = sum(1 for s in summaries if s["verdict"] == VERDICT_MEETS)
+        rejected = sum(1 for s in summaries if s["verdict"] == VERDICT_REJECTED)
+        emit(f"RESULT: PASSED. {len(summaries)} candidates: {meets} meet the "
+             f"pair target, {rejected} rejected, "
+             f"{len(summaries) - meets - rejected} below the target and kept.")
+    else:
+        emit("RESULT: PASSED. The rule is exercised and correct on every test "
+             "case; no real candidates were supplied.")
+    emit("=" * 72)
+
+    if BROKEN_RULE is not None:
+        # A deliberately broken run must not replace a real findings file.
+        return 1 if failures else 0
+
+    FINDINGS.mkdir(parents=True, exist_ok=True)
+    (FINDINGS / "10-charge-pair-filter.md").write_text(
+        "# The charge-pair filter\n\n"
+        "Computed output of `analysis/10_charge_pair_filter.py`. "
+        "Do not hand-edit.\n\n"
+        "Takes the candidate complexes a binder-design run produces, works out\n"
+        "which target residue each binder contact position faces, and scores each\n"
+        "candidate by how many of those pairs switch on as the surroundings turn\n"
+        "acidic. The design pipeline has no pH term in its objective, so this is\n"
+        "the step that makes the submission pH-conditional rather than generic.\n\n"
+        "EGFR is the epidermal growth factor receptor, the protein being designed\n"
+        "against. UniProt is the public sequence archive whose numbering this\n"
+        "project uses. mmCIF is the structure file format the design pipeline\n"
+        "writes.\n\n"
+        "**Ranked by correct pairs, deliberately not by binding strength.** The\n"
+        "requirement is no *detectable* binding at pH 7.4, which is a threshold\n"
+        "rather than a ratio, so a weak binder that clearly switches beats a\n"
+        "strong one. The design pipeline maximises interface confidence by\n"
+        "default and ranks its own output by `i_pDAE`; that ordering is replaced\n"
+        "here rather than adjusted. The pipeline's own numbers are carried\n"
+        "through untouched so they can be used to pick *downward* among the\n"
+        "candidates that already switch.\n\n"
+        "```\n" + "\n".join(out) + "\n```\n"
+    )
+    return 1 if failures else 0
+
+
+def build_test_campaign(folder, human):
+    """A synthetic campaign folder laid out the way the design pipeline lays one.
+
+    Covers the parts most likely to break when real output first arrives, none of
+    which the classification tests touch: finding the accepted complexes among
+    the binder-only ones, reading the metrics table, joining a metrics row to a
+    structure by name, identifying which chain is the target by measurement, and
+    comparing our contact set against the pipeline's own.
+
+    The layout and the column names were read out of the pipeline's own source
+    and output documentation on 1 October 2026, not recalled. If the real output
+    differs from this, that is the thing to fix, and this is where it shows.
+    """
+    ranked = folder / "3_Ranked"
+    ranked.mkdir(parents=True, exist_ok=True)
+
+    designs = [
+        ("design_a1b2c3_seq1", [(344, "H", True), (368, "H", True),
+                                (370, "E", True), (358, "D", True)]),
+        ("design_d4e5f6_seq1", [(344, "H", True), (370, "H", True)]),
+    ]
+    rows = []
+    for name, contacts in designs:
+        build_test_complex(ranked / f"{name}_EGFR_domain3.cif", contacts, human)
+        # The binder on its own, which the pipeline also writes and which has no
+        # interface to measure. It must be skipped rather than scored.
+        build_test_complex(ranked / f"{name}_monomer.cif", contacts[:1], human)
+        interface = ",".join(
+            f"{human[pos - 1]}{pos - common.SIGNAL_PEPTIDE_LEN}"
+            for pos, _b, _s in contacts)
+        rows.append({
+            "rank": len(rows) + 1, "trajectory": name.split("_seq")[0],
+            "design": name, "length": 72, "outcome": "accepted",
+            "i_pDAE": 0.21, "i_pTM": 0.83, "pLDDT": 0.91, "pTM": 0.78,
+            "i_pAE": 0.24, "Unbound_Binder_pLDDT": 0.88, "Target_pLDDT": 0.94,
+            "Binder_Sequence": "H" * 72,
+            "Interface_Binder_Residues": ",".join(
+                f"{b}{i + 1}" for i, (_p, b, _s) in enumerate(contacts)),
+            "Interface_Target_Residues": interface,
+            "Interface_BuriedArea": 812.0, "Interface_Residues": len(contacts),
+            "Hotspot_Contact_Fraction": 0.75, "Surface_Hydrophobicity": 0.31,
+            "Binder_Net_Charge": 4.0, "Binder_pI": 9.2,
+            "bindcraft_version": "1.0.1",
+        })
+    with (ranked / "!_Ranked.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    return folder
+
+
+def run_campaign_test(numbering, human, emit):
+    """Read a synthetic campaign folder end to end and assert what comes back."""
+    emit("2. Reading a campaign folder, end to end")
+    emit()
+    emit("   The classification tests above say nothing about whether this")
+    emit("   script can read what the design pipeline actually emits, which is")
+    emit("   the part most likely to be wrong. So a synthetic campaign folder is")
+    emit("   built in the layout the pipeline documents -- accepted complexes and")
+    emit("   binder-only files together in 3_Ranked/, alongside a !_Ranked.csv")
+    emit("   with its real column names -- and read back through the same code")
+    emit("   path a real folder would take.")
+    emit()
+    failures = []
+    quiet = []
+    with tempfile.TemporaryDirectory() as tmpdir:
+        folder = build_test_campaign(Path(tmpdir) / "campaign", human)
+        # The run's own narration is collected rather than printed: what matters
+        # here is the assertions below, not a second copy of a report about a
+        # folder that does not exist outside this test.
+        summaries, pairs, found = process_campaign(
+            folder, numbering, human, False, lambda text="": quiet.append(text))
+        failures.extend(found)
+
+        checks = [
+            ("the two accepted complexes are found and the binder-only files "
+             "are skipped", len(summaries), 2),
+            ("contact pairs are read from them",
+             len(pairs) >= 6, True),
+            ("the metrics table is joined to every structure",
+             sum(1 for s in summaries if s.get("metrics")), 2),
+            ("the pipeline's own i_pDAE is carried through",
+             all(s["metrics"].get("i_pDAE") for s in summaries), True),
+            ("our contact set contains the pipeline's",
+             all((s.get("interface_cross_check") or (None,))[0] == "contains"
+                 for s in summaries), True),
+            ("the candidate with a binder histidine facing H370 is rejected",
+             next(s["verdict"] for s in summaries if "d4e5f6" in s["design"]),
+             VERDICT_REJECTED),
+            ("the candidate with four correct pairs meets the target",
+             next(s["verdict"] for s in summaries if "a1b2c3" in s["design"]),
+             VERDICT_MEETS),
+            ("ranking puts the four-pair candidate first",
+             rank(summaries)[0]["design"].startswith("design_a1b2c3"), True),
+        ]
+        for label, got, want in checks:
+            ok = got == want
+            emit(f"   [{'PASS' if ok else 'FAIL'}] {label}: {got}"
+                 + ("" if ok else f", expected {want}"))
+            if not ok:
+                failures.append(f"campaign folder: {label} was {got}, "
+                                f"expected {want}")
+    emit()
+    emit("   Which chain is which was decided by measurement inside that run,")
+    emit("   not by the letter. The pipeline puts the target on chain A and the")
+    emit("   binder on B, the reverse of BindCraft version 1, so a parser that")
+    emit("   trusted the letter would read the wrong molecule and report a full")
+    emit("   set of plausible nonsense.")
+    emit()
+    return failures
+
+
+def run_self_test():
+    """Remove each branch of the rule in turn and confirm a test case notices.
+
+    The test cases above all pass. That on its own does not establish that they
+    test anything: a case that would still pass with the rule deleted is
+    decoration. So each branch is disabled in a separate process and the exit
+    code is genuinely observed, and the run is only sound if every branch has at
+    least one case that fails without it.
+    """
+    import subprocess
+
+    print("=" * 72)
+    print("SELF-TEST: is each branch of the rule actually covered by a case?")
+    print("=" * 72)
+    print()
+    print("Each run below disables one branch of the rule and runs the same test")
+    print("cases. Each should fail, and should name the case that caught it. A")
+    print("branch that can be removed with every case still passing is a branch")
+    print("nothing is testing.")
+    print()
+    failures = []
+    for rule, (expected_case, consequence) in BREAKABLE_RULES.items():
+        proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()),
+             "--break-rule", rule],
+            capture_output=True, text=True,
+            cwd=str(Path(__file__).resolve().parent))
+        caught = [line.strip() for line in proc.stdout.splitlines()
+                  if line.strip().startswith("- ")]
+        named = any(expected_case in line for line in caught)
+        ok = proc.returncode != 0 and named
+        print(f"   [{'PASS' if ok else 'FAIL'}] {rule}")
+        print(f"     if unnoticed: {consequence}")
+        print(f"     exit code {proc.returncode}, "
+              f"{len(caught)} assertion(s) failed")
+        for line in caught[:4]:
+            print(f"       {line}")
+        if not ok:
+            if proc.returncode == 0:
+                failures.append(
+                    f"{rule}: removing this branch broke no test case")
+            else:
+                failures.append(
+                    f"{rule}: tests failed but not the case meant to cover it "
+                    f"({expected_case})")
+        print()
+
+    print("=" * 72)
+    if failures:
+        print(f"SELF-TEST FAILED: {len(failures)} branch(es) are not covered.")
+        for failure in failures:
+            print(f"  - {failure}")
+        print("Add or fix a test case before trusting this filter.")
+    else:
+        print(f"SELF-TEST PASSED. All {len(BREAKABLE_RULES)} branches of the "
+              "rule are covered by a")
+        print("test case that fails when the branch is removed.")
+    print("=" * 72)
+    return 1 if failures else 0
+
+
+def process_campaign(folder, numbering, human, parse_only, emit):
+    """Every accepted design in a campaign folder, classified."""
+    failures = []
+    structures, where = find_candidate_structures(folder)
+    emit(f"   {folder}")
+    emit(f"   {len(structures)} candidate complex(es), from {where}")
+    if not structures:
+        emit("   Nothing to score.")
+        return [], [], failures
+    emit()
+
+    metrics, columns, metrics_path = read_metrics_table(folder, emit)
+    if metrics_path is not None:
+        emit(f"   Metrics table: {metrics_path.relative_to(folder)}, "
+             f"{len(metrics)} rows, {len(columns)} columns.")
+        emit("   Every column is carried through to our output unchanged. None")
+        emit("   of them is used to rank anything here.")
+        strengthish = [c for c in columns
+                       if any(term in c for term in
+                              ("i_pTM", "i_pAE", "i_pDAE", "pLDDT", "pTM",
+                               "BuriedArea", "Interface_Residues",
+                               "Hydrophobicity", "Contact_Fraction",
+                               "Net_Charge", "pI"))]
+        emit("   Of those, the ones describing interface quality, confidence or")
+        emit(f"   charge: {', '.join(strengthish) if strengthish else 'none found'}")
+        emit()
+
+    emit("   Which chain is the target and which the binder, by measurement:")
+    emit()
+    first = load_complex(structures[0])
+    target_chain, binder_chains, _evidence = identify_chains(
+        first, numbering, human, emit)
+    emit()
+    if target_chain is None:
+        if not parse_only:
+            emit("   No chain reads as human EGFR. Stopping.")
+            emit()
+            emit("   If this is the smoke run against the pipeline's own example")
+            emit("   target, that is the expected answer and --parse-only is the")
+            emit("   way to run it: the verdicts would be meaningless because the")
+            emit("   target is not ours, but the parsing is what is being tested.")
+            failures.append("no chain in the candidate structures reads as "
+                            "human EGFR; use --parse-only if this is the smoke run")
+            return [], [], failures
+        chain_ids = [c.id for c in first if common.protein_residues(c)]
+        target_chain, binder_chains = chain_ids[0], chain_ids[1:]
+        emit("   No chain reads as human EGFR, which is expected for the smoke")
+        emit("   run. Falling back to the pipeline's documented convention, that")
+        emit("   the first chain is the target and the rest are the binder:")
+        emit(f"   target {target_chain}, binder {', '.join(binder_chains)}.")
+        emit()
+    else:
+        emit(f"   Target is chain {target_chain}; binder is "
+             f"{', '.join(binder_chains)}.")
+        emit("   Taken from the measurement above rather than from the letter.")
+        emit("   The pipeline puts the target on A and the binder on B, which is")
+        emit("   the reverse of BindCraft version 1, so a parser that assumed a")
+        emit("   letter would read the wrong molecule and report a full set of")
+        emit("   plausible nonsense.")
+        emit()
+
+    if parse_only:
+        emit("   Running with --parse-only: contacts are reported, verdicts are")
+        emit("   not, and nothing is written to the shortlist. The point is to")
+        emit("   prove this script can read what the pipeline emits.")
+        emit()
+
+    summaries, all_pairs = [], []
+    for path in structures:
+        result = analyse_candidate(
+            path.stem, path, numbering, human,
+            target_chain=target_chain, binder_chains=binder_chains,
+            translate=not parse_only)
+        row = join_metrics(path.stem, metrics)
+        result["metrics"] = row
+        checked = cross_check_interface(result, row, emit) if row else None
+        result["interface_cross_check"] = checked
+        if checked and checked[0] == "DISAGREES":
+            failures.append(f"{path.stem}: {checked[1]}")
+        summaries.append(result)
+        all_pairs.extend(result["pairs"])
+
+    emit(f"   Scored {len(summaries)} candidates, {len(all_pairs)} contact pairs.")
+    emit()
+
+    if any(s.get("interface_cross_check") for s in summaries):
+        agreeing = sum(1 for s in summaries
+                       if (s.get("interface_cross_check") or (None,))[0]
+                       == "contains")
+        emit("   Cross-check against the pipeline's own interface list:")
+        emit(f"     {agreeing} of {len(summaries)} candidates have our 4.5 A")
+        emit(f"     contact set containing the pipeline's {PIPELINE_CUTOFF} A one,")
+        emit("     which is what a looser cutoff should give. A residue the")
+        emit("     pipeline reports that we do not would be a real disagreement")
+        emit("     and stops the run.")
+        emit()
+
+    if not parse_only:
+        report_results(summaries, emit)
+    return summaries, all_pairs, failures
+
+
+def report_results(summaries, emit):
+    """The ranked table, and what it says about the design."""
+    ranked = rank(summaries)
+    emit("3b. The candidates, ranked by correct pairs")
+    emit()
+    emit("   Ties are broken by how many of those pairs also have their charged")
+    emit("   groups within reach of each other, then by how many distinct target")
+    emit("   positions are paired. Never by binding strength.")
+    emit()
+    emit("   | rank | design | correct | of those, in reach | unresolved | "
+         "neutral | verdict |")
+    emit("   |---|---|---|---|---|---|---|")
+    for index, summary in enumerate(ranked, start=1):
+        emit(f"   | {index} | {summary['design']} | {summary['correct_pairs']} | "
+             f"{summary['correct_pairs_tight']} | "
+             f"{summary['unresolved_pairs']} | {summary['neutral_pairs']} | "
+             f"{summary['verdict']}"
+             + (f" ({'; '.join(summary['reasons'])})"
+                if summary["reasons"] else "") + " |")
+    emit()
+
+    meets = [s for s in ranked if s["verdict"] == VERDICT_MEETS]
+    rejected = [s for s in ranked if s["verdict"] == VERDICT_REJECTED]
+    below = [s for s in ranked if s["verdict"] == VERDICT_BELOW]
+    at_target = [s for s in meets if s["correct_pairs"] >= PAIR_TARGET]
+    emit(f"   {len(meets)} candidates reach {MIN_CORRECT_PAIRS} correct pairs, "
+         f"of which {len(at_target)} reach {PAIR_TARGET}.")
+    emit(f"   {len(rejected)} rejected for breaking a hard rule.")
+    emit(f"   {len(below)} below the pair target, kept and ranked last rather")
+    emit("   than discarded.")
+    emit()
+    emit("   What this changes about the design. The shortlist is the candidates")
+    emit("   that were not rejected, in this order. Choosing among them is a")
+    emit("   judgement to make by hand using the pipeline's own numbers carried")
+    emit("   through alongside, and the direction to choose in is downward in")
+    emit("   binding strength among those that switch, not upward.")
+    emit()
+
+
+def rank(summaries):
+    """Order the candidates. The one place the ranking rule lives.
+
+    By correct pairs, then by how many of those have their charged groups within
+    reach, then by how many distinct target positions are involved, then by name
+    so the order is stable between runs. No term here is a binding-strength
+    metric, and that is the point: the pipeline already ranks by interface
+    confidence and this replaces that ordering.
+    """
+    return sorted(summaries,
+                  key=lambda s: (-s["correct_pairs"],
+                                 -s["correct_pairs_tight"],
+                                 -len(s["anchors_paired"]),
+                                 s["design"]))
+
+
+def write_outputs(summaries, all_pairs, emit, parse_only, had_candidates):
+    DERIVED.mkdir(parents=True, exist_ok=True)
+    CANDIDATES.mkdir(parents=True, exist_ok=True)
+
+    pair_columns = ["design", "target_pos", "target_resnum", "target_aa",
+                    "binder_chain", "binder_pos", "binder_aa", "min_dist",
+                    "atom_pairs", "classification", "charge_group_dist",
+                    "charge_atoms_resolved", "charge_groups_reach", "forbidden"]
+    with (DERIVED / "10-candidate-pairs.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=pair_columns)
+        writer.writeheader()
+        for row in all_pairs:
+            out = dict(row)
+            if out["min_dist"] is not None:
+                out["min_dist"] = f"{out['min_dist']:.3f}"
+            if out["charge_group_dist"] is not None:
+                out["charge_group_dist"] = f"{out['charge_group_dist']:.3f}"
+            writer.writerow(out)
+
+    metric_columns = []
+    for summary in summaries:
+        for column in summary.get("metrics", {}):
+            if column not in metric_columns:
+                metric_columns.append(column)
+    summary_columns = ["design", "verdict", "reasons", "correct_pairs",
+                       "correct_pairs_in_reach", "unresolved_pairs",
+                       "his_his_pairs", "forbidden_contacts", "neutral_pairs",
+                       "total_pairs", "target_positions_paired",
+                       "target_positions_contacted"]
+    with (DERIVED / "10-candidate-summary.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(
+            handle, fieldnames=summary_columns + metric_columns)
+        writer.writeheader()
+        for summary in rank(summaries):
+            writer.writerow(summary_row(summary))
+
+    # The shortlist holds every candidate that broke no hard rule, in order. A
+    # candidate is dropped here for a histidine facing a histidine or a contact
+    # at 442, never for binding weakly, because the requirement is a detection
+    # threshold rather than a ratio and a weak clear switch is the better
+    # submission.
+    survivors = [s for s in rank(summaries) if s["verdict"] != VERDICT_REJECTED]
+    with (CANDIDATES / "shortlist.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(
+            handle, fieldnames=["rank", "meets_pair_target"] + summary_columns
+            + metric_columns)
+        writer.writeheader()
+        for index, summary in enumerate(survivors, start=1):
+            row = summary_row(summary)
+            row["rank"] = index
+            row["meets_pair_target"] = summary["verdict"] == VERDICT_MEETS
+            writer.writerow(row)
+
+    emit("4. Files written")
+    emit()
+    emit(f"   data/derived/10-candidate-pairs.csv      "
+         f"{len(all_pairs)} contact pairs")
+    emit(f"   data/derived/10-candidate-summary.csv    "
+         f"{len(summaries)} candidates")
+    emit(f"   results/candidates/shortlist.csv         "
+         f"{len(survivors)} not rejected")
+    if not had_candidates:
+        emit()
+        emit("   All three are empty apart from their headers, because no real")
+        emit("   candidate exists yet. They are written anyway so the columns")
+        emit("   the design run has to fill are visible before it runs rather")
+        emit("   than after.")
+    if parse_only:
+        emit()
+        emit("   Written from a --parse-only run, so the verdict columns carry")
+        emit("   no meaning. Do not read anything into them.")
+    emit()
+
+
+def summary_row(summary):
+    return dict(
+        design=summary["design"],
+        verdict=summary["verdict"],
+        reasons="; ".join(summary["reasons"]),
+        correct_pairs=summary["correct_pairs"],
+        correct_pairs_in_reach=summary["correct_pairs_tight"],
+        unresolved_pairs=summary["unresolved_pairs"],
+        his_his_pairs=summary["his_his_pairs"],
+        forbidden_contacts=summary["forbidden_contacts"],
+        neutral_pairs=summary["neutral_pairs"],
+        total_pairs=summary["total_pairs"],
+        target_positions_paired=" ".join(str(p)
+                                         for p in summary["anchors_paired"]),
+        target_positions_contacted=" ".join(str(p) for p
+                                            in summary["target_positions"]),
+        **summary.get("metrics", {}))
+
+
+if __name__ == "__main__":
+    sys.exit(main())

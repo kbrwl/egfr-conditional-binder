@@ -1,0 +1,156 @@
+# The charge-pair filter
+
+Computed output of `analysis/10_charge_pair_filter.py`. Do not hand-edit.
+
+Takes the candidate complexes a binder-design run produces, works out
+which target residue each binder contact position faces, and scores each
+candidate by how many of those pairs switch on as the surroundings turn
+acidic. The design pipeline has no pH term in its objective, so this is
+the step that makes the submission pH-conditional rather than generic.
+
+EGFR is the epidermal growth factor receptor, the protein being designed
+against. UniProt is the public sequence archive whose numbering this
+project uses. mmCIF is the structure file format the design pipeline
+writes.
+
+**Ranked by correct pairs, deliberately not by binding strength.** The
+requirement is no *detectable* binding at pH 7.4, which is a threshold
+rather than a ratio, so a weak binder that clearly switches beats a
+strong one. The design pipeline maximises interface confidence by
+default and ranks its own output by `i_pDAE`; that ordering is replaced
+here rather than adjusted. The pipeline's own numbers are carried
+through untouched so they can be used to pick *downward* among the
+candidates that already switch.
+
+```
+========================================================================
+CHARGE-PAIR FILTER
+========================================================================
+
+Scores design candidates by how many of their contacts form a charge
+pair that switches on as the surroundings turn acidic, and rejects the
+ones that break a hard rule. Residue numbers are positions in the
+human record P00533 in UniProt, the public sequence archive, unless a
+line says they are the structure file's own.
+
+Ranked by correct pairs and deliberately not by binding strength. The
+requirement is no detectable binding at pH 7.4, which is a threshold
+and not a ratio, so a weak binder that clearly switches beats a strong
+one. The pipeline's own strength and confidence numbers are carried
+through untouched so they can be used to pick downward.
+
+1. The test cases, built by hand and run every time
+
+   No candidate exists yet. These are synthetic complexes written in
+   the same mmCIF format the design pipeline emits, each built to
+   exercise one branch of the rule. The target residues are real EGFR
+   residues at real positions, numbered the way the trimmed target is
+   numbered, so the translation back into our numbering is exercised
+   too rather than bypassed.
+
+   four-correct-pairs
+     The design target: four pairs that all switch the right way. Two acidic target residues faced by binder histidines, and two target histidines faced by binder acidic residues.
+     contacts: E344 faced by binder H, D368 faced by binder H, H370 faced by binder E, H358 faced by binder D
+     [PASS] correct_pairs: 4
+     [PASS] forbidden_contacts: 0
+     [PASS] his_his_pairs: 0
+     [PASS] unresolved_pairs: 0
+     [PASS] verdict: meets the pair target
+
+   binder-his-faces-listed-target-his
+     A binder histidine facing H370, one of the two target histidines in our anchor set. Both turn positive at pH 6.5 and push apart, which can cancel a correct pair elsewhere on the same face. Rejected rather than scored, even though two correct pairs are present.
+     contacts: E344 faced by binder H, D368 faced by binder H, H370 faced by binder H
+     [PASS] correct_pairs: 2
+     [PASS] forbidden_contacts: 0
+     [PASS] his_his_pairs: 1
+     [PASS] unresolved_pairs: 0
+     [PASS] verdict: rejected
+     reasons given: binder histidine faces target histidine H370
+
+   binder-his-faces-unlisted-target-his
+     The same fault against H418, a target histidine that is not in our anchor set at all. The rejection has to apply to any target histidine, not only the ones we listed, because the physical problem is identical.
+     contacts: E344 faced by binder H, H418 faced by binder H
+     [PASS] correct_pairs: 1
+     [PASS] forbidden_contacts: 0
+     [PASS] his_his_pairs: 1
+     [PASS] unresolved_pairs: 0
+     [PASS] verdict: rejected
+     reasons given: binder histidine faces target histidine H418
+
+   contacts-442
+     Four correct pairs, and one contact at position 442. That is the single human/mouse difference inside the original epitope and sits in cetuximab's contact set, so the candidate is rejected despite having everything else right. This is the case that proves a good pair count cannot buy its way past a hard rule.
+     contacts: E344 faced by binder H, D368 faced by binder H, E391 faced by binder H, E400 faced by binder H, S442 faced by binder A
+     [PASS] correct_pairs: 4
+     [PASS] forbidden_contacts: 1
+     [PASS] his_his_pairs: 0
+     [PASS] unresolved_pairs: 0
+     [PASS] verdict: rejected
+     reasons given: contacts 442
+
+   no-correct-pairs
+     A well-formed interface with no charge pair anywhere in it. Not rejected, because nothing forbidden happens: it is kept, reported, and ranked last. A candidate is discarded for breaking a rule, never for being weak.
+     contacts: I365 faced by binder A, L369 faced by binder L, I371 faced by binder V, L372 faced by binder A
+     [PASS] correct_pairs: 0
+     [PASS] forbidden_contacts: 0
+     [PASS] his_his_pairs: 0
+     [PASS] unresolved_pairs: 0
+     [PASS] verdict: below the pair target
+
+   unresolved-side-chain
+     Three pairs that would all be correct, but one binder histidine has no side chain in the structure, so there is no evidence its charge reaches anything. It is counted separately and not as correct, which drops the candidate from three correct pairs to two and below the target. If an unresolved side chain were quietly counted, this case would pass.
+     contacts: E344 faced by binder H, E391 faced by binder H, D368 faced by binder H (side chain unresolved)
+     [PASS] correct_pairs: 2
+     [PASS] forbidden_contacts: 0
+     [PASS] his_his_pairs: 0
+     [PASS] unresolved_pairs: 1
+     [PASS] verdict: below the pair target
+
+   6 cases, all passed.
+
+2. Reading a campaign folder, end to end
+
+   The classification tests above say nothing about whether this
+   script can read what the design pipeline actually emits, which is
+   the part most likely to be wrong. So a synthetic campaign folder is
+   built in the layout the pipeline documents -- accepted complexes and
+   binder-only files together in 3_Ranked/, alongside a !_Ranked.csv
+   with its real column names -- and read back through the same code
+   path a real folder would take.
+
+   [PASS] the two accepted complexes are found and the binder-only files are skipped: 2
+   [PASS] contact pairs are read from them: True
+   [PASS] the metrics table is joined to every structure: 2
+   [PASS] the pipeline's own i_pDAE is carried through: True
+   [PASS] our contact set contains the pipeline's: True
+   [PASS] the candidate with a binder histidine facing H370 is rejected: rejected
+   [PASS] the candidate with four correct pairs meets the target: meets the pair target
+   [PASS] ranking puts the four-pair candidate first: True
+
+   Which chain is which was decided by measurement inside that run,
+   not by the letter. The pipeline puts the target on chain A and the
+   binder on B, the reverse of BindCraft version 1, so a parser that
+   trusted the letter would read the wrong molecule and report a full
+   set of plausible nonsense.
+
+3. Real candidates
+
+   None given. Run again with --candidates pointing at a campaign
+   folder once the design run has produced one. The tests above
+   are what can be checked before then, and they check the rule
+   rather than the pipeline's output format.
+
+4. Files written
+
+   data/derived/10-candidate-pairs.csv      0 contact pairs
+   data/derived/10-candidate-summary.csv    0 candidates
+   results/candidates/shortlist.csv         0 not rejected
+
+   All three are empty apart from their headers, because no real
+   candidate exists yet. They are written anyway so the columns
+   the design run has to fill are visible before it runs rather
+   than after.
+
+========================================================================
+RESULT: PASSED. The rule is exercised and correct on every test case; no real candidates were supplied.
+========================================================================
+```

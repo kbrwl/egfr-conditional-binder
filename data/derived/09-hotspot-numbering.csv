@@ -1,0 +1,9 @@
+uniprot_pos,trimmed_resnum,chain,aa,role,binder_partner,nearest_cut_edge_uniprot,distance_to_cut_edge_a,within_cut_edge_warning
+344,320,A,E,acidic,H,310,21.599,False
+358,334,A,H,target histidine,D or E,310,20.902,False
+368,344,A,D,acidic,H,480,16.367,False
+370,346,A,H,target histidine,D or E,480,18.503,False
+391,367,A,E,acidic,H,480,23.917,False
+400,376,A,E,acidic,H,480,12.837,False
+421,397,A,E,acidic,H,480,12.301,False
+424,400,A,E,acidic,H,480,6.587,True
