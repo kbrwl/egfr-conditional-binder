@@ -185,6 +185,8 @@ that paper built its own design against.
 
 Wrote data/derived/08-h370-neighbourhood.csv
 Wrote data/derived/08-h370-clusters.csv
+Wrote explorer/h370-data.js
+Checked 14 figures quoted in the explorer's prose: all match.
 
 ========================================================================
 RESULT: 16 candidate anchors around H370; largest cluster 8 within 24.3 A; includes H370: True.

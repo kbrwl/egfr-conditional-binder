@@ -56,6 +56,13 @@ Outputs:
   results/findings/08-h370-epitope.md
   data/derived/08-h370-neighbourhood.csv
   data/derived/08-h370-clusters.csv
+  explorer/h370-data.js          the two arrays the explorer page draws from, so
+                                 the numbers a reader sees come from this script
+                                 rather than being typed into the page
+
+Reads data/derived/05-anchor-clusters.csv and 05-anchor-clusters-with-h418.csv for
+the 415-466 clusters it compares against, rather than keeping its own copy of them.
+Run analysis/05_anchor_geometry.py first.
 
 Run standalone:  python analysis/08_h370_epitope.py
 """
@@ -72,6 +79,8 @@ import egfr_common as common
 
 ROOT = Path(__file__).resolve().parents[1]
 RECEPTOR_PDB = ROOT / "data" / "structures" / "6aru_receptor_only.pdb"
+STRUCTURE_LABEL = "6ARU"   # named in output, because exposure is one structure's reading
+EXPLORER = ROOT / "explorer"
 DERIVED = common.DERIVED
 FINDINGS = common.FINDINGS
 
@@ -135,6 +144,73 @@ def load_cetuximab_contacts():
         parts = line.split(",")
         contacts[int(parts[0])] = float(parts[3])
     return contacts
+
+
+def load_incumbent_clusters():
+    """The 415-466 anchor clusters, read from step 05's committed output.
+
+    Returned as (label, uniprot positions, where it came from). Step 05 writes two
+    files: the clusters it can stand behind, and a separate one for the case where
+    H418 is treated as usable, which step 03 measured as buried and step 06 found
+    partially exposed in a different structure. Both are read so the comparison
+    against H370 covers the conditional case too, marked as conditional.
+
+    These sets are not retyped here. If step 05's answer changes, this comparison
+    changes with it, which is the rule that two scripts needing the same quantity
+    do not each keep their own copy of it.
+    """
+    sets = []
+    for filename, conditional in (("05-anchor-clusters.csv", False),
+                                  ("05-anchor-clusters-with-h418.csv", True)):
+        path = DERIVED / filename
+        if not path.exists():
+            raise SystemExit(
+                f"{path} is missing. Run analysis/05_anchor_geometry.py first; "
+                "this step compares against its clusters rather than keeping its "
+                "own copy of them.")
+        lines = path.read_text().splitlines()
+        header = [h.strip() for h in lines[0].split(",")]
+        for line in lines[1:]:
+            if not line.strip():
+                continue
+            # The anchors column is quoted and holds a space-separated list such
+            # as "D416 E421 E424 E455".
+            before, _, rest = line.partition('"')
+            anchors, _, _after = rest.partition('"')
+            labels = anchors.split()
+            members = [int(a[1:]) for a in labels]
+            label = " ".join(labels)
+            if conditional:
+                label += " (conditional on H418)"
+                note = "415\u2013466, only if H418 is usable"
+            else:
+                note = "415\u2013466"
+            sets.append((label, members, note))
+        del header, before
+    return sets
+
+
+def js_array(name, records, fields):
+    """One JavaScript array literal, one record per line, for the explorer page.
+
+    `fields` is a list of (key, formatter). Written as a flat literal rather than
+    JSON so the file reads the same way as the rest of the explorer's source.
+    """
+    lines = [f"const {name} = ["]
+    for i, rec in enumerate(records):
+        parts = []
+        for key, fmt in fields:
+            if key not in rec:
+                continue
+            parts.append(f"{key}:{fmt(rec[key])}")
+        comma = "," if i < len(records) - 1 else ""
+        lines.append("  {" + ",".join(parts) + "}" + comma)
+    lines.append("];")
+    return "\n".join(lines)
+
+
+def js_string(value):
+    return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def main():
@@ -373,6 +449,7 @@ def main():
                         for x, y in itertools.combinations(face_best, 2))
             fspread = max(angle_between(normals[x], normals[y])
                           for x, y in itertools.combinations(face_best, 2))
+            face_span, face_spread = fspan, fspread
             emit(f"   Largest subset that also fits one face, under "
                  f"{FACE_LIMIT:.0f} degrees of spread:")
             emit(f"     {len(face_best)} anchors, "
@@ -388,6 +465,7 @@ def main():
                      f"{len(best)}. The distance test alone overstates it, because")
                 emit("   some of those anchors sit round the curve of the protein.")
         else:
+            face_span, face_spread = None, None
             emit(f"   No subset of two or more passes both tests. The cluster is")
             emit("   spread around the protein rather than sitting on one face.")
         emit()
@@ -398,6 +476,7 @@ def main():
         emit("   about the ones that remain.")
     else:
         face_best, face_valid = [], []
+        face_span, face_spread = None, None
         emit("   No cluster to test.")
     emit()
 
@@ -412,15 +491,13 @@ def main():
     emit("   The same face test applied to the 415-466 clusters, so both epitopes")
     emit("   are judged on identical terms:")
     emit()
-    incumbent_sets = {
-        "D416 E421 E424 E455": [416, 421, 424, 455],
-        "E424 E455 D458 D460": [424, 455, 458, 460],
-        "H433 E455 D458 D460": [433, 455, 458, 460],
-        "D416 E424 E455 D460": [416, 424, 455, 460],
-        "D416 H418 E421 E424 E455 (conditional on H418)":
-            [416, 418, 421, 424, 455],
-    }
-    for label, members in incumbent_sets.items():
+    # The sets themselves are step 05's committed output rather than a second
+    # copy typed in here, so the comparison cannot drift from what 05 found. Step
+    # 05 records which anchors cluster but not their angular spread, so the spread
+    # is computed here with the same face test applied to H370's cluster above.
+    incumbent_sets = load_incumbent_clusters()
+    incumbent_rows = []
+    for label, members, source_note in incumbent_sets:
         pts, ok = {}, True
         for pos in members:
             residue = by_uniprot.get(pos)
@@ -440,6 +517,8 @@ def main():
                      for a, b in itertools.combinations(members, 2))
         verdict = "one face" if spread < FACE_LIMIT else "WRAPS AROUND"
         emit(f"     {label}: span {span:.1f} A, spread {spread:.0f} deg — {verdict}")
+        incumbent_rows.append(dict(anchors=label.split(" (")[0], span=span,
+                                   spread=spread, source=source_note))
     emit()
 
     emit("   415-466, from steps 03 and 05:")
@@ -504,6 +583,126 @@ def main():
                      f"{CENTRE in combo}\n")
     emit("Wrote data/derived/08-h370-neighbourhood.csv")
     emit("Wrote data/derived/08-h370-clusters.csv")
+
+    # ---- the explorer's data file ----
+    # explorer/egfr-explorer.html draws the H370 sections from these two arrays.
+    # They are written here, from the same in-memory values as the CSVs above,
+    # because a number shown to a reader has to come from the script that computed
+    # it. The explorer page is held to the same rule as results/ and data/derived/.
+    anchor_records = []
+    for r in sorted(switchable, key=lambda r: r["distance"]):
+        rec = dict(p=r["pos"], aa=r["aa"], d=r["distance"], rsa=r["rsa"],
+                   ex=r["exposure"], cons=r["conserved"], cet=r["cetux"],
+                   pick=r["pos"] in face_best)
+        if not r["conserved"]:
+            rec["out"] = f"mouse has {r['mouse']}"
+        elif r["exposure"] == "buried":
+            rec["out"] = f"buried in {STRUCTURE_LABEL}"
+        anchor_records.append(rec)
+
+    cluster_records = []
+    if face_best:
+        cluster_records.append(dict(
+            n=" ".join(f"{aa_of[q]}{q}" for q in sorted(face_best)),
+            span=face_span, ang=face_spread, src=f"H{CENTRE} patch"))
+    for row in incumbent_rows:
+        cluster_records.append(dict(n=row["anchors"], span=row["span"],
+                                    ang=row["spread"], src=row["source"]))
+
+    one_dp = lambda v: f"{v:.1f}"
+    three_dp = lambda v: f"{v:.3f}"
+    js_bool = lambda v: "true" if v else "false"
+    EXPLORER.mkdir(parents=True, exist_ok=True)
+    (EXPLORER / "h370-data.js").write_text(
+        f"/* h370-data.js — generated by analysis/08_h370_epitope.py. "
+        "Do not hand-edit.\n"
+        f"   Same values as data/derived/08-h370-neighbourhood.csv and\n"
+        f"   data/derived/08-h370-clusters.csv. Rerun that script to change them.\n"
+        f"\n"
+        f"   H370   every residue within {NEIGHBOURHOOD:.0f} A of H{CENTRE} that "
+        "could carry a charge\n"
+        f"          pair, nearest first. d is angstroms from H{CENTRE}'s imidazole "
+        "ring centre,\n"
+        f"          rsa is relative solvent accessibility in {STRUCTURE_LABEL}, "
+        "cons is identical in\n"
+        "          mouse, cet is touched by cetuximab, pick is in the chosen "
+        "cluster, and\n"
+        "          out says why a residue is not a candidate.\n"
+        f"   CLUSTERS  anchor sets that fit one face, span in angstroms and "
+        "angular spread in\n"
+        f"          degrees. The H{CENTRE} patch is this script's result; the "
+        "415-466 sets are\n"
+        "          step 05's clusters, with their spread computed here by the same "
+        "face test,\n"
+        "          so both epitopes are judged on identical terms.\n"
+        "*/\n\n"
+        + js_array("H370", anchor_records,
+                   [("p", str), ("aa", js_string), ("d", one_dp),
+                    ("rsa", three_dp), ("ex", js_string), ("cons", js_bool),
+                    ("cet", js_bool), ("pick", js_bool), ("out", js_string)])
+        + "\n\n"
+        + js_array("CLUSTERS", cluster_records,
+                   [("n", js_string), ("span", one_dp),
+                    ("ang", lambda v: f"{v:.0f}"), ("src", js_string)])
+        + "\n"
+    )
+    emit("Wrote explorer/h370-data.js")
+
+    # ---- the figures the explorer's prose quotes ----
+    # H370 and CLUSTERS above are generated, so they cannot go stale. The
+    # explorer's FUNNEL and CMP blocks are prose with figures written into the
+    # sentences, which cannot be generated without turning the writing into
+    # templates. They are asserted instead: if this step's answer changes and the
+    # page is not updated with it, the run stops here rather than leaving a reader
+    # with a number no script produces any more. Keep these in step with the
+    # wording in explorer/egfr-explorer.html.
+    his_in_face = sorted(q for q in face_best if aa_of[q] == "H")
+    incumbent_plain = [r for r in incumbent_rows
+                       if "only if H418" not in r["source"]]
+    largest_incumbent = max((len(r["anchors"].split()) for r in incumbent_plain),
+                            default=0)
+    h433_cluster = next((r for r in incumbent_rows
+                         if "H433" in r["anchors"].split()), None)
+    quoted = [
+        ("residues within reach of the centre", len(rows), 154),
+        ("candidate anchors", len(candidates), 16),
+        ("anchors reachable by one face", len(face_best), 8),
+        ("span of that set, to one decimal place", round(face_span, 1), 24.3),
+        ("angular spread of that set, whole degrees", round(face_spread), 58),
+        ("target histidines in that set", len(his_in_face), 2),
+        ("candidate anchors cetuximab touches", len(touched), 1),
+        ("chosen anchors cetuximab touches",
+         sum(1 for q in face_best if by_uniprot[q] and q in cetux), 0),
+        ("human/mouse differences in the conserved run", len(run_diffs), 0),
+        ("largest 415-466 set, excluding the H418 case", largest_incumbent, 4),
+        ("minimum cluster the switch needs", MIN_CLUSTER, 3),
+        ("tightest angular spread among the clusters shown",
+         min(round(c["ang"]) for c in cluster_records) if cluster_records
+         else None, 24),
+    ]
+    mismatched = [(what, got, want) for what, got, want in quoted if got != want]
+    if h433_cluster is not None:
+        touched_in_h433 = sum(1 for a in h433_cluster["anchors"].split()
+                              if int(a[1:]) in cetux)
+        if touched_in_h433 != 1:
+            mismatched.append(("cetuximab contacts in the H433 cluster",
+                               touched_in_h433, 1))
+    if sorted(f"H{q}" for q in his_in_face) != ["H358", "H370"]:
+        mismatched.append(("which histidines are in the chosen set",
+                           [f"H{q}" for q in his_in_face], ["H358", "H370"]))
+    if mismatched:
+        emit()
+        emit("STOPPING. The figures written into the explorer's prose no longer")
+        emit("match what this script computes:")
+        for what, got, want in mismatched:
+            emit(f"  {what}: computed {got}, explorer says {want}")
+        emit()
+        emit("Update the FUNNEL and CMP text in explorer/egfr-explorer.html and the")
+        emit("expected values in this block together, then rerun.")
+        print("\n".join(out[-len(mismatched) - 6:]), file=sys.stderr)
+        return 1
+    emit(f"Checked {len(quoted) + 2} figures quoted in the explorer's prose: "
+         "all match.")
 
     emit()
     emit("=" * 72)

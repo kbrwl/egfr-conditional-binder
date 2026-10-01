@@ -87,6 +87,7 @@ input[type=range]{width:130px}
 .col.dim{opacity:.32}
 .col.sel{outline:2px solid var(--accInk);outline-offset:1px}
 .col.epi{box-shadow:inset 0 -3px 0 var(--accInk)}
+.col.epi2{box-shadow:inset 0 -3px 0 var(--warnInk)}
 .rowkey{display:flex;gap:16px;font-size:13px;color:var(--ink2);margin:10px 0 2px}
 .rowkey b{font-weight:600;color:var(--ink)}
 
@@ -175,7 +176,8 @@ the full story of that position.</p>
 <div class="legend">
   <span><span class="sw" style="background:var(--ok);border-color:var(--okLine)"></span>identical</span>
   <span><span class="sw" style="background:var(--bad);border-color:var(--badLine)"></span>differs</span>
-  <span><span class="sw" style="background:transparent;box-shadow:inset 0 -3px 0 var(--accInk)"></span>inside candidate epitope 415–466</span>
+  <span><span class="sw" style="background:transparent;box-shadow:inset 0 -3px 0 var(--accInk)"></span>415–466, the fallback patch</span>
+  <span><span class="sw" style="background:transparent;box-shadow:inset 0 -3px 0 var(--warnInk)"></span>365–376, the conserved run around H370</span>
 </div>
 
 <div class="detail" id="detail"><span class="small">Click a column above.</span></div>
@@ -324,6 +326,443 @@ we are not simply rebuilding cetuximab, which the competition rules forbid.</p>
 standard global alignment using the BLOSUM62 scoring table. Human sequence: UniProt
 P00533. Mouse sequence: UniProt Q01279. Numbering follows the human sequence throughout.</p>
 
+
+<!-- ===================================================================
+     H370 SECTIONS — appended 1 October 2026.
+     Added after the existing conserved-runs section. Nothing above this
+     comment was changed except the alignment grid's second epitope band.
+     Styles are scoped under .h370 so they cannot collide with the
+     original page. Colours come from the page's existing CSS variables.
+     Numbers: data/derived/08-h370-neighbourhood.csv and
+     data/derived/08-h370-clusters.csv, via analysis/08_h370_epitope.py.
+     =================================================================== -->
+
+<style>
+.h370 .pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:20px;
+  border:1px solid var(--line2);color:var(--ink2);margin:0 6px 6px 0}
+.h370 .pill.on{background:var(--acc);color:var(--accInk);border-color:var(--accLine)}
+.h370 .funnel{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;margin:14px 0}
+.h370 .fstep{flex:1 1 150px;border:1px solid var(--line);border-radius:10px;
+  background:var(--card);padding:12px;cursor:pointer}
+.h370 .fstep[aria-pressed="true"]{border-color:var(--accInk)}
+.h370 .fstep .big{font-family:var(--mono);font-size:26px;line-height:1.1}
+.h370 .fstep .lab{font-size:12px;color:var(--ink2);margin-top:4px}
+.h370 .fbody{border:1px solid var(--line);border-radius:10px;background:var(--card);
+  padding:14px;min-height:72px;font-size:14px}
+.h370 tr.out td{opacity:.42}
+.h370 tr.pick td{background:var(--acc)}
+.h370 .face{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.h370 .face svg{flex:0 0 260px}
+.h370 .clist{flex:1 1 300px;font-size:14px}
+.h370 .clist div{padding:6px 0;border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:13px}
+.h370 .clist div.fail{opacity:.3;text-decoration:line-through}
+.h370 .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));
+  gap:10px;margin:14px 0}
+.h370 .pair{border:1px solid var(--line);border-radius:10px;background:var(--card);
+  padding:11px;font-size:13px}
+.h370 .pair .t{font-family:var(--mono);font-size:16px}
+.h370 .pair .arrow{color:var(--ink3);margin:0 5px}
+.h370 .pair .state{margin-top:8px;font-size:12px;padding:3px 8px;border-radius:20px;
+  display:inline-block;border:1px solid}
+.h370 .s-on{background:var(--ok);color:var(--okInk);border-color:var(--okLine)}
+.h370 .s-off{background:var(--card);color:var(--ink3);border-color:var(--line2)}
+.h370 .s-bad{background:var(--bad);color:var(--badInk);border-color:var(--badLine)}
+.h370 .cmp tr{cursor:pointer}
+.h370 .cmp tr.sel{background:var(--acc)}
+.h370 .win{font-weight:600;color:var(--accInk)}
+</style>
+
+<div class="h370">
+
+<h2>Part two: the patch we are actually aiming at</h2>
+
+<p>Everything above compares human and mouse letter by letter. That tells us where the
+two species agree. It cannot tell us which of those positions a binder can physically
+touch, because a sequence is a line of letters and a protein is a folded object.</p>
+
+<p>This second half covers the measurement that answered that, run on 1 October 2026
+by <code>analysis/08_h370_epitope.py</code> against structure 6ARU.</p>
+
+<div class="note"><b>The thing to get straight first.</b> H370 is not the epitope.
+An <b>epitope</b> is the patch of surface a binder grips, which is always a group of
+residues. H370 is the centre point we measured outwards from, because it is one of
+two histidines shown experimentally to carry EGFR's pH-dependent binding. What came
+back from that measurement is a patch of <b>eight</b> residues, with H370 among
+them.
+</div>
+
+<h3>Why measure outwards from H370 specifically</h3>
+
+<p>The pH switch needs a <b>histidine</b> — the only amino acid that changes charge
+between pH 7.4 and pH 6.5. EGFR has many histidines, and guessing which one produces
+a real effect would be a guess. Liu et al. 2022 removed that guess: they changed each
+of EGFR's histidines to alanine one at a time (<b>alanine substitution</b>) and
+measured which change destroyed the pH-dependent binding. Two came back,
+<code>H433</code> and <code>H370</code>. That paper then built its own molecule on
+H433, leaving H370 as the other experimentally supported option and, as far as we
+found, unused.</p>
+
+<h2>The funnel: 154 residues down to 8</h2>
+
+<p>Click a stage to see what that filter did.</p>
+
+<div class="funnel" id="funnel"></div>
+<div class="fbody" id="fbody"></div>
+
+<h2>The sixteen candidates</h2>
+
+<p>Every residue near H370 that can carry a charge pair, is identical in mouse, and is
+reachable from outside. <b>Anchor</b> is this project's word for a residue on EGFR
+that the switch pairs against. Distances are measured from the charged tip of each
+side chain, because that is the part that does the work.</p>
+
+<div class="controls" id="anchorfilters"></div>
+
+<div class="tablewrap">
+<table>
+  <thead><tr>
+    <th>Anchor</th><th>Distance from H370</th><th>Exposure (RSA)</th>
+    <th>Same in mouse</th><th>Cetuximab touches</th><th>In the chosen eight</th>
+  </tr></thead>
+  <tbody id="anchorrows"></tbody>
+</table>
+</div>
+
+<p class="small"><b>RSA</b> is relative solvent accessibility: roll a water-sized ball
+over the structure, record how much of each residue it can touch, divide by the most
+that residue type could ever expose. 0.25 and above is treated as exposed, 0.05 and
+below as buried. Those cutoffs are conventions, so anything near a boundary should be
+read as ambiguous.</p>
+
+<h2>Close together is not the same as reachable</h2>
+
+<p>Sixteen candidates is not the answer, because a binder is one object with one face
+and has to touch its anchors all at once.</p>
+
+<p>The test used up to this point asked whether a set of anchors fits inside a ball 25
+ångströms across. That works for small sets and breaks for large ones: two anchors on
+<i>opposite sides</i> of the ball pass the distance test and are still impossible to
+touch together.</p>
+
+<p>So a second test was added. For each anchor, take the direction it points away from
+the protein's centre. Anchors on one face point roughly the same way. Measure the
+widest angle between any two directions in the set — the <b>angular spread</b>. Under
+90° is treated as one face.</p>
+
+<div class="card face">
+  <svg viewBox="0 0 240 200" role="img" aria-label="A ball of anchors versus a flat binder face">
+    <circle cx="110" cy="100" r="62" fill="none" stroke="currentColor"
+            stroke-opacity=".22" stroke-dasharray="4 4"/>
+    <text x="110" y="25" text-anchor="middle" font-size="11" fill="currentColor"
+          fill-opacity=".55">25 Å ball</text>
+    <circle cx="110" cy="100" r="30" fill="currentColor" fill-opacity=".10"/>
+    <text x="110" y="104" text-anchor="middle" font-size="10" fill="currentColor"
+          fill-opacity=".55">EGFR</text>
+    <circle cx="150" cy="58" r="6" fill="#1a9850"/>
+    <circle cx="167" cy="92" r="6" fill="#1a9850"/>
+    <circle cx="152" cy="126" r="6" fill="#1a9850"/>
+    <circle cx="62"  cy="132" r="6" fill="#d73027"/>
+    <path d="M186 36 L206 56 L176 150 L152 134 Z" fill="currentColor"
+          fill-opacity=".30"/>
+    <text x="196" y="172" text-anchor="middle" font-size="10" fill="currentColor"
+          fill-opacity=".6">binder face</text>
+    <text x="52" y="156" text-anchor="middle" font-size="10" fill="#d73027">
+      inside the ball,</text>
+    <text x="52" y="168" text-anchor="middle" font-size="10" fill="#d73027">
+      out of reach</text>
+  </svg>
+
+  <div class="clist">
+    <div style="border:0;font-family:var(--sans);padding-bottom:10px">
+      <label style="font-size:14px;color:var(--ink2)">
+        Allowed angular spread: <b id="angval" style="color:var(--ink)">90</b>°
+      </label><br>
+      <input type="range" id="angle" min="20" max="90" value="90" step="1"
+             style="width:100%;max-width:280px">
+      <div class="small" style="margin-top:6px">Drag it down and watch which sets
+      stop qualifying. The tightest group here spreads 24°, so below that none of
+      them do.</div>
+    </div>
+    <div id="clusters"></div>
+  </div>
+</div>
+
+<p class="small">The 90° limit is a working convention chosen here. It is not a
+measured property of binders and it is cruder than fitting a real protein backbone
+against the surface. Treat it as a filter that removes the clearly impossible rather
+than a guarantee about what it lets through.</p>
+
+<h3>What survived both tests</h3>
+
+<div class="card">
+  <p style="font-family:var(--mono);font-size:19px;margin-bottom:8px">
+    E344 &nbsp; H358 &nbsp; D368 &nbsp; H370 &nbsp; E391 &nbsp; E400 &nbsp; E421 &nbsp; E424</p>
+  <p class="small" style="margin:0">Eight anchors · span 24.3 Å · angular spread 58°,
+  widest between H358 and E424 · six acidic, two histidine · includes H370.
+  The minimum for a workable switch is three.</p>
+</div>
+
+<h2>How the switch would work on this patch</h2>
+
+<p>Each anchor gets a partner residue on our binder, chosen by what the anchor is.
+Both arrangements switch in the same direction as acidity rises, so they reinforce
+each other. Flip the pH and watch the whole face change state.</p>
+
+<div class="controls">
+  <button id="phbtn" onclick="togglePh()" aria-pressed="false">pH 7.4 — healthy tissue</button>
+  <span class="small" id="phnote"></span>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="note"><b>The arrangement we must never build.</b> Put a histidine on the
+binder facing a histidine on the target and both go positive together at pH 6.5, so
+they push apart — and that can cancel out a correct pair elsewhere on the same face.
+This project worked that out from first principles before finding that Liu et al.
+2022 had tested it: their histidine-facing-H433 version changed nothing, while their
+acidic-facing-H433 versions improved pH dependence substantially.
+<div class="board" style="margin-bottom:0">
+  <div class="pair">
+    <div class="t">H370 <span class="arrow">↔</span> His</div>
+    <div class="small">target histidine against binder histidine</div>
+    <div class="state s-bad" id="rejstate">rejected by rule</div>
+  </div>
+</div>
+</div>
+
+<h2>Old patch against new, side by side</h2>
+
+<p>Click any row for what that measure means and why it matters.</p>
+
+<div class="tablewrap">
+<table class="cmp">
+  <thead><tr><th>Measure</th><th>415–466</th><th>H370 patch</th></tr></thead>
+  <tbody id="cmprows"></tbody>
+</table>
+</div>
+<div class="fbody" id="cmpbody">Pick a row.</div>
+
+<div class="note"><b>One caveat the raw numbers hide.</b> The two candidate counts, 7
+and 16, were produced by different methods: the 7 came from a 52-residue stretch of
+sequence, the 16 from a 25-ångström sphere in space. The sphere is a bigger and
+better-shaped search area, and it contains seven of the old anchors outright — D416,
+E421, E424, H433, E455, D458 and D460 all reappear in the table above. So this is a
+better-defined search finding nine more candidates, rather than nine discoveries.
+The number that genuinely improved, and the one the design depends on, is the
+largest set reachable by one face: four, now eight.</div>
+
+<h2>What none of this settles</h2>
+<ul>
+  <li>Reachability is necessary and not sufficient. Eight anchors on one face says a
+  binder <i>could</i> touch them. Whether a protein exists that folds stably and
+  presents the right partners at the right angles is what the design pipeline has to
+  answer.</li>
+  <li>Nothing here speaks to the detection floor. The hardest requirement is no
+  <i>detectable</i> binding at pH 7.4, and the assay the organisers use has not been
+  announced.</li>
+  <li>Exposure values come from one structure, 6ARU. H418 is buried there and
+  partially exposed in 1NQL, which is a standing reminder that these are snapshots
+  rather than properties.</li>
+  <li>415–466 is not discarded. It stays fully characterised as the fallback.</li>
+</ul>
+
+</div><!-- /.h370 -->
+
+<!-- Generated by analysis/08_h370_epitope.py; defines H370 and CLUSTERS. -->
+<script src="h370-data.js"></script>
+
+<script>
+/* H370 and CLUSTERS are defined in h370-data.js, generated by
+   analysis/08_h370_epitope.py. FUNNEL and CMP below are prose, so they stay here;
+   the figures written into their sentences are asserted against that script's
+   output on every run, and it stops if they drift. Their source is
+   results/findings/08-h370-epitope.md. */
+
+const FUNNEL = [
+  {big:"154", lab:"residues within 25 Å of H370",
+   body:"<b>The starting pool.</b> Take the centre of H370's imidazole ring — the "+
+   "five-membered ring on its side chain where the charge sits — and collect every "+
+   "residue whose side-chain tip lies within 25 ångströms. That distance is roughly "+
+   "how far one small designed protein can reach with a single face, and it was "+
+   "fixed before the measurement so it could not be tuned to produce a nice answer. "+
+   "Most of these 154 are scenery."},
+  {big:"−", lab:"filter 1: can it carry a charge?",
+   body:"<b>Only three residue types are useful.</b> D (aspartic acid) and E "+
+   "(glutamic acid) are acidic and negative at both pH values; against those we put "+
+   "a histidine on our binder. H (histidine) is the switch itself; against those we "+
+   "put an acidic residue on our binder. Everything else cannot form a charge pair "+
+   "and is dropped."},
+  {big:"−", lab:"filter 2: same in mouse?",
+   body:"<b>The same sequence has to bind mouse EGFR too.</b> Aiming where the two "+
+   "species are already identical means cross-reactivity comes from the choice of "+
+   "target rather than from repair work afterwards. Three nearby candidates were "+
+   "dropped here: D393 (mouse has E), H383 (mouse has R, which cannot switch at "+
+   "all) and E412 (mouse has D)."},
+  {big:"−", lab:"filter 3: can water reach it?",
+   body:"<b>A buried residue cannot be touched, whatever its chemistry.</b> "+
+   "Measured as relative solvent accessibility. This dropped H418, which is "+
+   "conserved in mouse and would otherwise have qualified, at RSA 0.032 in "+
+   "structure 6ARU. Step 06 found it partially exposed in a different structure, so "+
+   "it is ambiguous rather than settled."},
+  {big:"16", lab:"candidate anchors",
+   body:"<b>What survived all three filters.</b> Sixteen residues, three of them "+
+   "target histidines (H358, H370, H433), one of them touched by the existing drug "+
+   "cetuximab (H433). Listed in full in the table below."},
+  {big:"8", lab:"reachable by one face",
+   body:"<b>The patch.</b> E344, H358, D368, H370, E391, E400, E421, E424 — span "+
+   "24.3 Å, angular spread 58°. Sixteen candidates sitting near H370 is not the "+
+   "same as sixteen a binder can touch at once, and the section below is the test "+
+   "that separates those two things."}
+];
+
+const CMP = [
+  ["human/mouse differences in the core run","1 (S442G)","0 (365–376)",2,
+   "The patch has to work in mouse as well as human. The new run, 365–376, has no "+
+   "differences at all — and it ends exactly where it does because both residues "+
+   "just outside it differ (S364A before, R377K after), which is a sign it is a "+
+   "genuinely conserved stretch rather than an arbitrary slice."],
+  ["candidate anchors","7","16",2,
+   "Residues that could carry a charge pair, are conserved in mouse, and are "+
+   "reachable. Read with the caveat below the table: these two numbers came from "+
+   "different search methods and are not a like-for-like comparison."],
+  ["largest set reachable by one face","4","8",2,
+   "The number that actually decides this. Three or four charge pairs are what the "+
+   "switch needs, because it is partial rather than all-or-nothing at pH 6.5. Four "+
+   "anchors is the bare minimum with nothing to spare; eight leaves room for pairs "+
+   "to be lost when a real backbone is fitted to the surface."],
+  ["target histidines in that set","1 (H433)","2 (H358, H370)",2,
+   "Each target histidine is a place to use the half of the pairing rule that puts "+
+   "an acidic residue on our binder. Two of them means the switch does not depend "+
+   "on a single residue behaving as expected."],
+  ["anchors cetuximab touches","1 of 4","0 of 8",2,
+   "Cetuximab is the approved anti-EGFR antibody whose footprint we measured in "+
+   "step 04. Overlapping it invites the objection that we have redrawn an existing "+
+   "drug's epitope. The new patch does not touch it anywhere — cetuximab's nearest "+
+   "contacts are at 373, 374 and 377, so the tail of the conserved run is inside "+
+   "its footprint while H370 and D368 are not."],
+  ["anchors in the domain IV groove","2 (D458, D460)","0",2,
+   "Domain III meets domain IV in a groove. An anchor sitting down in it is awkward "+
+   "to reach from outside even when the exposure number looks acceptable."],
+  ["sugar chain inside the region","yes, at N444","none in the patch",2,
+   "N-glycosylation: a flexible sugar chain attached to the protein. Crystal "+
+   "structures barely show them, so real accessibility near one is worse than the "+
+   "numbers suggest."],
+  ["already used by published work","yes, H433","no",2,
+   "Liu et al. 2022 built their pH-dependent anti-EGFR antibody on H433. H370 is "+
+   "the other histidine their experiment implicated, and no published binder uses "+
+   "it."]
+];
+
+/* ---- funnel ---- */
+(function(){
+  const f=document.getElementById('funnel'), b=document.getElementById('fbody');
+  FUNNEL.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='fstep'; d.setAttribute('aria-pressed', i===0?'true':'false');
+    d.innerHTML='<div class="big">'+s.big+'</div><div class="lab">'+s.lab+'</div>';
+    d.onclick=()=>{
+      [...f.children].forEach(c=>c.setAttribute('aria-pressed','false'));
+      d.setAttribute('aria-pressed','true'); b.innerHTML=s.body;
+    };
+    f.appendChild(d);
+  });
+  b.innerHTML=FUNNEL[0].body;
+})();
+
+/* ---- anchor table ---- */
+const AFILTERS=[
+  ["the chosen eight", r=>r.pick],
+  ["all 16 candidates", r=>r.cons && r.ex!=="buried"],
+  ["excluded, and why", r=>!!r.out],
+  ["show everything", ()=>true]
+];
+let afilter=1;
+function anchorRows(){
+  const keep=AFILTERS[afilter][1];
+  document.getElementById('anchorrows').innerHTML=H370.map(r=>{
+    const shown=keep(r);
+    return '<tr class="'+(shown?(r.pick?'pick':''):'out')+'">'+
+      '<td class="mono"><b>'+r.aa+r.p+'</b></td>'+
+      '<td class="mono">'+r.d.toFixed(1)+' Å</td>'+
+      '<td>'+r.ex+' ('+r.rsa.toFixed(3)+')</td>'+
+      '<td>'+(r.cons?'yes':'<b>no</b>')+'</td>'+
+      '<td>'+(r.cet?'yes':'—')+'</td>'+
+      '<td>'+(r.pick?'<b>yes</b>':(r.out?('— '+r.out):'—'))+'</td></tr>';
+  }).join('');
+}
+(function(){
+  const c=document.getElementById('anchorfilters');
+  AFILTERS.forEach((f,i)=>{
+    const btn=document.createElement('button');
+    btn.textContent=f[0]; btn.setAttribute('aria-pressed', i===afilter?'true':'false');
+    btn.onclick=()=>{afilter=i;
+      [...c.children].forEach((x,j)=>x.setAttribute('aria-pressed', j===i?'true':'false'));
+      anchorRows();};
+    c.appendChild(btn);
+  });
+  anchorRows();
+})();
+
+/* ---- face test ---- */
+function drawClusters(){
+  const lim=+document.getElementById('angle').value;
+  document.getElementById('angval').textContent=lim;
+  document.getElementById('clusters').innerHTML=CLUSTERS.map(c=>
+    '<div class="'+(c.ang<=lim?'':'fail')+'">'+c.n+
+    '<br><span style="font-family:var(--sans);color:var(--ink3)">span '+
+    c.span.toFixed(1)+' Å · spread '+c.ang+'° · '+c.src+'</span></div>').join('');
+}
+document.getElementById('angle').addEventListener('input',drawClusters);
+drawClusters();
+
+/* ---- pH board ---- */
+const PICKED=H370.filter(r=>r.pick).sort((a,b)=>a.p-b.p);
+let acidic=false;
+function drawBoard(){
+  document.getElementById('board').innerHTML=PICKED.map(r=>{
+    const his=r.aa==="H";
+    const partner=his?"Asp or Glu":"His";
+    const state=acidic
+      ? '<span class="state s-on">pulling together</span>'
+      : '<span class="state s-off">no attraction</span>';
+    const why=acidic
+      ? (his?"target histidine is now positive, binder acid is negative"
+            :"binder histidine is now positive, target acid is negative")
+      : (his?"target histidine is neutral"
+            :"binder histidine is neutral");
+    return '<div class="pair"><div class="t">'+r.aa+r.p+
+      '<span class="arrow">↔</span>'+partner+'</div>'+
+      '<div class="small" style="margin-top:4px">'+why+'</div>'+state+'</div>';
+  }).join('');
+  const btn=document.getElementById('phbtn');
+  btn.textContent=acidic?"pH 6.5 — inside a tumour":"pH 7.4 — healthy tissue";
+  btn.setAttribute('aria-pressed',acidic?'true':'false');
+  document.getElementById('phnote').textContent=acidic
+    ? "All eight pairs are on. This is the state we want, and only here."
+    : "All eight pairs are off. This is what \u201cno detectable binding\u201d has to look like.";
+  document.getElementById('rejstate').className=acidic?'state s-bad':'state s-off';
+  document.getElementById('rejstate').textContent=acidic
+    ? "both positive — pushing apart" : "both neutral — nothing happens";
+}
+function togglePh(){acidic=!acidic;drawBoard();}
+drawBoard();
+
+/* ---- comparison ---- */
+(function(){
+  const tb=document.getElementById('cmprows'), body=document.getElementById('cmpbody');
+  CMP.forEach(row=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td>'+row[0]+'</td><td>'+row[1]+'</td><td class="win">'+row[2]+'</td>';
+    tr.onclick=()=>{
+      [...tb.children].forEach(x=>x.classList.remove('sel'));
+      tr.classList.add('sel'); body.innerHTML=row[4];
+    };
+    tb.appendChild(tr);
+  });
+})();
+</script>
+
 </div>
 
 <script>
@@ -343,6 +782,7 @@ const grid=document.getElementById('grid'), detail=document.getElementById('deta
 let lo=310, hi=480, mode=null, sel=null;
 
 function inEpi(p){return p>=415&&p<=466}
+function inRun(p){return p>=365&&p<=376}
 
 function render(){
   grid.innerHTML='';
@@ -351,6 +791,7 @@ function render(){
     const d=document.createElement('div');
     d.className='col '+(c.ok?'match':'diff');
     if(inEpi(c.hp)) d.classList.add('epi');
+    if(inRun(c.hp)) d.classList.add('epi2');
     if(mode==='acid'&&!'DE'.includes(c.h)) d.classList.add('dim');
     if(mode==='his'&&c.h!=='H') d.classList.add('dim');
     if(mode==='diff'&&c.ok) d.classList.add('dim');
@@ -368,7 +809,8 @@ function show(c){
   let tags='';
   tags += c.ok ? '<span class="tag t-ok">identical in mouse</span>'
                : '<span class="tag t-bad">differs in mouse</span>';
-  if(inEpi(c.hp)) tags+='<span class="tag t-acc">inside candidate epitope</span>';
+  if(inEpi(c.hp)) tags+='<span class="tag t-acc">inside 415–466, the fallback patch</span>';
+  if(inRun(c.hp)) tags+='<span class="tag t-warn">inside 365–376, the conserved run around H370</span>';
   if('DE'.includes(c.h)) tags+='<span class="tag t-acc">negatively charged — histidine anchor</span>';
   if(c.h==='H') tags+='<span class="tag t-warn">histidine — flips positive in acid</span>';
   const code = c.ok ? c.h+c.hp : c.h+c.hp+c.m;
