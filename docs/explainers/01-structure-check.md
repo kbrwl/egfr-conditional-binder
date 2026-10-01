@@ -1,10 +1,11 @@
 # Explainer 01 — the structure check
 
-What `analysis/00` through `analysis/08` did, why, and what came back.
+What `analysis/00` through `analysis/07` did, why, and what came back.
 
-A later document, `02-what-was-already-published.md`, covers the literature search that followed and
-withdrew this project's novelty claim. Read this one for the measurements and that
-one for what they turned out to be worth.
+This explainer covers `analysis/00`–`07` only. `analysis/08`, which moved the target
+to a patch around H370, is the subject of `03-h370-epitope.md`. The literature search
+that prompted it is in `02-what-was-already-published.md`.
+
 Written for a reader with no biology background who intends to understand the
 work rather than trust it.
 
@@ -312,10 +313,8 @@ so sharing one residue with it is not sharing a mechanism. That is an argument t
 make in the write-up. Nothing computes it, and it must not be presented as a
 result.
 
-A separate point, found later and more important: **this arrangement is published,
-and on H433 specifically.** Liu et al. 2022 mapped EGFR's own H370 and H433 as the
-residues responsible for pH-dependent antibody binding, then deliberately put an
-acidic residue against H433. See "What the literature search found" below.
+This arrangement is published, including on H433 specifically; see
+`02-what-was-already-published.md`.
 
 **What this does not establish.** Geometric reachability is necessary and not
 sufficient. It does not show that a foldable binder exists which presents the
@@ -542,57 +541,11 @@ corrupting the input on purpose and confirming it fails.
 
 ---
 
-## What the literature search found
+## The literature search, and where the epitope went
 
-Before claiming the method was new, we searched for whether it already existed. It
-does. This is the most consequential thing in this document.
-
-**Putting histidines on a binder to make binding pH-dependent is about twenty years
-old.** It has a name in the literature — histidine switching, after Sarkar et al.
-2002 — a standard method for finding the right positions (histidine scanning,
-Schröter et al. 2015), clinical-stage molecules built on it, and review articles
-covering it. It is background to cite, not an idea to claim.
-
-**Putting an acidic residue on the binder against a histidine already on the target
-is also published**, and is described as a known strategy in a 2024 review (Wei &
-Sulea, *mAbs* 16:2404064). It has been done deliberately, with crystal structures, on
-CTLA-4 (Lee et al. 2022) and on VISTA (Johnston et al. 2019, taken to a clinical
-antibody by Thisted et al. 2024). Designing a de novo interface around a target
-histidine's two charge states was stated as a principle by the Baker lab in 2014
-(Strauch et al., *PNAS* 111:675–680).
-
-**And the closest paper is on our target, our histidine and our pH pair.** Liu et al.
-2022 (*Molecular Therapy – Oncolytics* 27:256–269) built a pH-dependent anti-EGFR
-antibody. They found EGFR's own H370 and H433 were responsible for the pH-dependence
-by mutating each histidine to alanine, then deliberately changed their antibody's
-Tyr32 to glutamate or aspartate to pair with H433. Binding at pH 6.5 against 7.4, and
-human/mouse cross-reactive as well. There is a patent family over it.
-
-So the novelty claim is withdrawn. It was a memory-based belief, exactly the kind
-this project's rules say must be checked, and checking it was worth more than
-keeping it.
-
-**One result in that paper helps us.** They also tried Tyr32**histidine** — a
-histidine on the binder facing the histidine on the target. It changed nothing, while
-the acidic versions worked well. That is published experimental evidence for the
-rejection criterion this project worked out from first principles: never put a
-histidine opposite H418 or H433. The rule now rests on a measurement rather than an
-argument.
-
-**And it pointed at two anchors we had missed.** Because that paper named H370, every
-histidine in domain III was listed from our own sequences: H358, H370, H383, H418,
-H433. H358 and H370 are identical in human and mouse and were never considered,
-because both fall outside 415–466. H383 differs between the species, so it is no use
-for cross-reactivity. Whether H358 or H370 deserves an epitope of its own is open,
-and H370 has experimental evidence behind it.
-
-**What is left that is defensible.** No published example was found of a **de novo
-designed miniprotein** that is pH-conditional against EGFR — the EGFR molecules in
-the literature are antibodies, and de novo pH-sensitive design has been published on
-other targets (Ahn et al. 2025). So the honest claim is about modality and
-combination, phrased as "we found no published example" rather than "this has never
-been done", and citing Liu et al. 2022 openly rather than leaving a reader to find
-it.
+The search of the existing literature that followed this work is covered in
+`02-what-was-already-published.md`. The epitope change that came out of it, from
+415–466 to a patch around H370, is covered in `03-h370-epitope.md`.
 
 ---
 
@@ -607,16 +560,12 @@ both published shapes, and the specific fear about domain II folding across it i
 not what the numbers show, but two crystal snapshots cannot give the balance of open
 to closed in the assay buffer, which is the number that would actually matter.
 
-**Withdrawn.** The claim that the method was novel, entirely rather than narrowed.
-See `02-what-was-already-published.md`, which covers the search, what it found and what it gave back.
+**Withdrawn.** The claim that the method was novel, withdrawn in full rather than
+narrowed; see `02-what-was-already-published.md`.
 
-**Superseded.** 415-466 is no longer the primary epitope. The literature search named
-EGFR's H370 as the other experimentally implicated histidine, and evaluating it
-produced a better epitope on every measure we have: eight conserved reachable anchors
-on one face instead of four, two target histidines instead of one, no overlap with
-cetuximab's footprint, and none of the domain IV groove or sugar-chain complications.
-Computed in `analysis/08_h370_epitope.py`; comparison table in
-`docs/decisions-log.md`. 415-466 stays fully characterised and is the fallback.
+**Superseded.** 415-466 is no longer the primary epitope; what replaced it and what
+was measured to decide that are in `03-h370-epitope.md`. Everything in this document
+about 415-466 still holds, and it remains fully characterised as the fallback.
 
 **The open question that matters most.** Whether H418 is usable. It decides
 between a four-anchor group that carries at least one drawback whichever you

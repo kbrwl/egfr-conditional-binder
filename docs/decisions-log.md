@@ -196,11 +196,9 @@ this repo numbers them — pH, mouse, affinity — it read as mouse and affinity
 which is the opposite of the intent. Objectives are named rather than numbered
 throughout for that reason.)
 
-**The novelty claim is withdrawn (1 October 2026).** This entry used to say that
-using the target's own H418 and H433 as anchors for acidic residues on our side was
-a method differentiator that no standard pipeline does. The literature search shows the
-idea is published, including on EGFR and on H433 specifically. Details under
-Resolved. What replaces it is in "How to describe the method honestly" below.
+**The novelty claim is withdrawn.** Recorded under Ruled out, with the three reasons
+and the evidence under Resolved. What replaces it is in "How to describe the method
+honestly" below.
 
 **How to describe the method honestly (1 October 2026).** With the novelty claim
 withdrawn, what is left is still worth submitting, and is defensible without any
