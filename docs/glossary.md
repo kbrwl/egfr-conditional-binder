@@ -18,6 +18,13 @@ A protein sequence written out is just a string of letters, e.g. `MKTAYIAKQRQ...
 **Residue** — one amino acid at one position in a chain. "Residue 390" means the
 390th link counting from the start. Used interchangeably with "position".
 
+**Chain** — one continuous string of amino acids. A structure file can hold several,
+labelled A, B, C and so on, because a crystal often contains the target and whatever
+was bound to it. 6ARU holds EGFR in one chain and the two halves of an antibody arm
+in others, which is why `analysis/02` writes a receptor-only file before measuring
+anything: a surface measured with the antibody still attached reads as buried where
+the antibody is sitting.
+
 **Domain** — a chunk of a protein that folds into its own self-contained blob.
 One protein chain can contain several, strung together like beads.
 
@@ -95,6 +102,13 @@ which gets a histidine opposite it on the binder, and a histidine already on EGF
 which gets an acidic residue opposite it. Eight were identified from sequence
 (D416, E421, E424, E455, D458, D460, H418, H433) before any check of whether they
 are reachable.
+
+**Candidate anchor** — an anchor that has passed the three filters that decide
+whether it could be used at all: it is a residue type that can carry a charge pair
+(acidic, or a histidine), it is identical in human and mouse, and water can reach it.
+"Candidate" is the reminder that passing those filters is not the same as being
+usable, because the set still has to be reachable by one binder face. The H370
+measurement produced 16 candidate anchors and 8 that survive the face test.
 
 **Epitope** — the specific patch on the target that a binder touches. Choosing
 the epitope is choosing where to aim.
@@ -221,7 +235,8 @@ different position, and measure which ones actually switch with pH. Schröter et
 worth knowing because it is what people do when the prediction is unreliable — and
 pH behaviour is unreliable to predict.
 
-**Alanine substitution** — replacing a residue with alanine, one of the smallest and
+**Alanine substitution**, also called **alanine scanning** when it is done across
+many positions in turn — replacing a residue with alanine, one of the smallest and
 chemically dullest amino acids, to find out whether the original residue mattered. If
 the effect you were studying disappears, that residue was involved. This is how Liu
 et al. 2022 established that EGFR's H370 and H433 are the histidines responsible for
@@ -359,6 +374,26 @@ completely different numbers in the file.
 corresponding atoms after superposition, in ångströms. It is the standard measure
 of how well two structures match. Low means they agree; a couple of ångströms
 across a domain is a good match.
+
+**Span** — of a set of anchors, the distance between its two furthest-apart members,
+in ångströms. It answers whether the whole set fits inside the reach of one small
+binder. Our working limit is 25 ångströms.
+
+**Angular spread** — of a set of anchors, the widest angle between any two of them,
+measured as the directions they point away from the centre of the protein. Anchors
+on one face of a protein point roughly the same way, so their spread is small;
+anchors wrapped around opposite sides point apart, so it is large. It is the
+measurement the face test is built on.
+
+**Face test** — our own term, not standard vocabulary, for checking that a set of
+anchors sits on one face of the protein rather than wrapped around it. It exists
+because span on its own is not enough: two anchors on opposite sides of a 25-ångström
+ball are within that distance of each other and still impossible for one binder to
+touch at the same time. A set whose angular spread is under 90 degrees is treated as
+reachable by one face. The 90 degrees is a working convention chosen in this project
+rather than a measured property of real binders, and it is cruder than fitting an
+actual protein backbone against the surface, so it should be read as a filter that
+removes the clearly impossible rather than a guarantee about what it lets through.
 
 **AlphaFold** — software that predicts a protein's 3D structure from its
 sequence alone. Outputs coordinates plus a confidence score.
