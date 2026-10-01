@@ -209,6 +209,36 @@ window between healthy tissue and tumour: neutral above about pH 6.5, positive
 below it. No other standard amino acid switches in that range. This makes it the
 only practical building block for a pH switch.
 
+**Histidine switching** — the established technique of putting histidine residues
+into a binding surface so that binding depends on pH. Named in Sarkar et al. 2002.
+Roughly twenty years old and the background our own work sits on; we cite it rather
+than claim it.
+
+**Histidine scanning** — the standard laboratory method for finding where to put
+those histidines: make many variants of a binder, each with a histidine in a
+different position, and measure which ones actually switch with pH. Schröter et al.
+2015 is the canonical method paper. It is a search rather than a prediction, which is
+worth knowing because it is what people do when the prediction is unreliable — and
+pH behaviour is unreliable to predict.
+
+**Alanine substitution** — replacing a residue with alanine, one of the smallest and
+chemically dullest amino acids, to find out whether the original residue mattered. If
+the effect you were studying disappears, that residue was involved. This is how Liu
+et al. 2022 established that EGFR's H370 and H433 are the histidines responsible for
+pH-dependent antibody binding: they removed each histidine in turn and saw which
+removal removed the pH effect. It is a direct measurement of involvement, which is
+why it is worth more than inferring importance from a structure.
+
+**Recycling antibody** — an antibody engineered to release its target inside the
+acidic compartments of a cell, so the target is destroyed while the antibody survives
+to be used again. A well-known application of pH-dependent binding running in the
+opposite direction to ours: release when acidic, rather than grip when acidic.
+Igawa et al. 2010.
+
+**Prior art** — anything already published that covers an idea you were about to
+claim as your own. Checking for it before claiming novelty is the difference between
+a submission that cites the field and one that a reader can refute from memory.
+
 **Imidazole ring** — the five-membered ring at the end of a histidine side chain,
 containing two nitrogen atoms. It is the part that picks up or loses a positive
 charge as pH changes, so it is the actual working component of the pH switch. The

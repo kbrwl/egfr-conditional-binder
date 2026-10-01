@@ -1,6 +1,10 @@
 # Explainer 01 — the structure check
 
-What `analysis/00` through `analysis/07` did, why, and what came back.
+What `analysis/00` through `analysis/08` did, why, and what came back.
+
+A later document, `02-prior-art.md`, covers the literature search that followed and
+withdrew this project's novelty claim. Read this one for the measurements and that
+one for what they turned out to be worth.
 Written for a reader with no biology background who intends to understand the
 work rather than trust it.
 
@@ -603,9 +607,16 @@ both published shapes, and the specific fear about domain II folding across it i
 not what the numbers show, but two crystal snapshots cannot give the balance of open
 to closed in the assay buffer, which is the number that would actually matter.
 
-**Withdrawn.** The claim that the method was novel. Both halves are published, and
-the closest paper is on EGFR and H433. What survives is a modality claim, stated as
-"we found no published example".
+**Withdrawn.** The claim that the method was novel, entirely rather than narrowed.
+See `02-prior-art.md`, which covers the search, what it found and what it gave back.
+
+**Superseded.** 415-466 is no longer the primary epitope. The prior-art search named
+EGFR's H370 as the other experimentally implicated histidine, and evaluating it
+produced a better epitope on every measure we have: eight conserved reachable anchors
+on one face instead of four, two target histidines instead of one, no overlap with
+cetuximab's footprint, and none of the domain IV groove or sugar-chain complications.
+Computed in `analysis/08_h370_epitope.py`; comparison table in
+`docs/decisions-log.md`. 415-466 stays fully characterised and is the fallback.
 
 **The open question that matters most.** Whether H418 is usable. It decides
 between a four-anchor group that carries at least one drawback whichever you
