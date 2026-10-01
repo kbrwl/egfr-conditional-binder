@@ -2,8 +2,8 @@
 
 Read this first in any new chat. Update it when something moves between sections.
 
-Last updated: 1 October 2026 (H370 epitope, design pipeline, corrections to the
-novelty record, target trimming and the charge-pair filter)
+Last updated: 2 October 2026 (trim boundary measured, E424 ranking term, target
+numbering check, smoke-run instrumentation)
 
 ---
 
@@ -561,6 +561,42 @@ RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
   reasons a severed-bond count and an edge distance do not capture. It is still
   the first smoke run against the trimmed target that moves this.
 
+  **The boundary was measured on 2 October 2026 and the measurement does not
+  separate the candidates.** `analysis/11_trim_boundary.py` predicted three
+  fragments with ESMFold and compared each against the same residues in 6ARU:
+  310–480 as cut, 310–480 with C470 mutated to serine, and 310–499. Results are in
+  `results/findings/11-trim-boundary.md`. Over the residues all three share, the
+  fit is 5.00, 4.97 and 4.97 Å. Across the eight anchors fitted on their own it is
+  0.64, 0.64 and 0.65 Å. Neither differs by more than the predictor can be
+  trusted to resolve. What differs is the cut edge: residues 471–480 sit 4.35 Å
+  from 6ARU when they are the fragment's end and 2.95 Å when they are 19 residues
+  inside it, the predictor's own confidence there rises from 54 to 78, and the
+  predicted C470–C499 bond forms at 2.22 Å. Against that, E424 itself came out
+  slightly further from 6ARU in 310–499 (2.71 Å) than in 310–480 (2.36 Å), the
+  wrong direction for the residue the extension was meant to help, though by an
+  amount inside the noise. Mutating C470 changed nothing measurable.
+
+  *Decision: the boundary stays 310–480.* The extension helps residues that only
+  one anchor is near, costs about 11% more target, and shows no benefit on the
+  anchor face. The deliberate C470S sequence difference buys nothing and is not
+  adopted. The risk E424 carries is handled where it bites, in the ranking in
+  `analysis/10`, which places a design that needs E424 below an equivalent one
+  that does not.
+
+  *What this does not establish.* The overall fit of about 5 Å is the same for all
+  three, so the boundary does not cause it, but this measurement cannot say whether
+  it reflects the predictor or the fragment. A fit on eight points is also
+  flattering by construction. A real answer needs the smoke run's predictor on our
+  hardware. The whole question stays Unverified, with weaker grounds for worry than
+  before and none for confidence.
+
+  *If the boundary is ever moved:* `analysis/09` takes its cut from
+  `egfr_common.D3_START` and `D3_END`, which are also the definition of domain III
+  that steps 01 and 06 use through local copies. Moving them would change step 09's
+  output and, once the local copies were synchronised, step 01's difference counts
+  and step 06's occlusion numbers. A separate constant for the trim boundary would
+  avoid that, and should be introduced rather than moving `D3_END`.
+
 - **Domain III boundaries.** 310–480 is the working definition used throughout.
   Confirm against the official annotation. Note that step 06 avoided depending on
   this by measuring occlusion as "contacted by residues outside 310–480" rather
@@ -1051,6 +1087,20 @@ passed". Reproducible via `analysis/00`–`06`.
    choice actually rest on, so they come back as measurements from our own run or
    not at all. Time one trajectory on the untrimmed target and one on domain III,
    so the ratio is measured rather than reasoned.
+
+   *Instrumented, 2 October 2026, not yet run.* `design/modal/bindcraft2_smoke.py`
+   now records the card type, peak card memory, wall-clock time for the run and per
+   trajectory, and the total residue count of the returned complex, into
+   `smoke-report.json` in the results volume. The residue count is what lets a
+   PD-L1 figure be carried to EGFR. Peak memory is an upper bound, since JAX can
+   reserve most of the card at start-up. Per-trajectory time depends on finding a
+   table of trajectories in the output; if none is found the report says so and
+   prints every table's row count instead of guessing. The same run now answers
+   whether the target comes back at the input's numbering, by comparing the target
+   chain of every returned complex against the input structure
+   (`analysis/target_numbering.py`), and `analysis/10` refuses to score any
+   candidate that fails that comparison. Blocked, like everything else, on
+   `modal setup`.
 10. **Rewrite `docs/explainers/04-design-pipeline.md` after the first real pipeline
    run**, with what actually happened in place of what was planned. Its figures are
    external, read from the web on 1 October 2026, and are a placeholder for
@@ -1063,3 +1113,9 @@ passed". Reproducible via `analysis/00`–`06`.
     (`analysis/09_trim_target.py`) and what it breaks is measured — one severed
     disulfide bond, one anchor near a cut edge — but whether the fragment holds
     its shape is still untested and is what this item is about.
+
+    *Partly done, 2 October 2026.* `analysis/11_trim_boundary.py` predicted three
+    candidate fragments with ESMFold and compared them against 6ARU. It did not
+    separate them; see the Unverified entry for what it did and did not show. What
+    remains is the same comparison with the predictor the design run uses, which
+    the smoke run on our own hardware can provide.

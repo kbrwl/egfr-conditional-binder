@@ -2,6 +2,7 @@
 
 What `analysis/09_trim_target.py` and `analysis/10_charge_pair_filter.py` do, why
 each one is harder than it sounds, and the things that would have failed silently.
+Also covers `analysis/11_trim_boundary.py`, which measured where the trim should stop.
 
 Written for a reader with no biology or software background.
 
@@ -102,15 +103,55 @@ real protein the chain continues and in the fragment it stops.
 Seven of the eight anchors sit 12.3 Å or further from either end. One does not:
 **E424 is 6.6 Å from the cut at 480.** Designs that lean heavily on E424 are leaning
 on the part of the model least likely to be right, which is why that affects how
-candidates are ranked rather than appearing only as a note.
+candidates are ranked rather than appearing only as a note. Script 10 now does
+this: a design that reaches the same number of good pairs without E424 ranks above
+one that needs it. The pair on E424 still counts as a good pair for deciding whether
+a candidate meets the target, because it is physically a good pair. It is only
+treated as less supported when candidates are ordered.
 
-## The open decision
+## The decision, and what measuring it showed
 
 Extending the boundary past 499 would make the severed staple whole and give E424
-margin, at a cost of about 20 residues and the risk that the start of the next domain
-does not behave well on its own. The way to settle it is to predict each candidate
-fragment on its own and compare it against the same residues in the intact structure.
-Recorded under Unverified in `docs/decisions-log.md`.
+margin, at a cost of about 20 residues and the risk that the start of the next
+domain does not behave well on its own. Script 11 settles it the way the decisions
+log said it would be settled: predict each candidate fragment on its own, then
+compare it against the same residues in the intact measured structure. Three
+fragments were tried: 310 to 480 as cut, the same with C470 changed to serine so
+there is no unpaired cysteine, and 310 to 499. Results are in
+`results/findings/11-trim-boundary.md`.
+
+The predictor was ESMFold, which works from a single sequence and is less accurate
+than the one the design run uses. It was used because it needs no graphics card, and
+the card access is still blocked. So the useful result is the difference between the
+three fragments, since all three went through the same instrument, and not any
+single number.
+
+**The three are not separable on anything the design depends on.** Over the
+residues all three share, the structures sit 5.00, 4.97 and 4.97 angstroms from the
+measured one. Across the eight anchors, lined up on those eight alone, it is 0.64,
+0.64 and 0.65 angstroms. Those differences are far inside what this predictor can
+resolve. A fit on eight points is also flattering by construction, so the 0.64
+should not be read as the anchors being modelled to better than an angstrom.
+
+The only place the fragments differ is the cut edge. The last ten residues, 471 to
+480, sit 4.35 angstroms from the measured structure when they are the fragment's
+end and 2.95 when they sit 19 residues inside it, and the predictor's own confidence
+there rises from 54 to 78. The predicted C470 to C499 bond forms at 2.22 angstroms.
+Against that, E424 itself came out a little further from the measured structure in
+the longer fragment, 2.71 against 2.36 angstroms, which is the wrong direction for
+the residue the extension was meant to help, although the difference is small
+enough to be noise. Changing C470 to serine changed nothing measurable.
+
+**The boundary stays at 480.** The extension improves residues that only E424 is
+near, costs about 11% more target, and shows no benefit on the anchor face. The
+serine change buys nothing and introduces a deliberate difference from the real
+sequence, so it is not adopted. E424's risk is handled in the ranking instead.
+
+What this does not settle: the overall fit of about 5 angstroms is the same for all
+three, so the boundary does not cause it, but this measurement cannot say whether
+it comes from the predictor or from the fragment. Only a prediction with the design
+run's own predictor can. The trimming decision therefore stays unverified, with
+weaker grounds for worry than before and none for confidence.
 
 ---
 
@@ -211,10 +252,23 @@ the chains by checking which one reads as human EGFR, never by the letter.
 **The target may be cropped again.** BindCraft2 has an internal measurement called
 `Target_Crop_Length`, which suggests it may trim the target itself. If it does that
 and renumbers while doing so, script 10's translation back to our numbering breaks
-without complaint, producing confident verdicts about the wrong residues. Unresolved.
-The run against BindCraft2's own example target is the cheapest way to find out, and
-script 10 refuses to score any candidate whose numbering it cannot reconcile with the
-input rather than assuming nothing moved.
+without complaint, producing confident verdicts about the wrong residues.
+
+What is known: BindCraft2's source defines that measurement as a count of residues
+that are not padding, and padding is a device for making batches the same length,
+so the reading is that nothing is cropped. Its documentation and output code also
+say the input's residue numbers are kept. Both are readings of source, and neither
+has been checked against what a run returns. The question is still open.
+
+What is built: script 10 now compares the target in every returned structure
+against the file that went in, and refuses to score a candidate whose numbering does
+not reconcile, rather than assuming nothing moved. It distinguishes four outcomes:
+identical, cropped with the numbers kept (accepted, since every position still means
+what it did), renumbered, and not matching. It was tested by deliberately renumbering
+a target and confirming the candidate is refused, and by switching the check off and
+confirming that test then fails. The smoke run against BindCraft2's example target is
+set up to make the same comparison on real output, but it has not been run, because
+the rented-machine account has not been authorised.
 
 ---
 
@@ -241,8 +295,11 @@ real column names and decoy files included, and reads it end to end on every run
 
 - Neither script has processed real output. Everything above is behaviour against
   constructed inputs.
-- Whether BindCraft2 crops and renumbers the target is unresolved.
-- Whether the boundary should extend past 499 is unresolved.
+- Whether BindCraft2 crops and renumbers the target is unresolved. The source says
+  it does not, and script 10 now refuses to score a candidate if it does.
+- Whether the 310 to 480 fragment holds the shape its anchors sit on is unresolved.
+  The comparison in script 11 did not separate the three boundaries it tried and
+  used a weaker predictor than the design run.
 - A good pair counted here is a geometric arrangement. Whether it produces the
   intended switch in a tube is what the experiment decides.
 - Script 10 scores what BindCraft2 returns. It cannot recover a design that was never
@@ -254,4 +311,4 @@ real column names and decoy files included, and reads it end to end on every run
 ## Terms introduced here
 
 For `docs/glossary.md`: chain, contact pair, disulfide bond, interface, mmCIF,
-residue numbering, side chain.
+residue numbering, side chain. Added with script 11: ESMFold, pLDDT, RMSD.

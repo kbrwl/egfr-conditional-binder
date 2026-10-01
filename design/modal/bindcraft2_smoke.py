@@ -65,6 +65,8 @@ Then:
         Copies whatever it produced back to this machine.
 """
 
+import os
+
 import modal
 
 APP_NAME = "bindcraft2-smoke"
@@ -96,6 +98,14 @@ image = (
     # Model weights are fetched into a volume rather than baked into the image,
     # so a rebuild does not re-download roughly 20 GB.
     .env({"BINDCRAFT_HOME": INSTALL_DIR})
+    # The numbering check shared with analysis/10, copied in last so a change to it
+    # does not rebuild the image above. Plain string paths rather than pathlib
+    # arithmetic, because this file is imported again inside the container, where
+    # the directory layout is different and parent-directory arithmetic can fail.
+    .add_local_file(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     "..", "..", "analysis", "target_numbering.py"),
+        "/opt/target_numbering.py")
 )
 
 app = modal.App(APP_NAME)
@@ -116,6 +126,122 @@ def _run(cmd, cwd=INSTALL_DIR):
         print("--- stderr ---", flush=True)
         print(proc.stderr, flush=True)
     return proc.returncode
+
+
+# ---------------------------------------------------------------------------
+# What the smoke run measures besides "did it work"
+# ---------------------------------------------------------------------------
+#
+# Explainer 04 has no figure for time per trajectory, peak graphics-card memory,
+# or the size of the complex, because the only ones available were quoted from
+# documentation for a different version of the tool. These come from our own
+# hardware. The size of the complex matters as much as the other two: run time and
+# memory scale with the total residue count, so a time measured on PD-L1 only
+# transfers to EGFR through that number.
+#
+# And the question flagged in analysis/09: BindCraft2 registers a filter metric
+# called Target_Crop_Length, which suggests it may crop the target. Its source says
+# the metric counts non-padding residues, and padding is a batching device, so the
+# reading so far is that nothing is cropped. That is a reading and not a
+# measurement. If the returned target were cropped and renumbered, analysis/10
+# would translate its numbers into ours wrongly and still print confident
+# verdicts, so the check is built into the run: the target chain of every returned
+# complex is compared against the structure file that went in, and the answer is
+# written down whichever way it falls.
+
+def _start_gpu_poll(path):
+    """Sample the card once a second into a file while the design runs.
+
+    Returns the process, or None if nvidia-smi is not there, in which case the
+    report says memory was not measured rather than omitting the line.
+    """
+    import subprocess
+
+    try:
+        return subprocess.Popen(
+            ["nvidia-smi", "--query-gpu=name,memory.used,memory.total",
+             "--format=csv,noheader,nounits", "-l", "1"],
+            stdout=open(path, "w"), stderr=subprocess.DEVNULL)
+    except OSError:
+        return None
+
+
+def _read_gpu_poll(path):
+    """(card name, peak memory used in MiB, total memory in MiB) from the samples.
+
+    Peak is the largest figure seen at one-second sampling, so a short spike
+    between samples is missed and the true peak is at least this. The figure is
+    the card's total used memory, which JAX may inflate by reserving most of the
+    card at start-up whether or not it needs it, so it bounds the requirement
+    from above and does not state it.
+    """
+    name, peak, total = None, None, None
+    try:
+        for line in open(path).read().splitlines():
+            parts = [x.strip() for x in line.split(",")]
+            if len(parts) != 3:
+                continue
+            name, used, total = parts[0], int(parts[1]), int(parts[2])
+            peak = used if peak is None else max(peak, used)
+    except (OSError, ValueError):
+        pass
+    return name, peak, total
+
+
+def _find_input_structure(campaign_json):
+    """The structure file the campaign was given, or every candidate for it.
+
+    The PD-L1 example names a preset target ("hPDL1") rather than a file path, so
+    the file is looked for under the install. Returns (path or None, candidates).
+    Not finding exactly one is reported as such: a guess here would make the
+    numbering comparison a comparison against the wrong file.
+    """
+    import json
+    import pathlib
+
+    root = pathlib.Path(INSTALL_DIR)
+    explicit = None
+    try:
+        spec = json.loads((root / campaign_json).read_text())
+        for entry in spec.get("targets", []) or []:
+            if entry.get("target_path"):
+                explicit = (root / campaign_json).parent / entry["target_path"]
+        key = str(spec.get("target", "")).lower()
+    except (OSError, ValueError):
+        key = ""
+    if explicit is not None and explicit.exists():
+        return explicit, [explicit]
+    found = []
+    for suffix in ("*.pdb", "*.cif"):
+        for path in root.rglob(suffix):
+            text = str(path).lower()
+            if ".venv" in text or "/results/" in text or "ranked" in text:
+                continue
+            if key and key in path.name.lower().replace("_", ""):
+                found.append(path)
+    return (found[0] if len(found) == 1 else None), found
+
+
+def _count_trajectories(project):
+    """Trajectory count read from whatever the run wrote, and where it came from.
+
+    BindCraft2 attempts trajectories until enough designs pass, so the number
+    attempted is not the number requested. It is taken as the row count of a table
+    in the project folder whose path mentions trajectories, and None if there is
+    no such table, in which case the report prints every table's row count so the
+    right one can be chosen by hand rather than guessed.
+    """
+    tables = {}
+    for path in project.rglob("*.csv"):
+        try:
+            tables[str(path.relative_to(project))] = max(
+                0, len(path.read_text(errors="replace").splitlines()) - 1)
+        except OSError:
+            continue
+    for name, rows in sorted(tables.items()):
+        if "traj" in name.lower() and rows > 0:
+            return rows, name, tables
+    return None, None, tables
 
 
 @app.function(gpu=DEFAULT_GPU, timeout=60 * 30,
@@ -158,8 +284,18 @@ def smoke(target: str = "examples/pdl1.json"):
     rc = _run("bindcraft fetch-weights || true")
     print(f"fetch-weights exit code {rc}")
 
+    import json
+    import sys
+    import time
+
+    poll_path = "/tmp/gpu-poll.csv"
+    poller = _start_gpu_poll(poll_path)
+    started = time.monotonic()
     rc = _run(f"bindcraft design {target}")
-    print(f"\ndesign exit code {rc}")
+    wall_seconds = time.monotonic() - started
+    if poller is not None:
+        poller.terminate()
+    print(f"\ndesign exit code {rc}, wall-clock {wall_seconds:.0f} s")
 
     # Copy anything that looks like output back into the volume, then report any
     # sequences found, because a sequence is the thing that proves the chain.
@@ -216,6 +352,96 @@ def smoke(target: str = "examples/pdl1.json"):
         print(f"\n--- {path.relative_to(out)}, first 5 lines ---")
         for line in text[:5]:
             print(line)
+
+    # ---- the measurements this run exists to produce -----------------------
+    sys.path.insert(0, "/opt")
+    import target_numbering
+
+    card, peak_mib, total_mib = _read_gpu_poll(poll_path)
+    try:
+        project = pathlib.Path(INSTALL_DIR) / json.loads(
+            (pathlib.Path(INSTALL_DIR) / target).read_text())["project_folder"]
+    except (OSError, ValueError, KeyError):
+        project = pathlib.Path(INSTALL_DIR) / "results"
+    trajectories, trajectory_table, tables = _count_trajectories(project)
+    input_path, input_candidates = _find_input_structure(target)
+
+    numbering_results, sizes = [], []
+    if input_path is not None:
+        for path in sorted(complexes):
+            result = target_numbering.check_complex(input_path, path)
+            result["file"] = str(path.relative_to(out))
+            numbering_results.append(result)
+            sizes.append(result["complex_residues"])
+
+    report = dict(
+        design_exit_code=rc, wall_clock_seconds=round(wall_seconds, 1),
+        card=card, card_memory_mib=total_mib, peak_memory_used_mib=peak_mib,
+        trajectories=trajectories, trajectory_table=trajectory_table,
+        seconds_per_trajectory=(round(wall_seconds / trajectories, 1)
+                                if trajectories else None),
+        table_row_counts=tables,
+        input_structure=str(input_path) if input_path else None,
+        input_candidates=[str(c) for c in input_candidates],
+        complexes_found=len(complexes),
+        complex_residues=sorted(set(sizes)),
+        numbering=[{k: v for k, v in r.items()
+                    if k not in ("missing_from_output", "not_in_input",
+                                 "wrong_identity")}
+                   | {"missing_count": len(r.get("missing_from_output", [])),
+                      "not_in_input_count": len(r.get("not_in_input", [])),
+                      "wrong_identity_count": len(r.get("wrong_identity", []))}
+                   for r in numbering_results],
+    )
+    (out / "smoke-report.json").write_text(json.dumps(report, indent=2))
+    results.commit()
+
+    print("\n" + "=" * 70)
+    print("WHAT THE SMOKE RUN MEASURED")
+    print("=" * 70)
+    print(f"card                     {card or 'NOT MEASURED (no nvidia-smi)'}"
+          f"  ({total_mib} MiB)")
+    print(f"peak card memory used    "
+          f"{peak_mib if peak_mib is not None else 'NOT MEASURED'} MiB, sampled "
+          f"once a second. An upper bound on the need: JAX can reserve most of "
+          f"the card at start-up whether or not it uses it.")
+    print(f"wall-clock, whole run    {wall_seconds:.0f} s")
+    if trajectories:
+        print(f"trajectories attempted   {trajectories} (rows of {trajectory_table})")
+        print(f"wall-clock per trajectory {wall_seconds / trajectories:.1f} s")
+    else:
+        print("wall-clock per trajectory NOT COMPUTED: no table with 'traj' in "
+              "its path. Row counts of every table, to pick the right one:")
+        for name, rows in sorted(tables.items()):
+            print(f"    {rows:6d}  {name}")
+    print(f"complex size             "
+          f"{', '.join(str(s) for s in sorted(set(sizes))) or 'NOT MEASURED'} "
+          f"residues (target plus binder). Run time and memory scale with this; "
+          f"it is what lets a PD-L1 figure be carried to EGFR.")
+
+    print("\nCROPPING AND NUMBERING OF THE TARGET")
+    if input_path is None:
+        print("  NOT ANSWERED. The input structure could not be identified, so "
+              "nothing was compared. Candidates found:")
+        for c in input_candidates:
+            print(f"    {c}")
+        print("  Fix this before reading anything into the run: an unanswered "
+              "question is not an answer of 'no change'.")
+    elif not numbering_results:
+        print("  NOT ANSWERED. No designed complex came back to compare.")
+    else:
+        statuses = sorted({r["status"] for r in numbering_results})
+        for r in numbering_results:
+            print(f"  {r['file']}: {target_numbering.describe(r)}")
+        print(f"  Outcomes across {len(numbering_results)} complex(es): "
+              f"{', '.join(statuses)}")
+        if all(r["ok"] for r in numbering_results):
+            print("  The target came back at the input's own numbers. "
+                  "analysis/10 can translate it.")
+        else:
+            print("  The target did NOT come back at the input's numbers. "
+                  "analysis/10 will refuse these. Do not start an EGFR campaign "
+                  "before working out how to map them back.")
     return sorted(set(produced))
 
 
