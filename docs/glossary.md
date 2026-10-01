@@ -15,6 +15,11 @@ R is arginine, K is lysine, W is tryptophan.
 3D shape. The sequence determines the shape; the shape determines what it does.
 A protein sequence written out is just a string of letters, e.g. `MKTAYIAKQRQ...`
 
+**Backbone** — the protein's skeleton: the chain of atoms running through every
+residue in order, which defines the shape, before deciding which side chains hang
+off it. Design tools invent a backbone first and choose the sequence afterwards,
+because the shape is what has to be complementary to the target.
+
 **Residue** — one amino acid at one position in a chain. "Residue 390" means the
 390th link counting from the start. Used interchangeably with "position".
 
@@ -109,6 +114,11 @@ whether it could be used at all: it is a residue type that can carry a charge pa
 "Candidate" is the reminder that passing those filters is not the same as being
 usable, because the set still has to be reachable by one binder face. The H370
 measurement produced 16 candidate anchors and 8 that survive the face test.
+
+**Hotspot** — the residues on the target that a design tool is told to aim at,
+given to it as a list. It is the field where this project's epitope work ends up: the
+eight anchors from `analysis/08` are what goes in it. The tool's own word, so it is
+worth knowing; it means the same thing as the chosen anchors here.
 
 **Epitope** — the specific patch on the target that a binder touches. Choosing
 the epitope is choosing where to aim.
@@ -396,7 +406,50 @@ actual protein backbone against the surface, so it should be read as a filter th
 removes the clearly impossible rather than a guarantee about what it lets through.
 
 **AlphaFold** — software that predicts a protein's 3D structure from its
-sequence alone. Outputs coordinates plus a confidence score.
+sequence alone. Outputs coordinates plus a confidence score. **AlphaFold2** is the
+version the design pipeline uses, run inside the loop to check each proposed binder
+rather than to study a known protein.
+
+**Inverse folding** — working out which amino acid sequence would fold into a shape
+you already have. The usual direction is sequence to structure; this runs the other
+way, structure to sequence. It is the second step of binder design, once a backbone
+has been invented. ProteinMPNN is the standard tool for it.
+
+**Self-consistency check** — feeding a designed sequence into a structure predictor
+and asking whether it folds into the shape it was designed as, and lands where it
+was meant to. The model is marking its own homework, so it is weak evidence about
+whether the binder works in a tube. It is good at catching obvious nonsense, which
+is what it is for.
+
+**Trajectory** — one attempt through a design loop: invent a backbone, choose a
+sequence, check it, keep or discard. Most trajectories end with nothing, so many are
+run to get a few survivors. Run time per trajectory scales with the size of the
+whole complex, target plus binder, which is why the target gets trimmed before a run.
+
+**GPU (graphics processing unit)** — the chip built to render game frames, used here
+because the same matrix arithmetic that draws graphics is what neural networks are
+made of. Structure prediction needs one; a laptop processor is not a substitute. The
+cards involved are data-centre hardware, so they are rented by the hour.
+
+**CUDA** — NVIDIA's programming interface for using one of its graphics cards for
+general computation rather than graphics. Software that needs a GPU usually means it
+needs an NVIDIA card with CUDA, which is why the card choice is not free.
+
+**Serverless** — renting compute that exists only while a job is running. No machine
+sits idle costing money between runs, and billing is per second of execution. The
+trade is a higher price per hour against paying for nothing in between.
+
+**Modal** — the serverless GPU provider this project uses. A Python file describes
+what to run and on what hardware; `modal run` starts a container with that GPU
+attached, runs the job, returns the output and shuts down. Chosen over a plain cloud
+virtual machine because it removes driver and environment setup, which is the part
+that consumes a short time budget.
+
+**Smoke run** — a first test on a known-good example, to prove the whole chain works
+end to end before any of your own choices enter it. Authentication, image build, GPU
+allocation and file output are all exercised at once. Running your own target first
+means a failure cannot be attributed, because a bad epitope, a wrong setting and a
+broken install all look the same.
 
 **ipTM (interface predicted TM-score)** — a confidence score that structure
 prediction software reports for a complex of two proteins, running from 0 to 1, where
@@ -413,7 +466,13 @@ confident the two pieces sit where you claim they do. Used to filter
 candidate binders.
 
 **BindCraft** — an open pipeline that takes a target structure plus a list of
-target residues and generates candidate binder sequences. Runs on a rented GPU.
+target residues and generates candidate binder sequences. Runs on a rented GPU. It
+bundles the three design steps — invent a backbone, choose a sequence, check it —
+into one automated loop, which is why it was chosen over wiring the tools together
+by hand. **BindCraft2** is the version this project actually uses, and the
+difference matters: v1 depends on PyRosetta and v2 does not mention it anywhere,
+which removes a licensing obstacle. See the decisions log for what was verified
+about it.
 
 **RFdiffusion / ProteinMPNN** — the other standard design route. More control,
 more setup difficulty. RFdiffusion proposes 3D shapes; ProteinMPNN works out

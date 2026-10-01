@@ -445,6 +445,18 @@ RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
 
 ## Unverified — do not build on these
 
+- **Trimming the target to domain III before running the design pipeline.** The
+  full extracellular region is about 620 residues, which makes each attempt slow
+  enough to exhaust the free compute budget in a handful of tries; domain III is
+  roughly 170, which brings a run into the fast case. The failure mode is real and
+  specific: cut too tight and the fragment will not hold its shape in the structure
+  predictor, so the binder would be designed against a surface that does not exist
+  on the intact protein. Keeping the whole domain rather than carving out the eight
+  anchors is the hedge against that, but nothing has tested where the limit sits.
+  How much can be left out is a judgement until something measures it. Resolve by
+  predicting the trimmed fragment alone and comparing it against the same residues
+  in the intact structure before trusting any design made against it.
+
 - **Domain III boundaries.** 310–480 is the working definition used throughout.
   Confirm against the official annotation. Note that step 06 avoided depending on
   this by measuring occlusion as "contacted by residues outside 310–480" rather
@@ -887,3 +899,12 @@ passed". Reproducible via `analysis/00`–`06`.
    `CLAUDE.md` before filtering candidates, because the pipeline's default
    objective will fight it.
 8. Novelty check, rank, submit up to 20 with written reasoning.
+9. **Rewrite `docs/explainers/04-design-pipeline.md` after the first real pipeline
+   run**, with what actually happened in place of what was planned. Its figures are
+   external, read from the web on 1 October 2026, and are a placeholder for
+   measurements we have not taken. Any figure that still matters afterwards moves
+   into a findings file produced by a script in `analysis/`, so it is reproducible
+   like every other number here.
+10. **Test how much of domain III the trim can leave out**, which is the unverified
+    decision recorded below. It controls both run time and whether the designs mean
+    anything, and nothing has measured it.
