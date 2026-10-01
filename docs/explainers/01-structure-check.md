@@ -2,7 +2,7 @@
 
 What `analysis/00` through `analysis/08` did, why, and what came back.
 
-A later document, `02-prior-art.md`, covers the literature search that followed and
+A later document, `02-what-was-already-published.md`, covers the literature search that followed and
 withdrew this project's novelty claim. Read this one for the measurements and that
 one for what they turned out to be worth.
 Written for a reader with no biology background who intends to understand the
@@ -608,7 +608,7 @@ not what the numbers show, but two crystal snapshots cannot give the balance of 
 to closed in the assay buffer, which is the number that would actually matter.
 
 **Withdrawn.** The claim that the method was novel, entirely rather than narrowed.
-See `02-prior-art.md`, which covers the search, what it found and what it gave back.
+See `02-what-was-already-published.md`, which covers the search, what it found and what it gave back.
 
 **Superseded.** 415-466 is no longer the primary epitope. The prior-art search named
 EGFR's H370 as the other experimentally implicated histidine, and evaluating it
