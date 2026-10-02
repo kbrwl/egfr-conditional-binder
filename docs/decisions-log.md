@@ -417,6 +417,54 @@ N444) is most affected; E421 (18.2 Å) and H433 (23.0 Å) are within reach of an
 extended chain. This cannot be settled from a crystal structure, which resolves
 only the innermost ordered sugars.
 
+**The H370 anchor face is not occluded by the rest of the receptor — settled
+2 October 2026.** `analysis/12_fragment_context_check.py`. Step 09 gives the design
+run a 171-residue fragment, so the design run cannot see whether the other 450
+residues of the extracellular region fold across the face we are aiming at. If they
+did, a design would score well and be unable to reach its target, and nothing in the
+run's own numbers would say so.
+
+Step 06 asked this of the old 415–466 epitope and found a real answer: D458 and D460
+sit in a groove against domain IV. **That measurement never covered the current
+anchors.** Step 08 moved the face to the H370 cluster, and only E421 and E424 fall in
+the range step 06 measured, so six of the eight positions the design run is aimed at
+had never been checked.
+
+Measured now, on the receptor chain alone, in both conformations:
+
+| | 6ARU (extended) | 1NQL (tethered) |
+|---|---|---|
+| anchors touched from outside domain III, at 4.5 Å | 0 of 8 | 0 of 8 |
+| anchors with any outside neighbour within 8 Å | 2 — E421, E424 | 2 — E421, E424 |
+| anchors on open face | 6 | 6 |
+
+The six clean anchors — E344, H358, D368, H370, E391, E400 — have 13.0 Å or more of
+clear space to the nearest residue outside domain III, and nothing at all within
+8 Å. The method reproduces step 06 exactly when run on the old anchors as a control
+(D458 ← Q486 at 2.98 Å, D460 ← K487 at 2.77 Å), and that control is cross-checked
+against step 06's committed table, so the run stops if the two ever disagree.
+
+Two measurements were kept apart deliberately, because they answer different
+questions: contact at 4.5 Å asks whether a residue is covered over, and the count of
+neighbours within 8 and 12 Å asks whether a body the size of a binder can get there.
+A residue can pass the first and fail the second by sitting in a cleft.
+
+What this changes: the occlusion risk that cost the old epitope two of its anchors
+does not apply to this face, in either published conformation. Truncating to domain
+III does not hide the anchors. **What it does not settle:** whether the cut fragment
+folds the way the intact protein does — a different question, still open, and only
+the design run's own predictor can close it. Step 11 could not resolve it with
+ESMFold.
+
+Also worth carrying: E421 and E424 are the only two anchors with any neighbour
+nearby, and step 09 separately found E424 sits 6.6 Å from the cut at 480. E424 is
+therefore the weakest of the eight on two independent grounds, which supports the
+rule step 10 already applies of ranking designs that lean on it below equivalent
+designs that do not.
+
+Walked through in plain language in `docs/explainers/06-checking-the-trimmed-target.md`,
+which also covers the per-candidate screen in `analysis/13_full_receptor_clash.py`.
+
 ---
 
 ## Open
@@ -1051,6 +1099,18 @@ passed". Reproducible via `analysis/00`–`06`.
    remains the main schedule risk** and should start in parallel with 1–3, not
    after them.
 5. Generate several hundred candidates against the confirmed patch.
+6a. **Full-receptor clash screen — WRITTEN, 2 October 2026, before any candidate
+   exists.** `analysis/13_full_receptor_clash.py`. Written ahead for the same reason
+   as the charge-pair scan. Step 12 settled that the anchor *face* is reachable,
+   which is a property of the target; this screens each individual *design*, because
+   a reachable face does not stop one particular binder approaching at an angle that
+   puts part of it inside domain II or domain IV. It superposes each returned complex
+   back onto full 6ARU through domain III and counts overlaps against the 438
+   residues the design run never saw. Rigid and cheap — no GPU — so it runs on every
+   candidate rather than competing for the rented machine. It flags rather than
+   drops: the decision to discard belongs in step 10's ranking, so that every
+   decision about what to submit is made in one place.
+
 6. **Charge-pair scan — WRITTEN, 1 October 2026, before any candidate exists.**
    `analysis/10_charge_pair_filter.py`. Deliberately written before generation
    rather than after: a filter written afterwards turns out to need a

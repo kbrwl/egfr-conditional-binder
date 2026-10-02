@@ -460,6 +460,37 @@ another as closely as possible, so the two can be compared. Necessary because
 coordinates are arbitrary: the same protein solved twice can be described by
 completely different numbers in the file.
 
+**Rigid-body superposition** — a superposition that may only rotate and slide a
+structure, never bend it. `analysis/13_full_receptor_clash.py` uses one to put a
+designed binder back into the full receptor: it lays the candidate's target on the
+same residues of the intact structure and moves the binder by the same amount. Note
+what this means for testing it — a superposition exists precisely to undo a rigid
+movement, so a target shifted bodily across the box lands back in place with an
+RMSD of zero, correctly. Only a change of *shape* can make a superposition fail.
+
+**Steric clash** — two atoms closer together than their sizes allow, meaning they
+would have to occupy the same space. A carbon atom is about 1.7 ångströms in radius
+and heavy atoms in ordinary contact sit 3.5 to 4.5 ångströms apart, so
+`analysis/13_full_receptor_clash.py` counts anything below 2.5 ångströms as an
+overlap rather than a close approach. Unlike a contact, a clash is not a matter of
+degree: two sets of atoms cannot both be there.
+
+**Clearance** — our own term, not standard vocabulary, for how much empty space
+sits above a residue. Distinct from accessibility, and the distinction matters: a
+residue can have no neighbours within contact distance and still sit at the bottom
+of a cleft nothing the size of a protein can reach into. Accessibility asks whether
+water can touch a residue; clearance asks whether a binder can. `analysis/12`
+measures it as the number of residues from outside domain III falling within 8 and
+12 ångströms, alongside the nearest-neighbour distance.
+
+**Occlusion** — one part of a molecule covering another part up, so that a binder
+cannot reach it. The risk it creates is silent: a design aimed at an occluded
+surface scores perfectly well in a model that cannot see the covering, and then
+measures as nothing in the assay, with no number to distinguish that from a badly
+designed binder. `analysis/06` found two anchors of the old 415–466 epitope
+occluded by domain IV; `analysis/12` found none of the current H370 anchors
+occluded, in either measured conformation.
+
 **ESMFold** — a protein structure predictor that works from a single sequence,
 with no multiple sequence alignment, meaning no column of related proteins from
 other species to read conservation out of. That makes it far cheaper to run than

@@ -27,7 +27,7 @@ from pathlib import Path
 
 from Bio import Align
 from Bio.Align import substitution_matrices
-from Bio.PDB import NeighborSearch
+from Bio.PDB import MMCIFParser, NeighborSearch, PDBParser
 from Bio.PDB.Polypeptide import is_aa
 from Bio.Data.IUPACData import protein_letters_3to1
 
@@ -483,3 +483,180 @@ def cross_check_residue_set(label, computed, reference_csv, column="uniprot_pos"
                f"{only_there}.")
     emit(f"   [FAIL] {message}")
     raise CrossCheckError(message)
+
+
+def load_primary_cluster(csv_path=None):
+    """The anchor positions, read back from step 08's committed output.
+
+    Step 08 decided which residues cluster on one face around H370 and wrote the
+    answer to `data/derived/08-h370-clusters.csv`. That answer is computed in one
+    place and read everywhere else, which is the rule in `CLAUDE.md` that came out
+    of steps 04 and 06 disagreeing about the same quantity.
+
+    This lives here rather than in step 09 because steps 09, 12 and 13 all need
+    the same eight positions, and a second copy of the parsing is a second chance
+    to read a different answer out of the same file.
+
+    Returns the sorted positions of the largest cluster that contains H370.
+    """
+    path = Path(csv_path or (DERIVED / "08-h370-clusters.csv"))
+    if not path.exists():
+        raise SystemExit(
+            f"{path} is missing. Run analysis/08_h370_epitope.py first; later "
+            "steps take the anchor set from its output rather than keeping their "
+            "own copy of it.")
+    best = None
+    for line in path.read_text().splitlines()[1:]:
+        if not line.strip():
+            continue
+        # cluster_size,max_internal_span_a,"344 358 ...",contains_h370
+        _before, _, rest = line.partition('"')
+        anchors, _, after = rest.partition('"')
+        members = [int(tok) for tok in anchors.split()]
+        if after.strip(", ").strip() != "True":
+            continue
+        if best is None or len(members) > len(best):
+            best = members
+    if best is None:
+        raise SystemExit(
+            f"{path} contains no cluster that includes H370. Rerun "
+            "analysis/08_h370_epitope.py.")
+    return sorted(best)
+
+
+def load_complex(path):
+    """Parse a structure, whichever of the two formats it is in.
+
+    The design pipeline writes mmCIF (macromolecular crystallographic information
+    file, the newer standard format). The structures we hold locally are PDB
+    format. Synthetic test cases are written as mmCIF so that the tests exercise
+    the same parser real design output will go through.
+
+    Shared by steps 10 and 13 so the two cannot read one file differently.
+    """
+    path = Path(path)
+    suffix = path.suffix.lower()
+    parser = MMCIFParser(QUIET=True) if suffix == ".cif" else PDBParser(QUIET=True)
+    return parser.get_structure(path.stem, str(path))[0]
+
+
+def identify_chains(model, numbering, human, emit=None):
+    """Which chain is the target and which is the designed binder, by measurement.
+
+    The design pipeline sorts its output chains so that the target takes A and the
+    binder takes the next letter. That is the opposite of BindCraft version 1,
+    where the designed binder was chain A, so a parser that assumes a letter will
+    read the wrong molecule and report a full set of plausible nonsense.
+
+    So the letter is not trusted. Each chain is scored by how many of its residues
+    translate through the numbering step 02 measured and then read as the amino
+    acid the human EGFR sequence has at that position. The target chain scores
+    near one; a designed binder, whose residue numbers are positions in a sequence
+    that exists nowhere, scores near zero.
+
+    Shared by steps 10 and 13, which must agree about which chain is which.
+
+    Returns (target chain id, [binder chain ids], evidence rows), or
+    (None, [], evidence) when no chain looks like EGFR.
+    """
+    evidence = []
+    for chain in model:
+        residues = protein_residues(chain)
+        if not residues:
+            continue
+        translatable = matching = 0
+        for residue in residues:
+            pos = numbering.uniprot_of(residue.id[1])
+            if pos is None or pos > len(human):
+                continue
+            translatable += 1
+            if human[pos - 1] == THREE_TO_ONE.get(residue.get_resname()):
+                matching += 1
+        share = matching / translatable if translatable else 0.0
+        evidence.append(dict(chain=chain.id, residues=len(residues),
+                             translatable=translatable, matching=matching,
+                             share=share))
+
+    if emit is not None:
+        emit("   | chain | residues | translate | read as human EGFR | share |")
+        emit("   |---|---|---|---|---|")
+        for row in evidence:
+            emit(f"   | {row['chain']} | {row['residues']} | "
+                 f"{row['translatable']} | {row['matching']} | "
+                 f"{row['share']:.2f} |")
+
+    ranked = sorted(evidence, key=lambda r: -r["share"])
+    if not ranked or ranked[0]["share"] < 0.8 or ranked[0]["matching"] < 3:
+        return None, [], evidence
+    target = ranked[0]["chain"]
+    binders = [row["chain"] for row in evidence if row["chain"] != target]
+    return target, binders, evidence
+
+
+def receptor_chain_of(model, human=None, min_residues=20):
+    """Find the chain that is EGFR in a measured structure, and its numbering.
+
+    A structure file may hold the receptor plus whatever was bound to it, and
+    which chain is which is not recorded anywhere a program can read. Each protein
+    chain is therefore aligned against the human sequence and the best match wins.
+    The numbering comes out of that same alignment rather than from an assumed
+    offset, because a wrong offset shifts every result and raises no error.
+
+    Returns (chain id, Numbering, percent identity, [other protein chain ids]).
+    """
+    human = human or human_sequence()
+    scored = []
+    for chain in model:
+        residues = protein_residues(chain)
+        if len(residues) < min_residues:
+            continue
+        numbering, pct = numbering_from_alignment(residues, human)
+        scored.append((pct, len(residues), chain.id, numbering))
+    if not scored:
+        raise SystemExit("No protein chain long enough to identify in this model.")
+    scored.sort(key=lambda row: (-row[0], -row[1], row[2]))
+    pct, _n, chain_id, numbering = scored[0]
+    others = [row[2] for row in scored[1:]]
+    return chain_id, numbering, pct, others
+
+
+def shell_counts(model, chain_id, numbering, centre_positions, exclude_range,
+                 shells=(8.0, 12.0)):
+    """How crowded each centre residue is by the same chain from outside a range.
+
+    `intra_chain_contacts_outside` answers whether something touches a residue at
+    4.5 angstroms. That is the right question for "is this covered over", and the
+    wrong one for "can a protein get here": a binder is a body roughly 20
+    angstroms across, so a residue can be free of contacts and still sit at the
+    bottom of a cleft too tight to reach into. These wider shells measure that.
+
+    Returns {our position: {"nearest": (distance, our position of the other
+    residue), shell: count of residues inside it}}.
+    """
+    residues = protein_residues(model[chain_id])
+    outside, centres = [], {}
+    for residue in residues:
+        pos = numbering.uniprot_of(residue.id[1])
+        if pos is None:
+            continue
+        if not (exclude_range[0] <= pos <= exclude_range[1]):
+            outside.append(residue)
+        if pos in centre_positions:
+            centres[pos] = residue
+    result = {}
+    for pos, residue in centres.items():
+        atoms = [a for a in residue if a.element != "H"]
+        row = {shell: 0 for shell in shells}
+        nearest = (float("inf"), None)
+        for other in outside:
+            best = min((a - b) for a in atoms
+                       for b in other if b.element != "H")
+            other_pos = numbering.uniprot_of(other.id[1])
+            if best < nearest[0]:
+                nearest = (best, other_pos)
+            for shell in shells:
+                if best < shell:
+                    row[shell] += 1
+        row["nearest"] = nearest
+        result[pos] = row
+    return result

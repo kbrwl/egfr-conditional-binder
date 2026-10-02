@@ -185,40 +185,14 @@ class RangeSelect(Select):
 
 
 def load_primary_cluster():
-    """The anchor positions, read back from step 08's committed output.
+    """The anchor positions step 08 chose, via the one shared reader.
 
-    Step 08 decided which residues cluster on one face around H370 and wrote the
-    answer to `data/derived/08-h370-clusters.csv`. That answer is not recomputed
-    here and not retyped here: if two scripts need the same quantity, one of them
-    computes it and the other reads it, which is the rule in `CLAUDE.md` that
-    came out of steps 04 and 06 disagreeing.
-
-    Returns the positions of the largest cluster that contains H370.
+    The parsing used to live here. It moved to `egfr_common` when steps 12 and 13
+    came to need the same eight positions: a second copy of the parsing is a
+    second chance to read a different answer out of the same file, which is the
+    failure `CLAUDE.md` records between steps 04 and 06.
     """
-    path = DERIVED / "08-h370-clusters.csv"
-    if not path.exists():
-        raise SystemExit(
-            f"{path} is missing. Run analysis/08_h370_epitope.py first; this "
-            "step takes the anchor set from its output rather than keeping its "
-            "own copy of it.")
-    best = None
-    for line in path.read_text().splitlines()[1:]:
-        if not line.strip():
-            continue
-        # cluster_size,max_internal_span_a,"344 358 ...",contains_h370
-        _before, _, rest = line.partition('"')
-        anchors, _, after = rest.partition('"')
-        members = [int(tok) for tok in anchors.split()]
-        contains_centre = after.strip(", ").strip() == "True"
-        if not contains_centre:
-            continue
-        if best is None or len(members) > len(best):
-            best = members
-    if best is None:
-        raise SystemExit(
-            f"{path} contains no cluster that includes H370. Rerun "
-            "analysis/08_h370_epitope.py.")
-    return sorted(best)
+    return common.load_primary_cluster()
 
 
 def load_numbering_shifted(shift=0):

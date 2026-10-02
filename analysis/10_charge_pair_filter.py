@@ -275,64 +275,21 @@ def charge_group_distance(residue_a, aa_a, residue_b, aa_b):
 # ---------------------------------------------------------------------------
 
 def load_complex(path):
-    """Parse a candidate structure, whichever of the two formats it is in.
+    """Parse a candidate structure, via the one shared parser.
 
-    The design pipeline writes mmCIF. The synthetic test cases are written in the
-    same format for that reason, so the tests exercise the parser that real
-    output will go through rather than a different one.
+    Moved to `egfr_common` when step 13 came to need the same thing: step 13 reads
+    the very same candidate files, and two parsers could disagree about one file.
     """
-    suffix = path.suffix.lower()
-    parser = MMCIFParser(QUIET=True) if suffix == ".cif" else PDBParser(QUIET=True)
-    return parser.get_structure(path.stem, str(path))[0]
+    return common.load_complex(path)
 
 
 def identify_chains(model, numbering, human, emit):
     """Which chain is the target and which is the designed binder, by measurement.
 
-    The design pipeline sorts its output chains so that the target takes A and the
-    binder takes the next letter. That is the opposite of BindCraft version 1,
-    where the designed binder was chain A, so a parser that assumes a letter will
-    read the wrong molecule and report a full set of plausible nonsense.
-
-    So the letter is not trusted. Each chain is scored by how many of its residues
-    translate through the numbering analysis/02 measured and then read as the
-    amino acid the human EGFR sequence has at that position. The target chain
-    scores near one; a designed binder, whose residue numbers are positions in a
-    sequence that exists nowhere, scores near zero.
-
-    Returns (target chain id, [binder chain ids], evidence rows), or
-    (None, [], evidence) when no chain looks like EGFR.
+    The rule and the reasoning now live in `egfr_common.identify_chains`, because
+    step 13 has to reach the same verdict about the same file as this step does.
     """
-    evidence = []
-    for chain in model:
-        residues = common.protein_residues(chain)
-        if not residues:
-            continue
-        translatable = matching = 0
-        for residue in residues:
-            pos = numbering.uniprot_of(residue.id[1])
-            if pos is None or pos > len(human):
-                continue
-            translatable += 1
-            if human[pos - 1] == common.THREE_TO_ONE.get(residue.get_resname()):
-                matching += 1
-        share = matching / translatable if translatable else 0.0
-        evidence.append(dict(chain=chain.id, residues=len(residues),
-                             translatable=translatable, matching=matching,
-                             share=share))
-
-    emit("   | chain | residues | translate | read as human EGFR | share |")
-    emit("   |---|---|---|---|---|")
-    for row in evidence:
-        emit(f"   | {row['chain']} | {row['residues']} | {row['translatable']} | "
-             f"{row['matching']} | {row['share']:.2f} |")
-
-    ranked = sorted(evidence, key=lambda r: -r["share"])
-    if not ranked or ranked[0]["share"] < 0.8 or ranked[0]["matching"] < 3:
-        return None, [], evidence
-    target = ranked[0]["chain"]
-    binders = [row["chain"] for row in evidence if row["chain"] != target]
-    return target, binders, evidence
+    return common.identify_chains(model, numbering, human, emit)
 
 
 def unscored(name, path, reason, numbering_status, numbering_detail):
