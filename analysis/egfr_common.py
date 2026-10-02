@@ -25,6 +25,7 @@ Abbreviations, expanded here because each file gets read on its own:
 
 from pathlib import Path
 
+import numpy as np
 from Bio import Align
 from Bio.Align import substitution_matrices
 from Bio.PDB import MMCIFParser, NeighborSearch, PDBParser
@@ -52,6 +53,21 @@ EPI_START, EPI_END = 415, 466    # the candidate epitope, the patch we aim at
 # an acidic residue opposite it.
 ANCHORS = {416: "D", 418: "H", 421: "E", 424: "E",
            433: "H", 455: "E", 458: "D", 460: "D"}
+
+# The atom each anchor is measured from: the charged tip of its side chain, because
+# that is what forms a charge pair. D uses the carboxylate carbon CG, E the
+# carboxylate carbon CD one atom further out, and H the centre of the imidazole ring.
+# Shared by steps 05 and 14 so the two measure from the same point.
+FUNCTIONAL_ATOM = {"D": ["CG"], "E": ["CD"],
+                   "H": ["CG", "ND1", "CD2", "CE1", "NE2"]}
+
+# A complex N-linked glycan is a branched chain of sugars rather than a single
+# sugar. Only its innermost sugars sit still enough to appear in a crystal
+# structure, while the whole assembly is mobile and can sweep 20-30 angstroms from
+# the point where it attaches. The two bands are therefore cautious on purpose.
+# UNVERIFIED: the 20-30 angstrom reach is from memory and is not measured here.
+GLYCAN_NEAR = 15.0       # very likely shadowed some of the time
+GLYCAN_PLAUSIBLE = 25.0  # within reach of an extended chain
 
 # Two residues are counted as touching if any pair of their atoms is this close,
 # measured in angstroms (an angstrom is a ten-billionth of a metre). 4.5 is the
@@ -239,6 +255,25 @@ def load_numbering(csv_path=None):
         uni, pdb, _offset = line.split(",")
         pdb_to_uniprot[int(pdb)] = int(uni)
     return Numbering(pdb_to_uniprot)
+
+
+def functional_point(res, aa):
+    """Pick the atom an anchor is measured from.
+
+    Returns (coordinates, a label for the atom used, whether it is a fallback).
+    The preferred atom is the charged tip of the side chain; CB, the first carbon
+    of the side chain, and then CA, the alpha carbon, are the fallbacks used when
+    the structure does not resolve the tip.
+    """
+    wanted = FUNCTIONAL_ATOM.get(aa, [])
+    coords = [res[a].coord for a in wanted if a in res]
+    if len(coords) == len(wanted) and coords:
+        if aa == "H":
+            return np.mean(coords, axis=0), "imidazole centroid", False
+        return coords[0], wanted[0], False
+    if "CB" in res:
+        return res["CB"].coord, "CB (FALLBACK)", True
+    return res["CA"].coord, "CA (FALLBACK)", True
 
 
 def protein_residues(chain):

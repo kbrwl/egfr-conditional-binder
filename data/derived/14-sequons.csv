@@ -1,0 +1,12 @@
+uniprot_pos,human_residues,mouse_residues_aligned,species_status,6ARU_nitrogen_to_sugar_a,6ARU_bonded,1NQL_nitrogen_to_sugar_a,1NQL_bonded
+128,NKT,NRT,both,42.711,False,30.510,False
+175,NMS,NMS,both,38.108,False,19.606,False
+196,NGS,NGS,both,60.523,False,40.247,False
+352,NAT,NAT,both,1.436,True,1.428,True
+361,NCT,YCT,human only,1.444,True,1.360,True
+413,NRT,NWT,both,1.437,True,4.968,False
+444,NIT,NIT,both,1.435,True,1.446,True
+528,NVS,NVS,both,30.630,False,1.445,True
+568,NIT,NIT,both,45.738,False,1.443,True
+603,NNT,NNT,both,43.534,False,1.498,True
+623,NCT,NCT,both,50.113,False,13.838,False

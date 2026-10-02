@@ -83,6 +83,8 @@ from Bio.PDB import PDBParser
 from Bio.PDB.Polypeptide import is_aa
 from Bio.Data.IUPACData import protein_letters_3to1
 
+import egfr_common as common
+
 ROOT = Path(__file__).resolve().parents[1]
 STRUCT = ROOT / "data" / "structures"
 RECEPTOR_PDB = STRUCT / "6aru_receptor_only.pdb"
@@ -102,20 +104,16 @@ ANCHORS = {416: "D", 418: "H", 421: "E", 424: "E",
            433: "H", 455: "E", 458: "D", 460: "D"}
 GLYCO_SITE = 444         # sugar attachment point found inside the block by step 03
 
-FUNCTIONAL_ATOM = {"D": ["CG"], "E": ["CD"],
-                   "H": ["CG", "ND1", "CD2", "CE1", "NE2"]}
+FUNCTIONAL_ATOM = common.FUNCTIONAL_ATOM   # shared with step 14
 
 # Filled in by the sugar-proximity section below: anchors close enough to the
 # sugar chain at N444 that their measured exposure should be read as an upper
 # bound on how reachable they really are.
 GLYCAN_RISK = set()
 
-# A complex N-linked glycan is a branched chain of sugars rather than a single
-# sugar. Only its innermost sugars sit still enough to appear in a crystal
-# structure, while the whole assembly is mobile and can sweep 20-30 A from the
-# point where it attaches. The two bands below are therefore cautious on purpose.
-GLYCAN_NEAR = 15.0     # very likely shadowed some of the time
-GLYCAN_PLAUSIBLE = 25.0  # within reach of an extended chain
+# The glycan reach bands live in egfr_common, shared with step 14.
+GLYCAN_NEAR = common.GLYCAN_NEAR
+GLYCAN_PLAUSIBLE = common.GLYCAN_PLAUSIBLE
 
 THREE_TO_ONE = {k.upper(): v for k, v in protein_letters_3to1.items()}
 
@@ -181,23 +179,7 @@ def load_cetuximab_contacts():
     return hits
 
 
-def functional_point(res, aa):
-    """Pick the atom this anchor is measured from.
-
-    Returns (coordinates, a label for the atom used, whether it is a fallback).
-    The preferred atom is the charged tip of the side chain; CB, the first carbon
-    of the side chain, and then CA, the alpha carbon, are the fallbacks used when
-    the structure does not resolve the tip.
-    """
-    wanted = FUNCTIONAL_ATOM.get(aa, [])
-    coords = [res[a].coord for a in wanted if a in res]
-    if len(coords) == len(wanted) and coords:
-        if aa == "H":
-            return np.mean(coords, axis=0), "imidazole centroid", False
-        return coords[0], wanted[0], False
-    if "CB" in res:
-        return res["CB"].coord, "CB (FALLBACK)", True
-    return res["CA"].coord, "CA (FALLBACK)", True
+functional_point = common.functional_point   # shared with step 14
 
 
 def main():

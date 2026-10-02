@@ -1,0 +1,33 @@
+anchor_set,structure,uniprot_pos,aa,nearest_sequon,nitrogen_distance_a,band,sequons_within_25a
+current H370 face,6ARU,344,E,352,12.415,likely shadowed,2
+current H370 face,1NQL,344,E,352,12.043,likely shadowed,2
+current H370 face,6ARU,358,H,352,10.797,likely shadowed,2
+current H370 face,1NQL,358,H,352,10.425,likely shadowed,2
+current H370 face,6ARU,368,D,352,15.343,within reach of an extended chain,2
+current H370 face,1NQL,368,D,352,14.290,likely shadowed,2
+current H370 face,6ARU,370,H,352,11.071,likely shadowed,4
+current H370 face,1NQL,370,H,352,10.627,likely shadowed,3
+current H370 face,6ARU,391,E,352,12.046,likely shadowed,4
+current H370 face,1NQL,391,E,352,11.256,likely shadowed,4
+current H370 face,6ARU,400,E,361,17.227,within reach of an extended chain,2
+current H370 face,1NQL,400,E,361,16.546,within reach of an extended chain,2
+current H370 face,6ARU,421,E,413,16.340,within reach of an extended chain,4
+current H370 face,1NQL,421,E,361,16.245,within reach of an extended chain,5
+current H370 face,6ARU,424,E,361,17.642,within reach of an extended chain,1
+current H370 face,1NQL,424,E,361,16.852,within reach of an extended chain,1
+old 415-466 epitope,6ARU,416,D,444,11.384,likely shadowed,4
+old 415-466 epitope,1NQL,416,D,444,12.676,likely shadowed,5
+old 415-466 epitope,6ARU,418,H,413,10.025,likely shadowed,4
+old 415-466 epitope,1NQL,418,H,413,15.065,within reach of an extended chain,5
+old 415-466 epitope,6ARU,421,E,413,16.340,within reach of an extended chain,4
+old 415-466 epitope,1NQL,421,E,361,16.245,within reach of an extended chain,5
+old 415-466 epitope,6ARU,424,E,361,17.642,within reach of an extended chain,1
+old 415-466 epitope,1NQL,424,E,361,16.852,within reach of an extended chain,1
+old 415-466 epitope,6ARU,433,H,352,19.080,within reach of an extended chain,1
+old 415-466 epitope,1NQL,433,H,352,18.633,within reach of an extended chain,2
+old 415-466 epitope,6ARU,455,E,361,25.814,probably clear,0
+old 415-466 epitope,1NQL,455,E,361,24.952,within reach of an extended chain,1
+old 415-466 epitope,6ARU,458,D,352,27.603,probably clear,0
+old 415-466 epitope,1NQL,458,D,352,27.345,probably clear,0
+old 415-466 epitope,6ARU,460,D,444,27.035,probably clear,0
+old 415-466 epitope,1NQL,460,D,352,26.946,probably clear,0
