@@ -2,8 +2,11 @@
 
 Read this first in any new chat. Update it when something moves between sections.
 
-Last updated: 2 October 2026 (trim boundary measured, E424 ranking term, target
-numbering check, smoke-run instrumentation)
+Last updated: 2 October 2026, afternoon. The Proteinbase Slack was read and its
+answers recorded (assay, construct, selection, submission); the marginal-affinity rule
+was withdrawn; Modal was linked and its first check found to have tested nothing;
+sugar-chain sequons, the tethered cut and the His-tag screen were written; and the
+i_pDAE direction was corrected.
 
 ---
 
@@ -12,7 +15,9 @@ numbering check, smoke-run instrumentation)
 Anthropic x Adaptyv Protein Design Competition, Challenge 1 (of 5).
 Official page: proteinbase.com/competitions/anthropic-adaptyv-2026/challenges/egfr
 Deadline 4 October 2026, 23:59 AoE (Anywhere on Earth: the deadline has not passed
-until it has passed in every time zone, which is UTC-12).
+until it has passed in every time zone, which is UTC-12). **The organisers may have extended it to
+5 October;** that is inferred from a Slack announcement and unconfirmed by the competition
+page, so plan against 4 October (see Unverified).
 
 Four further challenges follow weekly until 1 November 2026. Everything built
 here — the analysis scripts, the numbering guard, the findings format — should be
@@ -449,6 +454,111 @@ designs that do not.
 Walked through in plain language in `docs/explainers/06-checking-the-trimmed-target.md`,
 which also covers the per-candidate screen in `analysis/13_full_receptor_clash.py`.
 
+**What the organisers have said about the assay, the construct and the submission —
+recorded 2 October 2026.** Read from the Proteinbase Slack by a person and installed
+here as reported speech; nothing in this entry was computed by us. The attributions,
+dates and wording are in `docs/competition-qa-log.md` and the facts are in
+`docs/rules-reference.md`; where either disagrees with the competition page, the page
+wins. In brief:
+
+- *Assay.* Surface plasmon resonance, with **our designs immobilised and the target
+  flowed over them**. Top concentration 1000 nM, reportable range roughly 0.1 nM to
+  10 µM. Binding is declared when a K_D can be fitted or the association signal clears
+  300% over the negative control. A large K_D shift also qualifies, and no binding at
+  pH 7.4 with high affinity at pH 6.5 ranks higher.
+- *Buffer.* Matched ionic strength of about 170 mM at both pH values, so any difference
+  between them comes from the pH.
+- *The target.* The tethered conformation, expressed in HEK293 cells, glycosylated, with
+  a C-terminal His tag on both species.
+- *The designs.* Built with a C-terminal tail of linker, GFP11, linker and twin-Strep tag,
+  immobilised at the C-terminus. Linear chains only; cyclic peptides are not supported.
+- *Novelty.* The gate is level 3 of 4, scored automatically on upload, checked by MMseqs2
+  against SwissProt, the PDB, the USPTO and EBI patent databases, THPdb, PLAbDab and
+  Proteinbase.
+- *Selection.* Mainly method novelty, design diversity and a couple of computational
+  confidence metrics, the last being the smaller component. Explained in
+  `docs/explainers/07-the-assay-and-what-it-changes.md`.
+- *Submission.* Up to 20 designs, each chain 10 to 250 residues, **one submission every
+  24 hours**. Track 3 needs no confirmation email.
+
+**Allocation follows from that.** Design diversity is a selection axis in its own right,
+so the twenty slots should spread across anchor subsets and size categories and not take
+the top twenty of one ranked list. And a safe early batch can be uploaded and replaced
+later, so there is no reason to hold everything for a single upload.
+
+**The tethered cut: 6ARU stays, with one anchor unjudged — measured 2 October 2026.**
+The organisers say the screen uses the tethered form and our fragment is cut from 6ARU,
+the extended form. `analysis/16_tethered_fragment.py` cuts the same residues 310–480
+from 1NQL, the tethered structure, and compares them (`results/findings/16-tethered-
+fragment.md`). The rule for deciding was fixed before the measurement: the cuts are the
+same where it matters if no anchor's charged tip moves by 2.0 Å, a third of the 6 Å
+reach step 10 allows between two charged groups. That tolerance is a judgement.
+
+The whole fragment fits at 1.08 Å over 171 residues, matching step 06. The 79 residues
+within 8 Å of an anchor tip fit at 0.69 Å. The charged tips of seven anchors move 0.3 to
+1.2 Å, the largest being E391 at 1.19 Å. So 6ARU stays, for that measured reason.
+
+**E344 is a gap and not a pass.** Its charged tip is not resolved in 1NQL, so the rule
+cannot be applied to it. On CB, the nearest atom both structures share, it moves
+2.14 Å, and its backbone moves 1.79 Å, about three times any other anchor's. The 1NQL
+cut is kept on the shelf at `data/structures/1nql_domain3.pdb` with the same numbering.
+H418 reads 0.200 in 1NQL against 0.032 in 6ARU, and under the tethered form the 1NQL
+reading is the relevant one; that belongs to the 415–466 fallback and changes nothing
+for the H370 face. Explainer: none, because the comparison did not change the cut.
+
+**Sugar chains: all eight anchors are within reach of an attachment point, and N361 is
+human-only — measured 2 October 2026.** `analysis/14_glycan_sequons.py`
+(`results/findings/14-glycan-sequons.md`, explained in
+`docs/explainers/08-sugar-chains-near-the-anchors.md`). The human extracellular region
+has 11 sequons, N-X-S/T. Measured from each anchor's charged tip to each sequon's
+attachment nitrogen, in both structures:
+
+- E344, H358, D368, H370 and E391 are 10.4 to 14.3 Å from N352 in the tethered
+  structure, and a sugar is seen bonded to N352 in both structures.
+- E400, E421 and E424 are 16.2 to 16.9 Å from N361, also bonded in both.
+- No anchor is beyond 25 Å of a sequon. D368 is 14.3 Å in 1NQL and 15.3 Å in 6ARU, either
+  side of the 15 Å band line, so its band is borderline.
+- **N361 is a sequon in human and not in mouse.** Mouse has a tyrosine there. N361Y was
+  already one of step 01's 16 domain III differences and its effect on sugar chains was
+  not drawn until now. The human target carries a chain 16–17 Å from E400, E421 and E424
+  that the mouse target lacks, which bears on the mouse cross-reactivity ratio.
+
+The bands are step 05's and rest on a reach of 20–30 Å from memory (Unverified).
+Distance to an attachment point is a necessary condition for a chain covering a site and
+not evidence of it. The controls reproduce step 03's N444 distance (1.44 Å) and step
+05's seven N444 distances to 0.1 Å. **Nothing was dropped and step 10's ranking was not
+changed:** the work order expected a few flagged anchors and all eight are flagged,
+including both target histidines, so demoting by band would reorder the whole campaign
+and favour the three anchors near the human-only chain. What to do is an Open question.
+
+**The binder's C-terminus is kept out of the interface by a BindCraft2 setting.**
+`termini_accessible` points both chain ends away from the target (a loss term and a final
+floor of 0.0 on the terminus direction cosine, where +1 is away), so the C-terminal tail
+and the chip are not in the way. It is set in both campaign files written by
+`analysis/09_trim_target.py`. The work order's fallback of a filter in step 10 is not
+needed. It is geometry only. Linear chains only is recorded so no later challenge
+rediscovers it; nothing in the current plan conflicts.
+
+**The His tag is avoided inside the design loop and audited afterwards.** Both targets
+carry a C-terminal His tag the organisers expect to leave on, and a binder that grips it
+looks pH-selective and binds anything with a His tag; our pairing rule makes this project
+more exposed than most. `analysis/15_histag_counterscreen.py` was written before any
+candidate exists. The predictor is BindCraft2's own AlphaFold2 used through its
+detargeting objective, the tag given as the sequence GSHHHHHHGS at weight −0.5.
+`bindcraft score` was rejected because it reads existing structures and cannot predict a
+complex. "Accepts the tag" is `i_pTM_detarget` of at least 0.4, **BindCraft2's own default
+and not a threshold calibrated for this tag.** A blank is never a pass, and a pass is weak
+evidence. `design/configs/egfr-domain3-h370-notag.json` is the campaign with the tag as an
+off-target; it has **not been run**. Explained in
+`docs/explainers/09-the-his-tag-screen.md`.
+
+**The i_pDAE direction was wrong in our own documentation.** BindCraft2 defines it as a
+distance-masked interface TM confidence between 0 and 1, higher is better; its source keeps
+a list of lower-is-better metrics and i_pDAE is not in it. The glossary said lower was
+better, which is true of `i_pAE`, and the tie-break added to step 10 earlier that day sorted
+the wrong way round until this was caught and corrected the same afternoon, with a test
+that fails on the old direction.
+
 ---
 
 ## Open
@@ -526,17 +636,65 @@ only against the tightest triad (H433/D458/D460 or E455/D458/D460, both 15.6 Å)
 and would carry three pairs rather than four — thinner margin on a switch that is
 already partial.
 
-**Glycan shadowing at N444.** A sugar chain is attached inside the epitope.
-Accessibility numbers for nearby anchors are upper bounds. Not resolvable from a
-crystal structure; usable as a tie-breaker between otherwise equivalent clusters.
-Prefer clusters away from N444 where the choice is otherwise even.
+**What to do about sugar chains near the H370 anchors.** All eight are within reach of an
+attachment point (Settled). A decision for the project owner, with what each option costs:
 
-**What proportion of receptor is open vs closed in the assay buffer.** Step 06
-established the epitope is accessible in *both* published conformations, which
-removes the specific fear that domain II covers our face. It does not give the
-equilibrium in the assay, which is the number that would actually matter, and
-which two crystal snapshots cannot supply. Reduced from a potential blocker to an
-unquantified source of variance.
+1. *Disclose and proceed.* Costs nothing and removes nothing. The organisers recommended
+   domain III knowing the target is glycosylated, which is some reason to think the region
+   is usable.
+2. *Demote by band in step 10.* Prefers E400, E421 and E424 over the five anchors near N352,
+   at the price of leaning on the three anchors near the human-only chain at N361. It swaps
+   one risk for another.
+3. *Mark the footprint with coldspots,* residues BindCraft2 is told to keep clear. A
+   participant in the Slack suggested treating glycan sites that way. It discourages direct
+   contact with those residues and does not model a chain's sweep.
+4. *Design against human and mouse together* (next item).
+
+For the old 415–466 epitope the equivalent entry was N444, 11.4 Å from D416 and bonded to a
+sugar; it stays as a tie-breaker between otherwise equal clusters if that fallback is ever
+used.
+
+**Design against human and mouse together?** BindCraft2 has a multi-target mode for one
+binder that engages two orthologs, with hotspots given separately in each structure's own
+numbering; its own example is one binder for human and mouse PD-L1. It is aimed at the mouse
+cross-reactivity objective, which the organisers define as a mouse-to-human K_D ratio of
+about 1, and it could bear on the N361 difference. It needs a structure of mouse domain III,
+which we do not hold. All eight anchors are identical in the two species, so the hotspots
+carry over. Whether the gain is worth the setup is untested.
+
+**Is E344 usable as a tethered-form anchor?** Its charged tip is unresolved in 1NQL and its
+backbone and CB move 1.79 and 2.14 Å between the two forms (Settled). Candidates leaning on
+it rest on a position that differs between forms. Could be handled like E424, in the ranking.
+
+**Can the burial of a charge pair be measured well enough to rank on?** Explainer 07 argues
+that at roughly 170 mM ionic strength a charge pair in the closed-off core of an interface
+contributes much more than the same pair on the exposed rim, because dissolved ions screen
+exposed charges. That is a design preference and not a measurement. *Measurable:* yes, with
+tools already used here. Per-residue accessibility in the complex and the fraction of area
+buried on complex formation both come from Shrake–Rupley, as in steps 03 and 06. Probed on
+the three EGFR complexes on disk, the only oppositely charged cross-chain pairs within 4.0 Å
+were five (three distinct), with accessibility in the complex from 0.00 to 0.30 and the
+fraction buried from 0.30 to 1.00. *Testable:* no. Five pairs are too few to separate buried
+from rim, nothing ties a pair's burial to the strength of a pH switch, and step 10's
+constructed complexes hold isolated residue pairs with no environment around them. **No
+ranking term was built.** Revisit when real complexes from the design run exist; until then
+it would be a term that cannot be tested.
+
+**The exact mouse construct.** Residue range and vendor, asked twice in Slack on 1 October
+and not answered. Our check was against the sequence on the competition page.
+
+**Is cynomolgus monkey cross-reactivity in scope?** Amir's pre-launch message on 28 September
+said "mouse and cyno". The competition page, read on 2 October, names human and mouse only,
+and so does `docs/rules-reference.md`. If cyno is in scope, none of our conservation work has
+looked at it. One of the two sources is out of date.
+
+**What does novelty level 3 mean?** Simon Dürr said level 3 clears the gate (29 September and
+1 October) and on 1 October also described the requirement as the sequence being under 30%
+similar to anything existing. The two may not be the same threshold. The definition is at
+`adaptyvbio.com/blog/novelty` and has not been read. Novelty is scored automatically on
+upload, so it can be tested against the real checker before the deadline.
+
+**Are extra metric columns allowed in the submission CSV?** Asked on 1 October, unanswered.
 
 **Do pH selectivity and mouse cross-reactivity compete for the same surface?** Both
 mouse cross-reactivity constrain the same interface residues. Partly answered: all
@@ -545,8 +703,8 @@ conserved, and the only conflict found is position 442 — the single species
 difference in the block, which is also a cetuximab contact. Constraint recorded in
 Settled: do not contact 442.
 
-**Compute environment.** Nothing stood up yet. Colab / Modal / RunPod all viable.
-This is the main schedule risk — dependency and CUDA problems eat days.
+**Compute environment.** Modal, linked on 2 October. The GPU check passes on an NVIDIA
+A100-SXM4-40GB, driver 580.95.05, with JAX 0.11.2 on the GPU backend (Pipeline status).
 
 **Design pipeline choice.** BindCraft is the accessible one-command option.
 RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
@@ -629,6 +787,20 @@ RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
   and step 06's occlusion numbers. A separate constant for the trim boundary would
   avoid that, and should be introduced rather than moving `D3_END`.
 
+- **The 5 October deadline.** Tudor announced on 30 September that challenge 1 is extended by
+  one day for the Modal credit delays, which makes it 5 October 23:59 Anywhere on Earth. The
+  new date is inferred from that announcement and was not quoted. The competition page, read
+  on 2 October, still says 4 October with no extension. **Plan against 4 October** until the
+  page confirms it.
+
+- **How far a sugar chain reaches.** Step 05's bands of 15 and 25 Å rest on a reach of 20–30 Å
+  from a complex glycan, from memory. They are cautious on purpose. The ordering of the anchors
+  by distance is more reliable than the labels.
+
+- **Detargeting against a sequence target.** That BindCraft2 accepts the His tag as an
+  off-target alongside a structured target, and what it does to run time and hit rate, has not
+  been run. The weight of −0.5 and the ceiling of 0.4 are starting values.
+
 - **Domain III boundaries.** 310–480 is the working definition used throughout.
   Confirm against the official annotation. Note that step 06 avoided depending on
   this by measuring occlusion as "contacted by residues outside 310–480" rather
@@ -638,6 +810,13 @@ RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
 ---
 
 ## Resolved — moved out of Unverified
+
+**Which conformation is tested, which assay, and what counts as no detectable binding —
+answered by the organisers, 29–30 September (recorded 2 October 2026).** These were gaps in
+the official information and are now stated: the tethered conformation, surface plasmon
+resonance, and the 300% association rule (Settled; `docs/competition-qa-log.md`). The Open
+item on the balance of conformations in the assay is closed by this. What remains of it is
+that our fragment is cut from the extended structure, measured under Settled.
 
 **The method is not novel. Both halves are published, and the closest paper is on
 EGFR and on H433 (1 October 2026).** Searched before claiming novelty, on the
@@ -990,9 +1169,25 @@ histidines, no antibody overlap and no groove or sugar problems.
 
 ## Pipeline status — the critical path
 
-**State as of 1 October 2026: prepared, blocked on one command only the owner can
-run.** No candidate sequence exists yet. Under the hard rule below, this is what
+**State as of 2 October 2026, 14:45 IST: Modal linked, the GPU check passes, the PD-L1 smoke
+run is running.** No candidate sequence exists yet. Under the hard rule below, this is what
 everything else yields to.
+
+*What happened on 2 October.* Modal was linked by the owner (workspace `kunaal11791`, $30
+credit). **The first `check` exited successfully having tested nothing.** The file
+`design/modal/bindcraft2_smoke.py` defined the image and never passed it to the app, so both
+functions ran in Modal's default container, where `/opt/BindCraft2` does not exist. It also
+finished in about a minute, too fast for a 20 GB install, which is what pointed at it. Fixed:
+the app takes the image, `_run` no longer activates BindCraft2's environment for commands
+outside it, and `check` now raises when the GPU, JAX or the `bindcraft` command is missing.
+The rerun shows an NVIDIA A100-SXM4-40GB, driver 580.95.05, JAX 0.11.2 on `CudaDevice(id=0)`
+with default backend `gpu`, and `bindcraft design --help` working. The image build,
+including BindCraft2's `install.sh`, completed.
+
+The PD-L1 smoke run (`design/modal/bindcraft2_smoke.py::smoke`) was launched detached at
+14:17 IST with a four-hour ceiling, at most about $8.40 of the $30. Its console output only
+appears when the command finishes, because `_run` captures it, so progress is not visible.
+**Its result is not in this log yet.**
 
 *Chosen route: BindCraft2 on Modal.* `design/modal/bindcraft2_smoke.py` builds the
 image, checks the GPU, and runs BindCraft2 against its own shipped PD-L1 example —
@@ -1036,8 +1231,10 @@ ColabDesign, BoltzGen and others, targeting an H100 80 GB primarily. It accelera
 existing tools rather than offering an easier route, so it is not the fast path to a
 first sequence.
 
-*Blocked on:* `./.venv/bin/modal setup`, which opens a browser and can only be done
-by the account holder. Nothing can be spent before that.
+*No longer blocked.* Modal setup was the one step only the account holder could do, and it
+is done. Two read-only helpers, `inspect_cli` and `shell`, run on the processor with no GPU
+and were used to read BindCraft2's own documentation and source before configuring a paid
+run from them.
 
 *What is ready while it stays blocked (1 October 2026).* Both steps that need no
 GPU are written and passing: `analysis/09_trim_target.py` produces the trimmed
@@ -1064,6 +1261,12 @@ absorbed the effort because it is tractable and produces clean results, while th
 pipeline work is the part that eats days on dependency and CUDA problems and has not
 started. A perfect epitope with zero sequences is not a submission.
 
+*Status, 2 October 2026, 14:45 IST.* No candidate exists yet. The smoke run that would
+produce the first one was launched at 14:17 and has not finished. The CPU-only work done
+since is independent of that run and costs nothing, which is the reading of this rule that
+was agreed. It does not license pointing a campaign at EGFR before item 2 of Next actions is
+done. The rule is still live at the end of the day.
+
 **TIME BOX — the H370 evaluation ends on 2 October 2026.** Done by end of that day or
 abandoned, and we proceed with 415–466. Recorded so a later session does not reopen
 it.
@@ -1083,115 +1286,57 @@ dropping regardless. Nothing to gain, and a real contamination risk.
 
 ## Next actions, in order
 
-Steps 1–4 of the previous list are done — see Settled, "The structure check
-passed". Reproducible via `analysis/00`–`06`.
+Reordered on 2 October 2026 after the Slack intake. The smoke run and the CPU-only work are
+independent and only one of them costs money.
 
-1. **Resolve the H418 question — now a fallback question, not the critical path.**
-   It used to be ranked highest because it was said to carry the method-novelty
-   claim. That claim is withdrawn, and 415–466 is no longer the primary epitope, so
-   the item is rewritten rather than retired: it still decides something, but less.
-
-   What it decides now: whether the fallback epitope offers a four-anchor cluster
-   with no target histidine (D416, E421, E424, E455) or a five-anchor one with a
-   target histidine and no cetuximab overlap (D416, H418, E421, E424, E455, span
-   24.0 Å). That matters only if the H370 patch fails later.
-
-   One thing worth knowing and untested: the same buried reading in 6ARU that
-   excluded H418 from 415–466 also excluded it from the H370 candidate set at step
-   08's third filter. If H418 is usable it becomes a seventeenth candidate there,
-   and whether it would join or extend the eight-anchor cluster has not been
-   computed. That is the only route by which this question touches the primary
-   epitope.
-
-   Resolve by checking further EGFR structures and examining side-chain rotamers,
-   not by preferring whichever reading is more convenient. Ranked below the
-   pipeline either way, under the hard rule above.
-2. **Choose the anchor cluster and record the reasoning.** Use the trade-off table
-   in Open. This is a judgement call between novelty and cleanliness, and the
-   write-up is stronger for showing it was made deliberately.
-3. **Choose the molecule category.** Geometry points to a minibinder (40–100 aa);
-   a microbinder is possible only on the 15.6 Å triad.
-4. Stand up a GPU environment and get a binder-design pipeline running end to end
-   on any target, however bad the output, before attempting the real one. **This
-   remains the main schedule risk** and should start in parallel with 1–3, not
-   after them.
-5. Generate several hundred candidates against the confirmed patch.
-6a. **Full-receptor clash screen — WRITTEN, 2 October 2026, before any candidate
-   exists.** `analysis/13_full_receptor_clash.py`. Written ahead for the same reason
-   as the charge-pair scan. Step 12 settled that the anchor *face* is reachable,
-   which is a property of the target; this screens each individual *design*, because
-   a reachable face does not stop one particular binder approaching at an angle that
-   puts part of it inside domain II or domain IV. It superposes each returned complex
-   back onto full 6ARU through domain III and counts overlaps against the 438
-   residues the design run never saw. Rigid and cheap — no GPU — so it runs on every
-   candidate rather than competing for the rented machine. It flags rather than
-   drops: the decision to discard belongs in step 10's ranking, so that every
-   decision about what to submit is made in one place.
-
-6. **Charge-pair scan — WRITTEN, 1 October 2026, before any candidate exists.**
-   `analysis/10_charge_pair_filter.py`. Deliberately written before generation
-   rather than after: a filter written afterwards turns out to need a
-   measurement the generation run did not save, and there is no time to
-   regenerate. Writing the consumer first is what let the schema above be
-   checked in advance.
-
-   It applies the positional rule, rejects any candidate with a binder histidine
-   facing **any** target histidine rather than only H418 and H433, rejects any
-   candidate contacting 442, and ranks by correct-pair count. Six synthetic test
-   cases and one synthetic campaign folder are built and run every time, and
-   `--self-test` removes each branch of the rule in turn to confirm a test case
-   fails without it. All pass.
-
-   What it still needs: real output. The verdicts are untested against anything
-   BindCraft2 actually emitted, only against complexes we built to look like it.
-   Run it against the PD-L1 smoke run with `--parse-only` as soon as that exists:
-   the verdicts will be meaningless because PD-L1 is not our target, but it
-   proves the script can read what the pipeline really writes.
-7. **Rank by charge pairs, then by confidence.** Step 10 leads with the pair count
-   and uses BindCraft2's `i_pDAE` ordering upward as a tie-break among candidates
-   with equal counts. It never discards a candidate for binding weakly or strongly;
-   it discards for breaking a rule. See Ruled out for why the earlier direction was
-   withdrawn.
-8. Novelty check, rank, submit up to 20 with written reasoning.
-9. **Have the smoke run record wall-clock time per trajectory and peak GPU
-   memory**, and write both into a findings file. Explainer 04 originally quoted a
-   250-residue trajectory at five minutes, a 900-residue one at two to three hours,
-   and a 32 GB minimum video memory. All three came from BindCraft v1's
-   documentation and were removed, because BindCraft2's documentation states
-   neither a runtime per design nor a minimum video memory. They are the numbers
-   the trimming decision and the card
-   choice actually rest on, so they come back as measurements from our own run or
-   not at all. Time one trajectory on the untrimmed target and one on domain III,
-   so the ratio is measured rather than reasoned.
-
-   *Instrumented, 2 October 2026, not yet run.* `design/modal/bindcraft2_smoke.py`
-   now records the card type, peak card memory, wall-clock time for the run and per
-   trajectory, and the total residue count of the returned complex, into
-   `smoke-report.json` in the results volume. The residue count is what lets a
-   PD-L1 figure be carried to EGFR. Peak memory is an upper bound, since JAX can
-   reserve most of the card at start-up. Per-trajectory time depends on finding a
-   table of trajectories in the output; if none is found the report says so and
-   prints every table's row count instead of guessing. The same run now answers
-   whether the target comes back at the input's numbering, by comparing the target
-   chain of every returned complex against the input structure
-   (`analysis/target_numbering.py`), and `analysis/10` refuses to score any
-   candidate that fails that comparison. Blocked, like everything else, on
-   `modal setup`.
-10. **Rewrite `docs/explainers/04-design-pipeline.md` after the first real pipeline
-   run**, with what actually happened in place of what was planned. Its figures are
-   external, read from the web on 1 October 2026, and are a placeholder for
-   measurements we have not taken. Any figure that still matters afterwards moves
-   into a findings file produced by a script in `analysis/`, so it is reproducible
-   like every other number here.
-11. **Test how much of domain III the trim can leave out**, which is the unverified
-    decision recorded below. It controls both run time and whether the designs mean
-    anything, and nothing has measured it. The trim itself is now written
-    (`analysis/09_trim_target.py`) and what it breaks is measured — one severed
-    disulfide bond, one anchor near a cut edge — but whether the fragment holds
-    its shape is still untested and is what this item is about.
-
-    *Partly done, 2 October 2026.* `analysis/11_trim_boundary.py` predicted three
-    candidate fragments with ESMFold and compared them against 6ARU. It did not
-    separate them; see the Unverified entry for what it did and did not show. What
-    remains is the same comparison with the predictor the design run uses, which
-    the smoke run on our own hardware can provide.
+1. **PD-L1 smoke run — running.** Launched 14:17 IST, detached. When it finishes, report the
+   card, the wall-clock time and time per trajectory, the peak memory, the size of the
+   returned complex, and the target numbering comparison. The residue count is what lets a
+   PD-L1 figure be carried to EGFR. Peak memory is an upper bound, since JAX can reserve most
+   of the card at start-up. The same run answers whether the target comes back at the input's
+   numbering, by comparing the target chain of every returned complex against the input
+   (`analysis/target_numbering.py`); `analysis/10` refuses to score any candidate that
+   fails that. Then run `analysis/10 --parse-only` against its output: the verdicts mean
+   nothing because PD-L1 is not our target, but it proves the script can read what the
+   pipeline really writes. Check the direction `i_pDAE` is ranked in `!_Ranked.csv` against
+   the correction under Settled.
+2. **Validate both campaign files start up before a real run.** `termini_accessible` and the
+   tag off-target have never been run. A start-up check with `--set max_trajectories=1`
+   against the real fragment costs cents and answers whether BindCraft2 accepts a short
+   sequence as an off-target. It needs the config, the fragment and the sequence file passed
+   into the container. Do not start the EGFR campaign before this.
+3. **Owner decisions that shape the campaign file:** how to handle sugar chains near the
+   anchors, and whether to design against human and mouse together (both under Open); which
+   anchor cluster; and the molecule category. Geometry points to a minibinder of 40–100
+   residues; a microbinder is possible only on the 15.6 Å triad. Show that the cluster
+   choice was made deliberately, because the write-up is stronger for it.
+4. **Generate several hundred candidates** against the confirmed patch, from
+   `egfr-domain3-h370-notag.json` if item 2 shows it starts and from the plain file if not.
+   Designs generated without the tag cannot be screened for it afterwards.
+5. **Test whether the fragment holds its shape,** which is what the cut risks and nothing has
+   measured. Predict the 171-residue fragment with the design run's own predictor and
+   compare it with 6ARU across the anchors. Step 11 tried with ESMFold and got about 5 Å for
+   all three boundaries, the predictor's noise floor. The ratio of run times for 171
+   against 621 residues is also unmeasured: time one trajectory on each.
+6. **Run the three screens on real output:** `analysis/10_charge_pair_filter.py` (charge
+   pairs, then `i_pDAE` as a tie-break with the higher reading first),
+   `analysis/13_full_receptor_clash.py` (would each binder fit in the intact receptor) and
+   `analysis/15_histag_counterscreen.py` (`--candidates`). All three have only ever seen
+   constructed inputs.
+7. **Novelty, spread, submit.** Check novelty with MMseqs2 against the databases the
+   organisers listed, and test against the real checker, which scores automatically on
+   upload. Read `adaptyvbio.com/blog/novelty` first. Spread the twenty slots across anchor
+   subsets and size categories. Upload an early safe batch and replace it, one submission per
+   24 hours. Plan against 4 October 23:59 AoE. Write the reasoning, because selection reads
+   the documentation.
+8. **Rewrite `docs/explainers/04-design-pipeline.md` after the first real pipeline run,** with
+   what happened in place of what was planned. Its figures are external, read on 1 October,
+   and any that still matter move into a findings file produced by a script in `analysis/`.
+9. **Resolve the H418 question — a fallback question, not the critical path.** It decides
+   whether the 415–466 fallback offers a four-anchor cluster with no target histidine or a
+   five-anchor one with a target histidine and no cetuximab overlap (D416, H418, E421, E424,
+   E455, span 24.0 Å). Under the tethered form 1NQL's reading of 0.200 is the relevant one
+   and 6ARU's 0.032 may be an artefact of the antibody. Resolve by checking further
+   structures and side-chain rotamers. Do not reopen the epitope choice.
+10. **Burial of charge pairs:** revisit when real complexes exist (Open). No ranking term
+    until it can be tested.
