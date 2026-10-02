@@ -32,7 +32,7 @@ human record P00533 in UniProt, the public sequence archive, unless a
 line says they are the structure file's own.
 
 Ranked by correct pairs first, because the pairs are what produce the pH
-switch. The pipeline's own i_pDAE (lower is better) is carried through and
+switch. The pipeline's own i_pDAE (higher is better) is carried through and
 breaks ties among candidates whose pair terms are all equal. It never
 overrides a pair term and it does not discard a candidate.
 

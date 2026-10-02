@@ -70,7 +70,7 @@ conditions with the pH 6.5 end as high as the switch allows, so nothing here pre
 weaker binding. An earlier version of this script did; that was withdrawn, see Ruled
 out in `docs/decisions-log.md`.
 
-The pipeline's own confidence ordering, `i_pDAE` (lower is better), is carried
+The pipeline's own confidence ordering, `i_pDAE` (higher is better), is carried
 through to the output and used as the last term of the ranking. Among candidates
 whose pair terms are all equal, the one with the more confident interface comes
 first. It never overrides a pair term, it is not folded into a score, and it does
@@ -722,7 +722,7 @@ def run_tests(numbering, human, emit):
     base = by_name["four-correct-pairs"]
     level = [dict(base, design="tie-a-doubtful", metrics={"i_pDAE": "0.41"}),
              dict(base, design="tie-m-no-metric"),
-             dict(base, design="tie-z-confident", metrics={"i_pDAE": "0.18"})]
+             dict(base, design="tie-z-confident", metrics={"i_pDAE": "0.82"})]
     ordered = [s["design"] for s in rank(level)]
     want = ["tie-z-confident", "tie-a-doubtful", "tie-m-no-metric"]
     ok = ordered == want
@@ -736,8 +736,8 @@ def run_tests(numbering, human, emit):
 
     fewer = dict(base, design="pairs-fewer-confident", supported_pairs=3,
                  correct_pairs=3, correct_pairs_tight=3,
-                 metrics={"i_pDAE": "0.02"})
-    more = dict(base, design="pairs-more-doubtful", metrics={"i_pDAE": "0.90"})
+                 metrics={"i_pDAE": "0.95"})
+    more = dict(base, design="pairs-more-doubtful", metrics={"i_pDAE": "0.30"})
     ordered = [s["design"] for s in rank([fewer, more])]
     ok = ordered[0] == "pairs-more-doubtful"
     emit("   Ranking: more pairs but a worse i_pDAE against fewer pairs and a better one")
@@ -924,7 +924,7 @@ def main(argv=None):
     emit("line says they are the structure file's own.")
     emit()
     emit("Ranked by correct pairs first, because the pairs are what produce the pH")
-    emit("switch. The pipeline's own i_pDAE (lower is better) is carried through and")
+    emit("switch. The pipeline's own i_pDAE (higher is better) is carried through and")
     emit("breaks ties among candidates whose pair terms are all equal. It never")
     emit("overrides a pair term and it does not discard a candidate.")
     emit()
@@ -1346,7 +1346,15 @@ def report_results(summaries, emit):
 
 
 def pipeline_confidence(summary):
-    """The pipeline's own `i_pDAE` for a candidate, lower meaning more confident.
+    """A sort key from the pipeline's own `i_pDAE`, so the more confident interface
+    sorts first.
+
+    BindCraft2 defines `i_pDAE` as a distance-masked interface TM confidence between
+    0 and 1 and ranks it higher-is-better: its own `rank.py` lists the metrics where
+    lower is better, and this is not among them. The key is the negated value so
+    that an ascending sort puts the higher reading first. The first version of this
+    function sorted the other way round, on a glossary entry that said lower was
+    better, and so preferred the less confident interface.
 
     A candidate with no value, or one that is not a number, gets infinity and so
     sorts after every candidate that has one. With `--break-rule pdae-tiebreak`
@@ -1359,7 +1367,7 @@ def pipeline_confidence(summary):
         number = float(value)
     except (TypeError, ValueError):
         return float("inf")
-    return float("inf") if number != number else number
+    return float("inf") if number != number else -number
 
 
 def rank(summaries):
@@ -1369,7 +1377,7 @@ def rank(summaries):
     trimmed target's cut edge (E424), then by all correct pairs, then by how many
     of those have their charged groups within reach, then by how many distinct
     target positions are involved. Candidates still level after all of those are
-    ordered by the pipeline's own `i_pDAE`, the more confident interface first, and
+    ordered by the pipeline's own `i_pDAE`, the higher reading first, and
     last by name so the order is stable between runs.
 
     The pair terms come first because the charge pairs are what produce the switch.

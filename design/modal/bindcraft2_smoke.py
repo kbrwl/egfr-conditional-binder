@@ -477,6 +477,26 @@ def smoke(target: str = "examples/pdl1.json"):
     return sorted(set(produced))
 
 
+@app.function(timeout=60 * 10)
+def inspect_cli():
+    """Print BindCraft2's own help for each subcommand. No GPU, so it costs almost
+    nothing. Written 2 October 2026 so that a design decision about scoring a
+    candidate against something other than the main target rests on what the
+    command says it does, not on a guess about its interface."""
+    for sub in ("score", "rank", "filter", "fetch-weights"):
+        _run(f"bindcraft {sub} --help")
+    _run("bindcraft design --list-modalities || true")
+    _run("bindcraft design --list-properties || true")
+
+
+@app.function(timeout=60 * 10)
+def shell(cmd: str):
+    """Run one read-only shell command inside the BindCraft2 image, on the
+    processor with no GPU. For reading BindCraft2's own documentation and source
+    before configuring a paid run from it: modal run ...::shell --cmd "ls docs"."""
+    _run(cmd)
+
+
 @app.local_entrypoint()
 def main():
     print("Run one of these explicitly rather than this entrypoint:")
