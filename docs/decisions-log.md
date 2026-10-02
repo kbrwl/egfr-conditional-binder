@@ -233,10 +233,20 @@ chain keeping the numbering its own structure gave it. That is what makes
 the offset `analysis/02` already measured, and it is why the trimmed target keeps
 6ARU's numbers rather than counting from 1.
 
+*Measured on real output, 2 October 2026.* Until then this rested on a reading of the
+source. `analysis/target_numbering.py`, run inside the smoke run's container on its two
+accepted complexes, reports for both: target numbering identical, all 115 residues present
+at the input's own numbers with the same amino acids. BindCraft2 did not crop or renumber
+the PD-L1 target. That is one structured target of 115 residues with default settings. It
+has not been shown for our 171-residue fragment, which is why `analysis/10` still refuses
+any candidate whose numbering does not reconcile.
+
 **The target is chain A and the binder is chain B, which is the reverse of
 BindCraft v1.** A parser assuming the binder is chain A would read the wrong
 molecule and report a full set of plausible nonsense. `analysis/10` identifies
 the chains by measuring which one reads as human EGFR rather than by the letter.
+*Measured on the same two complexes:* chain A holds 115 residues, the target, and chain B
+holds 144 and 165, the binder.
 
 **The one thing the output does not contain, which is the thing we need.**
 BindCraft2 writes `Interface_Binder_Residues` and `Interface_Target_Residues` as
@@ -1187,7 +1197,37 @@ including BindCraft2's `install.sh`, completed.
 The PD-L1 smoke run (`design/modal/bindcraft2_smoke.py::smoke`) was launched detached at
 14:17 IST with a four-hour ceiling, at most about $8.40 of the $30. Its console output only
 appears when the command finishes, because `_run` captures it, so progress is not visible.
-**Its result is not in this log yet.**
+**Its end-of-run report is not in this log yet.** Read by hand from the live container at
+about 14:46 IST, 29 minutes in, and to be superseded by the script's own
+`smoke-report.json` when the run ends:
+
+- *Works end to end.* Trajectories, refolded complexes and ranked designs all exist. Of 7
+  trajectories finished, 2 were accepted. The ranked table has 43 columns and every column
+  step 10's constructed table assumed is present.
+- *Two workers share the one card.* Peak card memory sampled at 1 Hz was 17,950 MiB of
+  40,960 MiB, so the memory is an upper bound for two workers and may include memory JAX
+  reserved. An A100 40 GB is not shown to be needed; a smaller card is not shown to be
+  enough, and no speed ratio between cards was measured.
+- *Time per trajectory, design phase only,* for a 115-residue target: 185 s at binder length
+  87, 245 s at 67, 310 s at 94, 516 s at 165 and 574 s at 178. The two trajectories that
+  included compilation (62 and 144 residues, 207 s and 634 s) are left out because
+  compilation inflates them. Validation and refolding are not in these figures.
+- *Throughput observed,* including everything: 7 trajectories in about 27 minutes, roughly
+  15 per hour. Two of 7 accepted is 29%, from a sample too small to carry to EGFR.
+- *Complex size.* 259 and 280 residues (115 target plus 144 and 165 binder). The EGFR
+  fragment plus a 60–100 residue binder is 231–271, so these timings are the right order for
+  the fragment. The full 621-residue receptor would give 681–721, about two and a half times
+  as large, and its slowdown was not measured.
+- *i_pDAE is ranked higher-first*: rank 1 has 0.22 and rank 2 has 0.19 in `!_Ranked.csv`,
+  matching the source and the correction under Settled.
+
+**What that means for the campaign size.** The campaign file asks for up to 2,000
+trajectories and 200 accepted designs. At about 15 trajectories an hour that is more than
+130 hours of card time, and the $30 buys about 14 hours of an A100 40 GB at $2.10 an hour,
+roughly 200 trajectories and, at the PD-L1 acceptance rate, around 60 accepted designs. The
+EGFR rate is unknown and may well be lower. The counts in `analysis/09` were never derived
+from a measured run time, as its note says; they should be reset to the budget before the
+campaign starts (Next actions, item 4).
 
 *Chosen route: BindCraft2 on Modal.* `design/modal/bindcraft2_smoke.py` builds the
 image, checks the GPU, and runs BindCraft2 against its own shipped PD-L1 example —
@@ -1261,11 +1301,11 @@ absorbed the effort because it is tractable and produces clean results, while th
 pipeline work is the part that eats days on dependency and CUDA problems and has not
 started. A perfect epitope with zero sequences is not a submission.
 
-*Status, 2 October 2026, 14:45 IST.* No candidate exists yet. The smoke run that would
-produce the first one was launched at 14:17 and has not finished. The CPU-only work done
-since is independent of that run and costs nothing, which is the reading of this rule that
-was agreed. It does not license pointing a campaign at EGFR before item 2 of Next actions is
-done. The rule is still live at the end of the day.
+*Status, 2 October 2026, about 14:50 IST.* The condition is met: the PD-L1 smoke run has
+produced accepted designs, two by 14:46, against a target that is not ours. That is the
+pipeline producing candidate sequences, which is what the rule asks for. The run has not
+finished. The CPU-only work done since is independent of it and costs nothing. Meeting the
+rule does not license pointing a campaign at EGFR before item 2 of Next actions is done.
 
 **TIME BOX — the H370 evaluation ends on 2 October 2026.** Done by end of that day or
 abandoned, and we proceed with 415–466. Recorded so a later session does not reopen
@@ -1310,9 +1350,12 @@ independent and only one of them costs money.
    anchor cluster; and the molecule category. Geometry points to a minibinder of 40–100
    residues; a microbinder is possible only on the 15.6 Å triad. Show that the cluster
    choice was made deliberately, because the write-up is stronger for it.
-4. **Generate several hundred candidates** against the confirmed patch, from
-   `egfr-domain3-h370-notag.json` if item 2 shows it starts and from the plain file if not.
-   Designs generated without the tag cannot be screened for it afterwards.
+4. **Generate candidates** against the confirmed patch, from `egfr-domain3-h370-notag.json`
+   if item 2 shows it starts and from the plain file if not. Designs generated without the
+   tag cannot be screened for it afterwards. **Resize the campaign to the budget first:** the
+   file asks for up to 2,000 trajectories and 200 accepted designs, which at the measured
+   rate is far beyond $30 (Pipeline status). Choose the counts from the card time you are
+   willing to spend, and set `max_trajectories` so the run stops by itself.
 5. **Test whether the fragment holds its shape,** which is what the cut risks and nothing has
    measured. Predict the 171-residue fragment with the design run's own predictor and
    compare it with 6ARU across the anchors. Step 11 tried with ESMFold and got about 5 Å for
