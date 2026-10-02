@@ -96,6 +96,7 @@ Writes:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -391,9 +392,13 @@ def main(argv=None):
         emit()
 
     # ---- Tables ----
+    # A deliberately broken run must not replace a real findings file. Step 10
+    # already guards against this, and this step did not until a break-check run
+    # overwrote its committed output.
+    write_files = not args.break_numbering
     DERIVED.mkdir(parents=True, exist_ok=True)
     csv_path = DERIVED / "12-anchor-clearance.csv"
-    with csv_path.open("w") as fh:
+    with (csv_path.open("w") if write_files else open(os.devnull, "w")) as fh:
         fh.write("structure,uniprot_pos,aa,anchor_set,touched_at_4_5a,"
                  "touched_by_uniprot_pos,contact_distance_a,nearest_outside_a,"
                  "nearest_outside_pos,residues_within_8a,residues_within_12a\n")
@@ -413,7 +418,10 @@ def main(argv=None):
                              f"{contact is not None},{touched_by},{distance},"
                              f"{near_d:.3f},{near_pos},"
                              f"{row[SHELLS[0]]},{row[SHELLS[1]]}\n")
-    emit(f"Wrote data/derived/{csv_path.name}")
+    if write_files:
+        emit(f"Wrote data/derived/{csv_path.name}")
+    else:
+        emit("No file written: this is a deliberately broken run.")
     emit()
 
     emit("=" * 72)
@@ -428,6 +436,9 @@ def main(argv=None):
              "holds")
         emit("its shape is a separate question and is still open.")
     emit("=" * 72)
+
+    if not write_files:
+        return 1 if failures else 0
 
     FINDINGS.mkdir(parents=True, exist_ok=True)
     (FINDINGS / "12-fragment-context.md").write_text(

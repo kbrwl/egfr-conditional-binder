@@ -109,6 +109,7 @@ Writes:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -646,9 +647,11 @@ def main(argv=None):
     emit("   marginal verdict is reported as marginal rather than as a failure.")
     emit()
 
+    # A deliberately broken run must not replace a real findings file.
+    write_files = BROKEN_RULE is None
     DERIVED.mkdir(parents=True, exist_ok=True)
     csv_path = DERIVED / "13-candidate-clashes.csv"
-    with csv_path.open("w") as fh:
+    with (csv_path.open("w") if write_files else open(os.devnull, "w")) as fh:
         fh.write("design,verdict,hard_overlaps,contacts,closest_a,"
                  "closest_uniprot_pos,domain3_contacts,superposition_rmsd_a,"
                  "matched_ca_atoms,reason\n")
@@ -661,8 +664,11 @@ def main(argv=None):
                      f"{result['closest_pos'] or ''},"
                      f"{result['domain3_contacts']},{rmsd},"
                      f"{result['matched_atoms']},{reason}\n")
-    emit(f"Wrote data/derived/{csv_path.name}"
-         + ("" if results else " (header only; no real candidates yet)"))
+    if write_files:
+        emit(f"Wrote data/derived/{csv_path.name}"
+             + ("" if results else " (header only; no real candidates yet)"))
+    else:
+        emit("No file written: this is a deliberately broken run.")
     emit()
 
     emit("=" * 72)
@@ -677,6 +683,9 @@ def main(argv=None):
              "and a")
         emit("target that is not 6ARU is refused rather than scored.")
     emit("=" * 72)
+
+    if not write_files:
+        return 1 if failures else 0
 
     FINDINGS.mkdir(parents=True, exist_ok=True)
     (FINDINGS / "13-full-receptor-clash.md").write_text(

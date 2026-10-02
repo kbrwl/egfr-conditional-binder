@@ -29,9 +29,6 @@ back into the intact receptor and measures the overlap.
    face does not stop one particular binder approaching at an angle that
    puts part of it inside domain II or domain IV.
 
-   NOTE: --break-rule hard-clash is in effect — stop counting atom overlaps below 2.5 A, so a binder buried in domain IV reads clear.
-   This run is expected to fail.
-
 1. The intact receptor: 6aru.pdb
 
    receptor chain A, 99.7% identity to human EGFR
@@ -52,7 +49,7 @@ back into the intact receptor and measures the overlap.
    | constructed candidate | what it is | expected | got | overlaps | RMSD |
    |---|---|---|---|---|---|
    | binder-on-open-face | a binder out from the anchor face, where a real one would sit | clear | clear | 0 | 0.00 A |
-   | binder-inside-domain-iv | a binder in the volume the rest of the receptor occupies | clashing | marginal | 0 | 0.00 A |
+   | binder-inside-domain-iv | a binder in the volume the rest of the receptor occupies | clashing | clashing | 55 | 0.00 A |
    | target-wrong-shape | a target whose shape is not 6ARU's, so the binder cannot be placed | not scored | not scored | 0 | 5.98 A |
    >  target-wrong-shape: the target does not lie on 6ARU: RMSD 5.98 A over 171 CA atoms, above the 2.5 A limit. The binder cannot be placed, so no clash figure would mean anything
    | binder-only-file | a binder-only file, which the run's output really does contain | not scored | not scored | 0 | — |
@@ -83,7 +80,8 @@ back into the intact receptor and measures the overlap.
 Wrote data/derived/13-candidate-clashes.csv (header only; no real candidates yet)
 
 ========================================================================
-RESULT: 1 CHECK(S) FAILED —
-  - binder-inside-domain-iv: expected clashing, got marginal
+RESULT: PASSED. Every constructed case came back as it had to: a binder
+on the open face reads clear, one inside domain IV reads clashing, and a
+target that is not 6ARU is refused rather than scored.
 ========================================================================
 ```
