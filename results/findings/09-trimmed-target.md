@@ -241,9 +241,10 @@ with the antibody already removed by analysis/02.
    chain-letter prefix. The residue numbers and the chain letter in it
    are computed and checked above by three independent routes.
 
-   Not confirmed. The binder length range and the two design counts are
-   defaults rather than decisions, because the molecule category is
-   still open and no per-design runtime has been measured. BindCraft2
+   Not confirmed. The binder length range is a decision (see below);
+   the two design counts are not, because no per-design runtime has
+   been measured. A pilot campaign of 150-200 trajectories is meant to
+   measure that before the main run is sized. BindCraft2
    also registers a filter metric called Target_Crop_Length, which
    suggests it may crop the target itself; whether that interacts with
    this trim, or renumbers the target in the output, has not been

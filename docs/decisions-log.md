@@ -17,7 +17,9 @@ Official page: proteinbase.com/competitions/anthropic-adaptyv-2026/challenges/eg
 Deadline 4 October 2026, 23:59 AoE (Anywhere on Earth: the deadline has not passed
 until it has passed in every time zone, which is UTC-12). **The organisers may have extended it to
 5 October;** that is inferred from a Slack announcement and unconfirmed by the competition
-page, so plan against 4 October (see Unverified).
+page, so plan against 4 October (see Unverified). The competition page is authoritative over
+Slack, which is our own standing precedence rule, so this stands even though an extension would
+be welcome. Summarised in the Blocked table in `CLAUDE.md`.
 
 Four further challenges follow weekly until 1 November 2026. Everything built
 here — the analysis scripts, the numbering guard, the findings format — should be
@@ -536,10 +538,31 @@ attachment nitrogen, in both structures:
 The bands are step 05's and rest on a reach of 20–30 Å from memory (Unverified).
 Distance to an attachment point is a necessary condition for a chain covering a site and
 not evidence of it. The controls reproduce step 03's N444 distance (1.44 Å) and step
-05's seven N444 distances to 0.1 Å. **Nothing was dropped and step 10's ranking was not
-changed:** the work order expected a few flagged anchors and all eight are flagged,
-including both target histidines, so demoting by band would reorder the whole campaign
-and favour the three anchors near the human-only chain. What to do is an Open question.
+05's seven N444 distances to 0.1 Å. **Nothing was dropped at this step:** the work order
+expected a few flagged anchors and all eight are flagged, including both target
+histidines, so demoting by band would reorder the whole campaign and favour the three
+anchors near the human-only chain — that trap is real and ranking by band was rejected
+for it.
+
+**Decided 2 October 2026: demote by which sequon is nearest, not by band — the demerit
+attaches to N361, not to N352.** The two sequons differ in kind rather than only in
+distance. N352 sits in both species, so a chain there costs absolute affinity in human
+and mouse alike and leaves the mouse-to-human K_D ratio untouched, which is what mouse
+cross-reactivity is scored on; N352 proximity is ignored for ranking. N361 exists in
+human and not in mouse, so shielding there moves that ratio directly, which is the one
+place a cheap ranking term buys something. The five anchors nearest N352 — E344, H358,
+D368, H370, E391 — carry no demerit; the three nearest N361 — E400, E421, E424 — do,
+demoted and never excluded, in the same shape as the existing E424 edge-reliance rule.
+Implemented in `analysis/10_charge_pair_filter.py` as `N361_SEQUON_RELIANT_POSITIONS`,
+with its own test case and ranking assertion. Both target histidines, H358 and H370,
+sit on the N352 side, so the half of the pairing rule needing an acidic binder residue
+is unaffected, and E424 already carried the edge-reliance demotion on the unrelated
+ground of its distance from the trimmed target's cut edge, so it is now demoted on two
+independent grounds rather than double-counted within one. This is a tie-break built on
+a plausible asymmetry, not a measured effect: nothing measures whether a chain at 16 to
+17 Å actually reaches E400, E421 or E424, and the 20–30 Å reach the bands themselves
+rest on is still Unverified. Explained in
+`docs/explainers/08-sugar-chains-near-the-anchors.md`, section 6.
 
 **The binder's C-terminus is kept out of the interface by a BindCraft2 setting.**
 `termini_accessible` points both chain ends away from the target (a loss term and a final
@@ -646,19 +669,15 @@ only against the tightest triad (H433/D458/D460 or E455/D458/D460, both 15.6 Å)
 and would carry three pairs rather than four — thinner margin on a switch that is
 already partial.
 
-**What to do about sugar chains near the H370 anchors.** All eight are within reach of an
-attachment point (Settled). A decision for the project owner, with what each option costs:
-
-1. *Disclose and proceed.* Costs nothing and removes nothing. The organisers recommended
-   domain III knowing the target is glycosylated, which is some reason to think the region
-   is usable.
-2. *Demote by band in step 10.* Prefers E400, E421 and E424 over the five anchors near N352,
-   at the price of leaning on the three anchors near the human-only chain at N361. It swaps
-   one risk for another.
-3. *Mark the footprint with coldspots,* residues BindCraft2 is told to keep clear. A
-   participant in the Slack suggested treating glycan sites that way. It discourages direct
-   contact with those residues and does not model a chain's sweep.
-4. *Design against human and mouse together* (next item).
+**What to do about sugar chains near the H370 anchors — decided, see Settled.** All eight
+are within reach of an attachment point. Decided 2 October 2026 to demote by which sequon is
+nearest (N361 side demoted, N352 side not) rather than by distance band, implemented in
+`analysis/10`. Disclosing the risk in the write-up happens regardless, since the ranking term
+is a design preference and the underlying uncertainty — whether a chain actually reaches these
+anchors — is not resolved by it. Coldspots and the human/mouse joint-design mode (next item)
+were considered and not taken for this purpose: coldspots discourage contact with the flagged
+residues themselves without modelling a chain's sweep beyond them, and the joint-design mode
+needs a mouse domain III structure we do not hold.
 
 For the old 415–466 epitope the equivalent entry was N444, 11.4 Å from D416 and bonded to a
 sugar; it stays as a tie-breaker between otherwise equal clusters if that fallback is ever
@@ -693,10 +712,19 @@ it would be a term that cannot be tested.
 **The exact mouse construct.** Residue range and vendor, asked twice in Slack on 1 October
 and not answered. Our check was against the sequence on the competition page.
 
-**Is cynomolgus monkey cross-reactivity in scope?** Amir's pre-launch message on 28 September
-said "mouse and cyno". The competition page, read on 2 October, names human and mouse only,
-and so does `docs/rules-reference.md`. If cyno is in scope, none of our conservation work has
-looked at it. One of the two sources is out of date.
+**Is cynomolgus monkey cross-reactivity in scope? — decided 2 October 2026: design for
+human and mouse only.** Amir's pre-launch message on 28 September said "mouse and cyno". The
+competition page, read on 2 October, names human and mouse only, and so does
+`docs/rules-reference.md`. The page is authoritative, and it names two species, so no GPU time
+or campaign slot is spent on cyno.
+
+One cheap check is worth doing once the campaign is sized and running, because it costs no card
+time: fetch the *Macaca fascicularis* EGFR sequence from UniProt, align it, and check whether the
+eight H370-cluster anchors and the sequons from step 14 are conserved. If they are, the methods
+write-up can say the epitope is conserved in cyno as well, at no cost; if not, the write-up can
+name which anchors would break. This is a write-up improvement, not a design input, so it is
+deferred until Next actions item 4 (generating candidates) is under way — not done now, because
+the campaign is not yet sized or running (Pipeline status).
 
 **What does novelty level 3 mean?** Simon Dürr said level 3 clears the gate (29 September and
 1 October) and on 1 October also described the requirement as the sequence being under 30%
@@ -1039,8 +1067,10 @@ designs with no binding at pH 7.4 together with high affinity at pH 6.5 rank hig
 two conditions, with the pH 6.5 end as high as it can be.
 
 The instrument adds a second reason. The target is flowed at a top concentration of
-1000 nM and K_D is reportable over roughly 0.1 nM to 10 µM. At a K_D of 10 µM only
-about 9% of the sites on the chip are occupied at 1000 nM, so a deliberately weak
+1000 nM and K_D is reportable over roughly 0.1 nM to 10 µM. Occupancy at that
+concentration is [analyte] / ([analyte] + K_D) by the definition of K_D, computed in
+`analysis/17_occupancy_table.py` (`results/findings/17-occupancy.md`): roughly 91% at
+a K_D of 100 nM, 50% at 1 µM, 25% at 3 µM and 9% at 10 µM. So a deliberately weak
 design can read as no detectable binding at pH 6.5 as well. That fails human binding
 instead of demonstrating pH selectivity.
 

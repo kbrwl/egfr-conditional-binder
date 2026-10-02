@@ -31,6 +31,17 @@ once the numbering changed under it.
 
 ---
 
+## Blocked — do not invent an answer
+
+| Question | Why it is blocked | What to do |
+|---|---|---|
+| Whether the deadline is 4 or 5 October 2026 | The competition page, read 2 October 2026, says 4 October 2026, 23:59 Anywhere on Earth (UTC-12), with no extension shown. A one-day extension was announced in the Proteinbase Slack on 30 September 2026, inferred rather than quoted, and has not appeared on the page. The competition page is authoritative over Slack (`docs/decisions-log.md`) | Work to 4 October 2026, 23:59 Anywhere on Earth. Treat 5 October as a possible bonus day and do not spend it in advance |
+
+Record anything newly blocked in the Open or Unverified section of
+`docs/decisions-log.md`, which this table summarises rather than replaces.
+
+---
+
 ## The affinity rule: maximise the pH gap
 
 Design for the largest achievable difference between binding at pH 6.5 and binding
@@ -48,9 +59,14 @@ roughly 0.1 nM to 10 µM.
 What follows for a design:
 
 - No binding at pH 7.4 is the best outcome and not the only qualifying one.
-- A binder made deliberately weak gives up the top of the ranking. At a K_D of
-  10 µM only about 9% of the sites on the chip are occupied at 1000 nM, so it can
-  read as no detectable binding at pH 6.5 as well, which fails human binding.
+- A binder made deliberately weak gives up the top of the ranking. The fraction
+  of binder occupied at the assay's top concentration is [analyte] divided by
+  itself plus K_D — by definition, since K_D is the concentration at which half
+  the sites are occupied. At 1000 nM that gives roughly 91% occupancy for a K_D
+  of 100 nM, falling to 9% at 10 µM (`analysis/17_occupancy_table.py`,
+  `results/findings/17-occupancy.md`), so a design weakened toward the far end
+  of the reportable range can read as no detectable binding at pH 6.5 as well,
+  which fails human binding.
 - Charge-pair count leads the ranking, because the charge pairs are what produce the
   switch. BindCraft2's own confidence ordering is a tie-break among candidates with
   equal pair counts, used to prefer the higher-confidence interface.

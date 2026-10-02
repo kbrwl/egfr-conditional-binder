@@ -224,35 +224,46 @@ moved into the shared module, confirmed by comparing every file it writes.
 
 ---
 
-## 6. What this changes, and what is left to decide
-
-It changes what we know and does not change the design on its own. Nothing was
-dropped and `analysis/10_charge_pair_filter.py` was not changed.
+## 6. What this changes, and what was decided
 
 The work order that asked for this check expected a few anchors to be flagged and
 asked for step 10's ranking to demote them, in the way it already demotes a design
-that leans on E424 near the cut edge. All eight are flagged, including both
-histidines. A demotion by band would reorder every candidate, and it would favour
-pairs on E400, E421 and E424, which sit near the human-only chain at N361. That
-swaps one risk for another. It is a judgement for the project owner and not a
-default to set quietly.
+that leans on E424 near the cut edge. All eight came back flagged, including both
+histidines, which is why demoting by band was rejected: ranking by distance to the
+nearest attachment point favours E400, E421 and E424, the three anchors nearest the
+human-only chain at N361, which trades one risk for another rather than removing one.
 
-Options that exist, with what each costs:
+**Decided 2 October 2026: demote by which sequon is nearest, not by band, and attach
+the demotion to N361 rather than to N352.** The two sequons differ in kind and not
+only in distance. N352 sits in both species, so a chain there costs absolute affinity
+in human and mouse alike and leaves the mouse-to-human K_D ratio — what mouse
+cross-reactivity is scored on — untouched. N361 exists in human and not in mouse, so
+whatever shielding it causes happens on one target and not the other, which moves
+that ratio directly. The five anchors nearest N352 (E344, H358, D368, H370, E391)
+carry no demerit; the three nearest N361 (E400, E421, E424) do, in the same shape as
+the existing E424 edge-reliance rule — a design relying on one of them is ranked
+below an equivalent design that does not, never excluded. Implemented in
+`analysis/10_charge_pair_filter.py` as `N361_SEQUON_RELIANT_POSITIONS`, with its own
+test case and ranking assertion alongside the E424 one; both target histidines, H358
+and H370, sit on the N352 side, so the half of the pairing rule needing an acidic
+binder residue is unaffected.
 
-1. **Disclose and proceed.** Record the risk in the write-up. The organisers
-   recommended domain III knowing the target is glycosylated, which is some reason to
-   think the region is usable. It costs nothing and removes nothing.
-2. **Demote by band in step 10.** Prefers E400, E421 and E424 over the five anchors
-   near N352, at the price of leaning on the three anchors near the human-only chain.
-3. **Mark the footprint with coldspots.** BindCraft2 accepts coldspots, residues to
-   keep clear, and a participant in the Proteinbase Slack suggested treating glycan
-   sites that way. A coldspot discourages contact with those residues themselves, and
-   a chain's sweep reaches beyond them, so this reduces direct contact and does not
-   model the chain.
-4. **Design against human and mouse together.** BindCraft2 has a multi-target mode for
-   one binder that engages two orthologs, with hotspots given separately in each
-   structure's numbering. It is aimed at the mouse objective and could also bear on N361.
-   It needs a structure of mouse domain III, which we do not hold.
+**This is a tie-break built on a plausible asymmetry, not a measured effect, and
+should be described that way wherever it is cited.** Distance to an attachment point
+is a necessary condition for shielding and not evidence of it: nothing here measures
+whether a chain at 16 to 17 Å actually reaches E400, E421 or E424, and the 20–30 Å
+reach the bands themselves rest on is still marked Unverified (section 7). E424
+already carried the edge-reliance demotion on an unrelated ground — its distance from
+the trimmed target's cut edge — so a design leaning on it is now demoted on two
+independent grounds, not double-counted within one.
+
+The other options considered and not taken: marking the footprint with coldspots,
+residues BindCraft2 is told to keep clear, which discourages direct contact but does
+not model a chain's sweep beyond it; and designing against human and mouse together
+in one BindCraft2 run, which needs a structure of mouse domain III that we do not
+hold and was judged untested rather than rejected (`docs/decisions-log.md`, Open).
+Disclosing the risk in the write-up happens regardless of the ranking term, since the
+term is a design preference and the underlying uncertainty is not resolved by it.
 
 ---
 

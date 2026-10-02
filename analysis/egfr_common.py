@@ -61,6 +61,12 @@ ANCHORS = {416: "D", 418: "H", 421: "E", 424: "E",
 FUNCTIONAL_ATOM = {"D": ["CG"], "E": ["CD"],
                    "H": ["CG", "ND1", "CD2", "CE1", "NE2"]}
 
+# The assay's top analyte concentration, in nanomolar (nM, a billionth of a
+# mole per litre, a measure of how much dissolved substance is present). The
+# organisers flow the target at this concentration at both pH values
+# (docs/competition-qa-log.md). Used by `occupancy_fraction` below.
+ASSAY_TOP_CONCENTRATION_NM = 1000.0
+
 # A complex N-linked glycan is a branched chain of sugars rather than a single
 # sugar. Only its innermost sugars sit still enough to appear in a crystal
 # structure, while the whole assembly is mobile and can sweep 20-30 angstroms from
@@ -140,6 +146,26 @@ BORDERLINE_MARGIN = 0.05
 
 # Sugar residue names, so they can be told apart from amino acids in a file.
 GLYCAN_NAMES = {"NAG", "NDG", "BMA", "MAN", "FUC", "GAL", "SIA", "BGC", "GLC"}
+
+
+def occupancy_fraction(kd_nm, analyte_nm=ASSAY_TOP_CONCENTRATION_NM):
+    """What share of the binder on the chip is occupied at equilibrium.
+
+    K_D, the dissociation constant, is by definition the analyte concentration
+    at which half of the binder's sites are occupied. The fraction occupied at
+    any analyte concentration follows from that definition alone, with no
+    further assumption: [analyte] / ([analyte] + K_D). At the analyte
+    concentration equal to K_D this gives exactly 0.5, which is what makes K_D
+    the concentration it is.
+
+    Both arguments are in the same units (nanomolar, nM, by convention here,
+    matching `ASSAY_TOP_CONCENTRATION_NM`), since only their ratio matters.
+    Used to turn a target K_D into what the instrument would actually see at
+    its top concentration, which is the practical floor a deliberately
+    weakened design runs into: see `docs/explainers/07-the-assay-and-what-it-
+    changes.md` and `results/findings/17-occupancy.md`.
+    """
+    return analyte_nm / (analyte_nm + kd_nm)
 
 
 def read_fasta(path):

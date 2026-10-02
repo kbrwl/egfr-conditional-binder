@@ -74,11 +74,23 @@ not to bind, so it shows what the instrument reads when nothing is happening;
 everything else is judged against it. If neither test holds, the organisers write
 down **no detectable binding**.
 
-The practical floor matters more than the ceiling here. A binder weaker than
-roughly 1 µM, flowed at a top concentration of 1000 nM, barely occupies anything
-and may give neither a fittable curve nor a 300% signal. At that point it reads
-as no detectable binding at pH 6.5 as well as at 7.4, so the submission fails
-human binding rather than demonstrating pH selectivity.
+The practical floor matters more than the ceiling here, and it is arithmetic. The
+fraction of binder on the chip that is occupied at any moment is the analyte
+concentration divided by itself plus the K_D. At the top concentration of 1000 nM
+that gives roughly 91% occupancy for a K_D of 100 nM, 50% for 1 µM, 25% for 3 µM
+and 9% for 10 µM. So a design in the high nanomolar range produces a strong,
+easily fitted signal, and one at the far end of the reportable range produces a
+small one. Where exactly the instrument stops returning a fittable curve depends
+on the size of the design and the density on the chip as well as the occupancy,
+and the organisers have not said. What the arithmetic does establish is the
+direction: deliberate weakening walks a design toward the end of the range where
+the signal is smallest, and far enough along it the design reads as no detectable
+binding at pH 6.5 as well as at pH 7.4, which fails human binding.
+
+The table is computed by `analysis/17_occupancy_table.py` rather than typed in by
+hand, since the same figures also appear in `CLAUDE.md` and `docs/decisions-log.md`
+and three hand-typed copies of one calculation is exactly the risk `CLAUDE.md` warns
+against. See `results/findings/17-occupancy.md`.
 
 ---
 

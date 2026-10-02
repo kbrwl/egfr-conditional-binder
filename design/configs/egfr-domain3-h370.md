@@ -65,12 +65,17 @@ and `docs/source/reference.md`:
 Computed and checked by `analysis/09`, by three independent routes: the residue
 numbers, the chain letter, and the amino acid each hotspot turns out to be.
 
-**Not confirmed.** `binder_lengths` of 60-100 is a
-default rather than a decision: the molecule category is still open in
-`docs/decisions-log.md`, and the minibinder band is 40-100 amino acids. The counts
-200 and 2000 are not derived from a measured runtime,
-because no per-design runtime for BindCraft2 has been measured by us or published
-by it.
+**`binder_lengths` of 30-100 is a decision, made
+2 October 2026** (`docs/decisions-log.md`): it spans the top of the microbinder
+band (under 40 amino acids) and the minibinder band (40-100), rather than
+minibinder alone, because shorter binders cost less per trajectory and selection
+rewards design diversity, which spreading across two size categories serves on
+its own. 30 is a judgement for where a folded interface is still plausible, not a
+measured floor. **Not confirmed.** The counts 200 and
+2000 are not derived from a measured runtime, because no per-design
+runtime for BindCraft2 has been measured by us or published by it; a pilot
+campaign of 150-200 trajectories is meant to measure the two rates that size the
+main run before it is launched.
 
 **One thing to check before the first real run.** BindCraft2 registers a filter
 metric named `Target_Crop_Length`, which suggests it may crop the target itself.

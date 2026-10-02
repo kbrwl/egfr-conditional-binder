@@ -32,9 +32,14 @@ human record P00533 in UniProt, the public sequence archive, unless a
 line says they are the structure file's own.
 
 Ranked by correct pairs first, because the pairs are what produce the pH
-switch. The pipeline's own i_pDAE (higher is better) is carried through and
-breaks ties among candidates whose pair terms are all equal. It never
-overrides a pair term and it does not discard a candidate.
+switch. Two demotions never discard a candidate but rank it below an
+equivalent one that does not need the same anchor: leaning on E424, near
+the trimmed target's cut edge, and leaning on E400, E421 or E424, the
+three anchors nearest the human-only N361 sugar-chain attachment point.
+The pipeline's own i_pDAE (higher is better) is carried through and
+breaks ties among candidates whose pair terms are all equal. Neither
+demotion nor i_pDAE overrides a pair term and neither discards a
+candidate.
 
 1. The test cases, built by hand and run every time
 
@@ -103,13 +108,28 @@ overrides a pair term and it does not discard a candidate.
      [PASS] verdict: below the pair target
 
    e424-pair-among-four
-     Four correct pairs, one of them on E424, which sits 6.6 angstroms from the cut in the trimmed target. Still meets the pair target, because the pair is correct, but only three of the four count as supported, so it ranks below the four-correct-pairs case that reaches the same count without E424.
+     Four correct pairs, one of them on E424, which sits 6.6 angstroms from the cut in the trimmed target. Still meets the pair target, because the pair is correct, but only three of the four count as supported, so it ranks below the four-correct-pairs case that reaches the same count without E424. E424 is also one of the three anchors nearest N361, so it is demoted on two independent grounds at once, not double-counted within either field.
      contacts: E344 faced by binder H, D368 faced by binder H, H370 faced by binder E, E424 faced by binder H
+     [PASS] anchor_group_supported_pairs: 3
      [PASS] correct_pairs: 4
      [PASS] edge_reliant_pairs: 1
      [PASS] forbidden_contacts: 0
      [PASS] his_his_pairs: 0
+     [PASS] n361_reliant_pairs: 1
      [PASS] supported_pairs: 3
+     [PASS] unresolved_pairs: 0
+     [PASS] verdict: meets the pair target
+
+   e421-pair-among-four
+     Four correct pairs, one of them on E421, one of the three anchors nearest N361, a sugar-chain attachment point that exists in human and not in mouse. Still meets the pair target, because the pair is correct, but only three of the four count toward the anchor-group-supported total, so it ranks below the four-correct-pairs case that reaches the same count using only anchors nearest the shared N352 sequon. E421 is not near the trimmed target's cut edge, so this isolates the new demotion from the E424 edge-reliance one above. Named to sort alphabetically before four-correct-pairs, so the ranking assertion below is a real test of the demotion term rather than a pass that would happen anyway from the name-based final tie-break.
+     contacts: E344 faced by binder H, D368 faced by binder H, H370 faced by binder E, E421 faced by binder H
+     [PASS] anchor_group_supported_pairs: 3
+     [PASS] correct_pairs: 4
+     [PASS] edge_reliant_pairs: 0
+     [PASS] forbidden_contacts: 0
+     [PASS] his_his_pairs: 0
+     [PASS] n361_reliant_pairs: 1
+     [PASS] supported_pairs: 4
      [PASS] unresolved_pairs: 0
      [PASS] verdict: meets the pair target
 
@@ -124,13 +144,16 @@ overrides a pair term and it does not discard a candidate.
    Ranking: four correct pairs without E424 against four with it
      [PASS] order: four-correct-pairs then e424-pair-among-four
 
+   Ranking: four correct pairs on the N352 side against four with one on the N361 side
+     [PASS] order: four-correct-pairs then e421-pair-among-four
+
    Ranking: three candidates level on every pair term, ordered by i_pDAE
      [PASS] order: tie-z-confident then tie-a-doubtful then tie-m-no-metric
 
    Ranking: more pairs but a worse i_pDAE against fewer pairs and a better one
      [PASS] order: pairs-more-doubtful then pairs-fewer-confident
 
-   8 cases, all passed.
+   9 cases, all passed.
 
 2. Reading a campaign folder, end to end
 

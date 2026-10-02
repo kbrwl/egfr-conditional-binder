@@ -41,10 +41,22 @@ COST, AT THE PRICES READ ON 1 OCTOBER 2026
 The $30 monthly free allowance is about 37 hours on an L4 or 14 on an A100 40GB.
 
 BindCraft2's documentation does not state a minimum VRAM, so the choice of card
-here is a judgement rather than a requirement. UNVERIFIED either way. A100 40GB
-is the default below because the folding step is the memory-hungry part and a
-failure from running out of memory costs more time than the price difference
-costs money. Drop to L4 with --gpu l4 once something is known to work.
+was a judgement rather than a requirement when nothing had run yet. It no longer
+is: the PD-L1 smoke run (2 October 2026) measured peak card memory at 17,950 MiB
+on an A100 40GB (40,960 MiB), sampled once a second across two workers sharing
+the card. That is an upper bound -- JAX can reserve more than it needs at
+start-up -- and it fits inside an L4's 24,564 MiB with about 6 GiB of headroom
+even without correcting for the over-estimate. So the default below is now L4,
+which is the larger lever: $30 of free credit buys roughly 37 hours on an L4
+against 14 on an A100 40GB (see the costs below), for a card that has not been
+shown to be too small. No speed ratio between the two cards has been measured,
+so the trajectory-rate figures from the A100 smoke run do not carry over
+directly; the pilot campaign (docs/decisions-log.md) is what measures that on
+this card. There is no runtime flag to pick the card -- `gpu=DEFAULT_GPU` is
+fixed at decoration time -- so switching back to A100-40GB if an out-of-memory
+failure appears means changing the constant below and redeploying; the earlier
+docstring's "drop to L4 with --gpu l4" described a flag that was never
+implemented, and is corrected here rather than repeated.
 
 HOW TO RUN
 ----------
@@ -73,8 +85,9 @@ APP_NAME = "bindcraft2-smoke"
 VOLUME_NAME = "bindcraft2-results"
 WEIGHTS_VOLUME = "bindcraft2-weights"
 
-# Default card. See the note above on why this rather than something cheaper.
-DEFAULT_GPU = "A100-40GB"
+# Default card. See the note above: switched from A100-40GB to L4 on 2 October
+# 2026 once the smoke run showed peak memory fits inside it.
+DEFAULT_GPU = "L4"
 
 # BindCraft2's own installer is run at image build time, so it is cached and not
 # repeated on every run. The repository is cloned to a fixed path because its

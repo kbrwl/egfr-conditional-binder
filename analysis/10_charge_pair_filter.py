@@ -156,6 +156,33 @@ FORBIDDEN_POSITIONS = {442}
 # survive contact with a shortlist, which is why this is a term in the ranking.
 EDGE_RELIANT_POSITIONS = {424}
 
+# Positions whose pairs are ranked as less supported for a reason distinct from
+# EDGE_RELIANT_POSITIONS above: mouse cross-reactivity rather than reliability of
+# the trimmed model. E400, E421 and E424 are the three anchors nearest N361, a
+# sugar-chain attachment point (a sequon) that exists in the human sequence and
+# not in the mouse one -- mouse has tyrosine there instead
+# (results/findings/14-glycan-sequons.md, docs/explainers/08-sugar-chains-near-
+# the-anchors.md). The other five anchors -- E344, H358, D368, H370, E391 -- sit
+# nearest N352, a sequon present in both species. A sugar chain at N352 costs
+# absolute affinity in both species alike and leaves the mouse-to-human K_D ratio
+# untouched, which is what mouse cross-reactivity is scored on; a chain at N361
+# does not, because whatever shielding it causes happens on the human target and
+# not the mouse one, moving that ratio directly.
+#
+# This is a tie-break built on a plausible asymmetry, not a measured effect, and
+# it should be described that way wherever it is cited. Distance to an
+# attachment point is a necessary condition for shielding and not evidence of
+# it: nothing measures whether a chain at 16-17 A actually reaches these three
+# anchors, and the 20-30 A reach the distance bands themselves rest on is marked
+# Unverified in `docs/decisions-log.md`. Both target histidines, H358 and H370,
+# are on the N352 side, so the half of the pairing rule that needs an acidic
+# residue on the binder is unaffected. A pair here still counts as correct for
+# the verdict; a design that reaches the same count without it ranks above one
+# that needs it, in the same shape as EDGE_RELIANT_POSITIONS. E424 sits in both
+# sets, so a design leaning on it is demoted on two independent grounds rather
+# than double-counted within one.
+N361_SEQUON_RELIANT_POSITIONS = {400, 421, 424}
+
 # How many correct pairs a candidate needs. The switch is partial rather than
 # all-or-nothing at pH 6.5 -- only a fraction of a histidine's copies carry the
 # extra charge at any moment -- so one pair produces a weak effect and three or
@@ -220,6 +247,13 @@ BREAKABLE_RULES = {
         "e424-pair-among-four",
         "a design leaning on E424, 6.6 angstroms from the cut in a trimmed "
         "model, would rank level with an equivalent design that does not"),
+    "sequon-reliance": (
+        "e421-pair-among-four",
+        "a design leaning on E400, E421 or E424 -- the three anchors nearest "
+        "the human-only N361 sequon -- would rank level with an equivalent "
+        "design that leans on the five anchors nearest the shared N352 "
+        "sequon instead, despite the asymmetric risk to the mouse "
+        "cross-reactivity ratio"),
     "pdae-tiebreak": (
         "pdae tie-break",
         "candidates with identical pair counts would be ordered by name, so the "
@@ -307,7 +341,9 @@ def unscored(name, path, reason, numbering_status, numbering_detail):
     return dict(
         design=name, path=path, pairs=[], verdict=VERDICT_UNSCORABLE,
         reasons=[reason], correct_pairs=0, correct_pairs_tight=0,
-        edge_reliant_pairs=0, supported_pairs=0, unresolved_pairs=0,
+        edge_reliant_pairs=0, supported_pairs=0,
+        n361_reliant_pairs=0, anchor_group_supported_pairs=0,
+        unresolved_pairs=0,
         his_his_pairs=0, forbidden_contacts=0, neutral_pairs=0, total_pairs=0,
         target_positions=[], anchors_paired=[],
         numbering_status=numbering_status, numbering_detail=numbering_detail)
@@ -398,6 +434,9 @@ def analyse_candidate(name, path, numbering, human, target_chain=None,
     edge_reliant = ([] if BROKEN_RULE == "edge-reliance"
                     else [r for r in correct
                           if r["target_pos"] in EDGE_RELIANT_POSITIONS])
+    n361_reliant = ([] if BROKEN_RULE == "sequon-reliance"
+                    else [r for r in correct
+                          if r["target_pos"] in N361_SEQUON_RELIANT_POSITIONS])
 
     reasons = []
     if his_his:
@@ -424,6 +463,8 @@ def analyse_candidate(name, path, numbering, human, target_chain=None,
         correct_pairs_tight=len(tight),
         edge_reliant_pairs=len(edge_reliant),
         supported_pairs=len(correct) - len(edge_reliant),
+        n361_reliant_pairs=len(n361_reliant),
+        anchor_group_supported_pairs=len(correct) - len(n361_reliant),
         unresolved_pairs=len(unresolved), his_his_pairs=len(his_his),
         forbidden_contacts=len(forbidden),
         neutral_pairs=sum(1 for r in rows if r["classification"] == "neutral"),
@@ -631,11 +672,37 @@ def test_cases(human):
                 "pair target, because the pair is correct, but only three of "
                 "the four count as supported, so it ranks below the "
                 "four-correct-pairs case that reaches the same count without "
-                "E424.",
+                "E424. E424 is also one of the three anchors nearest N361, so "
+                "it is demoted on two independent grounds at once, not "
+                "double-counted within either field.",
             contacts=[(344, "H", True), (368, "H", True),
                       (370, "E", True), (424, "H", True)],
             expect=dict(verdict=VERDICT_MEETS, correct_pairs=4,
                         edge_reliant_pairs=1, supported_pairs=3,
+                        n361_reliant_pairs=1, anchor_group_supported_pairs=3,
+                        his_his_pairs=0, forbidden_contacts=0,
+                        unresolved_pairs=0),
+        ),
+        dict(
+            name="e421-pair-among-four",
+            why="Four correct pairs, one of them on E421, one of the three "
+                "anchors nearest N361, a sugar-chain attachment point that "
+                "exists in human and not in mouse. Still meets the pair "
+                "target, because the pair is correct, but only three of the "
+                "four count toward the anchor-group-supported total, so it "
+                "ranks below the four-correct-pairs case that reaches the "
+                "same count using only anchors nearest the shared N352 "
+                "sequon. E421 is not near the trimmed target's cut edge, so "
+                "this isolates the new demotion from the E424 edge-reliance "
+                "one above. Named to sort alphabetically before "
+                "four-correct-pairs, so the ranking assertion below is a "
+                "real test of the demotion term rather than a pass that "
+                "would happen anyway from the name-based final tie-break.",
+            contacts=[(344, "H", True), (368, "H", True),
+                      (370, "E", True), (421, "H", True)],
+            expect=dict(verdict=VERDICT_MEETS, correct_pairs=4,
+                        edge_reliant_pairs=0, supported_pairs=4,
+                        n361_reliant_pairs=1, anchor_group_supported_pairs=3,
                         his_his_pairs=0, forbidden_contacts=0,
                         unresolved_pairs=0),
         ),
@@ -714,6 +781,18 @@ def run_tests(numbering, human, emit):
     if not ok:
         failures.append("e424 ranking: the design leaning on E424 ranked "
                         "level with or above the equivalent one that does not")
+    emit()
+
+    ordered = [s["design"] for s in rank(
+        [by_name["e421-pair-among-four"], by_name["four-correct-pairs"]])]
+    ok = ordered[0] == "four-correct-pairs"
+    emit("   Ranking: four correct pairs on the N352 side against four with "
+         "one on the N361 side")
+    emit(f"     [{'PASS' if ok else 'FAIL'}] order: {' then '.join(ordered)}")
+    if not ok:
+        failures.append("n361 ranking: the design leaning on E400/E421/E424 "
+                        "ranked level with or above the equivalent one "
+                        "leaning on the N352-side anchors instead")
     emit()
 
     # The tie-break on the pipeline's own i_pDAE. The names are chosen so that
@@ -924,9 +1003,14 @@ def main(argv=None):
     emit("line says they are the structure file's own.")
     emit()
     emit("Ranked by correct pairs first, because the pairs are what produce the pH")
-    emit("switch. The pipeline's own i_pDAE (higher is better) is carried through and")
-    emit("breaks ties among candidates whose pair terms are all equal. It never")
-    emit("overrides a pair term and it does not discard a candidate.")
+    emit("switch. Two demotions never discard a candidate but rank it below an")
+    emit("equivalent one that does not need the same anchor: leaning on E424, near")
+    emit("the trimmed target's cut edge, and leaning on E400, E421 or E424, the")
+    emit("three anchors nearest the human-only N361 sugar-chain attachment point.")
+    emit("The pipeline's own i_pDAE (higher is better) is carried through and")
+    emit("breaks ties among candidates whose pair terms are all equal. Neither")
+    emit("demotion nor i_pDAE overrides a pair term and neither discards a")
+    emit("candidate.")
     emit()
 
     human = common.human_sequence()
@@ -1305,16 +1389,21 @@ def report_results(summaries, emit):
     ranked = rank(summaries)
     emit("3b. The candidates, ranked by correct pairs")
     emit()
-    emit("   Ties are broken by how many of those pairs also have their charged")
-    emit("   groups within reach of each other, then by how many distinct target")
-    emit("   positions are paired, then by the pipeline's own i_pDAE with the more")
-    emit("   confident interface first.")
+    emit("   Ties are broken first by how many correct pairs rest on E424, near the")
+    emit("   trimmed target's cut edge, then by how many rest on E400, E421 or E424,")
+    emit("   the three anchors nearest the human-only N361 sugar-chain attachment")
+    emit("   point (docs/explainers/08-sugar-chains-near-the-anchors.md) -- both")
+    emit("   demotions, never exclusions. Remaining ties are broken by how many of")
+    emit("   those pairs also have their charged groups within reach of each other,")
+    emit("   then by how many distinct target positions are paired, then by the")
+    emit("   pipeline's own i_pDAE with the more confident interface first.")
     emit()
-    emit("   | rank | design | correct | of those, in reach | unresolved | "
-         "neutral | verdict |")
-    emit("   |---|---|---|---|---|---|---|")
+    emit("   | rank | design | correct | N361-side | of those, in reach | "
+         "unresolved | neutral | verdict |")
+    emit("   |---|---|---|---|---|---|---|---|")
     for index, summary in enumerate(ranked, start=1):
         emit(f"   | {index} | {summary['design']} | {summary['correct_pairs']} | "
+             f"{summary['n361_reliant_pairs']} | "
              f"{summary['correct_pairs_tight']} | "
              f"{summary['unresolved_pairs']} | {summary['neutral_pairs']} | "
              f"{summary['verdict']}"
@@ -1374,11 +1463,20 @@ def rank(summaries):
     """Order the candidates. The one place the ranking rule lives.
 
     By supported pairs, meaning correct pairs not resting on a position near the
-    trimmed target's cut edge (E424), then by all correct pairs, then by how many
-    of those have their charged groups within reach, then by how many distinct
-    target positions are involved. Candidates still level after all of those are
-    ordered by the pipeline's own `i_pDAE`, the higher reading first, and
-    last by name so the order is stable between runs.
+    trimmed target's cut edge (E424), then by anchor-group-supported pairs,
+    meaning correct pairs not resting on the three anchors nearest the
+    human-only N361 sequon (E400, E421, E424), then by all correct pairs, then
+    by how many of those have their charged groups within reach, then by how
+    many distinct target positions are involved. Candidates still level after
+    all of those are ordered by the pipeline's own `i_pDAE`, the higher
+    reading first, and last by name so the order is stable between runs.
+
+    The two demotion terms are independent and both never-reject: each only
+    distinguishes among candidates that are otherwise equal on the term before
+    it, and raw `correct_pairs` always gets a say once both are tied. Neither
+    can make a design with strictly more correct pairs lose to one with fewer.
+    E424 sits in both flagged sets, so a design leaning on it is demoted on
+    both grounds rather than having one demotion double-counted.
 
     The pair terms come first because the charge pairs are what produce the switch.
     `i_pDAE` is deliberately the last term before the name: it breaks ties among
@@ -1386,6 +1484,7 @@ def rank(summaries):
     """
     return sorted(summaries,
                   key=lambda s: (-s["supported_pairs"],
+                                 -s["anchor_group_supported_pairs"],
                                  -s["correct_pairs"],
                                  -s["correct_pairs_tight"],
                                  -len(s["anchors_paired"]),
@@ -1419,6 +1518,7 @@ def write_outputs(summaries, all_pairs, emit, parse_only, had_candidates):
                 metric_columns.append(column)
     summary_columns = ["design", "verdict", "reasons", "correct_pairs",
                        "supported_pairs", "edge_reliant_pairs",
+                       "anchor_group_supported_pairs", "n361_reliant_pairs",
                        "correct_pairs_in_reach", "unresolved_pairs",
                        "his_his_pairs", "forbidden_contacts", "neutral_pairs",
                        "total_pairs", "target_numbering",
@@ -1476,6 +1576,8 @@ def summary_row(summary):
         correct_pairs=summary["correct_pairs"],
         supported_pairs=summary["supported_pairs"],
         edge_reliant_pairs=summary["edge_reliant_pairs"],
+        anchor_group_supported_pairs=summary["anchor_group_supported_pairs"],
+        n361_reliant_pairs=summary["n361_reliant_pairs"],
         correct_pairs_in_reach=summary["correct_pairs_tight"],
         unresolved_pairs=summary["unresolved_pairs"],
         his_his_pairs=summary["his_his_pairs"],

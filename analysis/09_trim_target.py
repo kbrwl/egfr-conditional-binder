@@ -126,11 +126,18 @@ HOTSPOT_NOTE = CONFIG_DIR / f"{CAMPAIGN_NAME}.md"
 NOTAG_CONFIG = CONFIG_DIR / f"{CAMPAIGN_NAME}-notag.json"
 TAG_FASTA = ROOT / "data" / "sequences" / "his-tag-offtarget.fasta"
 
-# Binder length range handed to the design run, in amino acids. The molecule
-# category is still open in docs/decisions-log.md; 40-100 is the minibinder band
-# and the anchor cluster spans 24.3 angstroms, which is what points there. This
-# is a default rather than a decision and the companion note says so.
-BINDER_LENGTHS = (60, 100)
+# Binder length range handed to the design run, in amino acids. Decided
+# 2 October 2026 (docs/decisions-log.md): spread across the top of the
+# microbinder band (under 40 aa) and the minibinder band (40-100 aa), rather
+# than minibinder alone, because run time and card cost scale with the size of
+# the whole complex and shorter binders are cheaper per trajectory, and because
+# selection rewards design diversity, which a spread across two size categories
+# serves on its own. 30 is a judgement for where a designed domain can still
+# plausibly hold a folded interface, not a measured floor -- BindCraft2 itself
+# places no limit there, and the competition's own floor is 10 residues for the
+# whole submitted chain. The anchor cluster spans 24.3 angstroms (step 08),
+# which is consistent with binders at the small end of this range reaching it.
+BINDER_LENGTHS = (30, 100)
 
 # How many accepted designs to stop at, and the cap on attempts. Neither is
 # derived from a measured runtime, because no per-design runtime for this
@@ -741,9 +748,10 @@ def main(argv=None):
     emit("   chain-letter prefix. The residue numbers and the chain letter in it")
     emit("   are computed and checked above by three independent routes.")
     emit()
-    emit("   Not confirmed. The binder length range and the two design counts are")
-    emit("   defaults rather than decisions, because the molecule category is")
-    emit("   still open and no per-design runtime has been measured. BindCraft2")
+    emit("   Not confirmed. The binder length range is a decision (see below);")
+    emit("   the two design counts are not, because no per-design runtime has")
+    emit("   been measured. A pilot campaign of 150-200 trajectories is meant to")
+    emit("   measure that before the main run is sized. BindCraft2")
     emit("   also registers a filter metric called Target_Crop_Length, which")
     emit("   suggests it may crop the target itself; whether that interacts with")
     emit("   this trim, or renumbers the target in the output, has not been")
@@ -1078,12 +1086,17 @@ and `docs/source/reference.md`:
 Computed and checked by `analysis/09`, by three independent routes: the residue
 numbers, the chain letter, and the amino acid each hotspot turns out to be.
 
-**Not confirmed.** `binder_lengths` of {BINDER_LENGTHS[0]}-{BINDER_LENGTHS[1]} is a
-default rather than a decision: the molecule category is still open in
-`docs/decisions-log.md`, and the minibinder band is 40-100 amino acids. The counts
-{FINAL_DESIGNS} and {MAX_TRAJECTORIES} are not derived from a measured runtime,
-because no per-design runtime for BindCraft2 has been measured by us or published
-by it.
+**`binder_lengths` of {BINDER_LENGTHS[0]}-{BINDER_LENGTHS[1]} is a decision, made
+2 October 2026** (`docs/decisions-log.md`): it spans the top of the microbinder
+band (under 40 amino acids) and the minibinder band (40-100), rather than
+minibinder alone, because shorter binders cost less per trajectory and selection
+rewards design diversity, which spreading across two size categories serves on
+its own. 30 is a judgement for where a folded interface is still plausible, not a
+measured floor. **Not confirmed.** The counts {FINAL_DESIGNS} and
+{MAX_TRAJECTORIES} are not derived from a measured runtime, because no per-design
+runtime for BindCraft2 has been measured by us or published by it; a pilot
+campaign of 150-200 trajectories is meant to measure the two rates that size the
+main run before it is launched.
 
 **One thing to check before the first real run.** BindCraft2 registers a filter
 metric named `Target_Crop_Length`, which suggests it may crop the target itself.
