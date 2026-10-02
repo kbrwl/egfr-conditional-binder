@@ -1,0 +1,9 @@
+uniprot_pos,aa,ca_moved_a,compared_atom,atom_moved_a,tip_resolved_in_both
+344,E,1.786,CB,2.136,False
+358,H,0.371,imidazole centroid,0.324,True
+368,D,0.456,CG,0.702,True
+370,H,0.263,imidazole centroid,0.669,True
+391,E,0.304,CD,1.188,True
+400,E,0.638,CD,0.969,True
+421,E,0.373,CD,0.797,True
+424,E,0.602,CD,0.417,True
