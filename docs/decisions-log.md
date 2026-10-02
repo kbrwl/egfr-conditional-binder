@@ -1313,6 +1313,45 @@ target and the campaign file BindCraft2 receives, and
 step is now the only blocked step, and the first successful run has somewhere to
 send its output rather than needing a filter written afterwards.
 
+*The PD-L1 smoke run was found still live, checked 2 October 2026, after this
+section was last written.* `./.venv/bin/modal app list` shows every other app from
+that day's work as `stopped`, except `ap-zIp8z3RQdOrgZU0CNvEXIW` (`bindcraft2-smoke`),
+state `ephemeral (detached)`, 1 task, created 14:16 IST, no stop time recorded. This
+is the same run already described above, launched detached at 14:17 IST with a
+four-hour ceiling (`timeout=60*60*4` on the `smoke` function); only a partial check
+at 14:46 IST (2 of 7 trajectories accepted, 29 minutes in) was ever captured, and
+nobody went back for its final `smoke-report.json`. Whether it is still progressing
+or hung, and its actual run time and cost, is being checked now via its logs.
+**No EGFR campaign is running or has ever been launched; this is the unrelated
+PD-L1 example only.**
+
+*It finished on its own at 15:49:34 IST, before the stop command landed.* Full
+report, superseding the 14:46 partial check: card NVIDIA A100-SXM4-40GB, peak
+memory 18,218 MiB (confirms the L4 switch above — 24 GB is comfortably enough),
+whole run 5540 s (~92 minutes) for 30 trajectories attempted, 184.7 s/trajectory,
+81 redesign candidates, **10 of 30 trajectories accepted (33%)**, 2 terminated at
+the anneal phase. Complex sizes ranged 127-434 residues. Cost at the A100 rate:
+roughly $3.23, well inside the $8.40 ceiling the run was given.
+
+**A bug found in the smoke script's own final verdict, not in the pipeline.**
+Its printed conclusion said the target "did NOT come back at the input's
+numbers" and warned not to start an EGFR campaign — wrong. Of 95 `.cif` files
+the numbering check inspected, 91 (every real designed complex, across
+trajectories, refolding and the final ranking) read "identical: all 115
+residues present at the input's own numbers". The other 4 — `scaffolds/ARP.cif`,
+`Fab.cif`, `VHH.cif`, `scFv.cif` — are BindCraft2's own internal template
+structures for other binder modalities (an alternative repeat protein, an
+antibody Fab, a nanobody, a single-chain antibody fragment), not anything this
+run designed. `smoke()`'s output-copy step globs every `*.cif` under the whole
+BindCraft2 install directory with no further filter, so it swept these up along
+with the real output, and the numbering check dutifully reported that a
+nanobody scaffold does not resemble PD-L1 — true, and meaningless. The real
+finding stands uncontaminated: **the target does come back at the input's own
+numbers**, for every actual designed complex. Fix before writing the real
+EGFR campaign runner: restrict the file copy, or at least the numbering check's
+input list, to the run's own output directories (`1_Trajectories/`,
+`2_Refolded/`, `3_Ranked/`) rather than globbing the whole install tree.
+
 ---
 
 ## Commitments made in advance

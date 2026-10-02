@@ -383,8 +383,16 @@ def smoke(target: str = "examples/pdl1.json"):
     for name in sorted(set(produced)):
         print(f"  {name}")
 
+    # Restricted to BindCraft2's own output subdirectories. The broad copy above
+    # also pulls in template scaffold structures BindCraft2 ships for other
+    # binder modalities (scaffolds/ARP.cif, Fab.cif, VHH.cif, scFv.cif, found by
+    # the 2 October smoke run) -- unrelated structures that correctly fail the
+    # numbering check below and would otherwise make its verdict say the target
+    # "did not come back" when every real designed complex did.
+    OUTPUT_DIRS = ("1_Trajectories", "2_Refolded", "3_Ranked")
     complexes = [p for p in out.rglob("*.cif")
-                 if not p.stem.endswith("_monomer")]
+                 if not p.stem.endswith("_monomer")
+                 and any(d in p.parts for d in OUTPUT_DIRS)]
     print(f"\nDesigned complexes (what analysis/10 reads): {len(complexes)}")
     if not complexes:
         print("  NONE. Without these the charge-pair filter has nothing to run")
