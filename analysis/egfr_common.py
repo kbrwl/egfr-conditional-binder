@@ -47,10 +47,17 @@ ECD_START, ECD_END = 25, 645    # the part of EGFR outside the cell
 D3_START, D3_END = 310, 480      # domain III, our working definition
 EPI_START, EPI_END = 415, 466    # the candidate epitope, the patch we aim at
 
-# The eight positions we could build a pH switch against, with the amino acid each
-# one is. D and E are acidic and always carry a negative charge, so we put a
-# histidine opposite them. H is histidine, which changes charge with pH, so we put
-# an acidic residue opposite it.
+# The EIGHT ANCHORS OF THE 415-466 EPITOPE -- the recorded FALLBACK, superseded as
+# the primary target by step 08's H370 cluster (344, 358, 368, 370, 391, 400, 421,
+# 424, read back via load_primary_cluster() below). Kept for the fallback steps
+# (01, 03-06) and the old-anchor control in step 14, which compares against this
+# set to prove its code reproduces earlier committed results. A reader who finds
+# this dict without this comment, alongside CLAUDE.md's current design rule, would
+# take it for the live anchor set -- it is not.
+#
+# The amino acid each position is: D and E are acidic and always carry a negative
+# charge, so the binder gets a histidine opposite them. H is histidine, which
+# changes charge with pH, so the binder gets an acidic residue opposite it.
 ANCHORS = {416: "D", 418: "H", 421: "E", 424: "E",
            433: "H", 455: "E", 458: "D", 460: "D"}
 

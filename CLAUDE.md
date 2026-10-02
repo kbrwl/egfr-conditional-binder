@@ -16,18 +16,105 @@ Design protein binders against the part of human EGFR that sits outside the cell
 for Challenge 1 of the Anthropic x Adaptyv Protein Design Competition. There are
 three objectives, listed here in the order of importance the organisers give them:
 
-1. pH selectivity: bind human EGFR at pH 6.5, with no detectable binding at pH 7.4.
-2. Mouse cross-reactivity: the same sequence must also bind mouse EGFR.
-3. Affinity against human EGFR.
+1. **pH selectivity**: bind human EGFR at pH 6.5, with no detectable binding at
+   pH 7.4.
+2. **Mouse cross-reactivity**: the same sequence must also bind mouse EGFR.
+3. **Human binding**: bind human EGFR at all, with affinity as the measure.
 
 The order matters when the objectives pull against each other, and the organisers
 have said so directly: a weak but clearly pH-sensitive binder may outrank a
 high-affinity binder that is not pH-sensitive.
 
-Refer to the objectives by name rather than by number. The source we originally
+**Refer to the objectives by name rather than by number.** The source we originally
 worked from numbered them the other way round, and a sentence in the decisions log
 that said "objectives 2 and 3" ended up meaning the opposite of what was intended
-once the numbering changed under it.
+once the numbering changed under it. The decisions log and this file also order them
+differently — the log lists them as a design task, this file in the organisers' order
+of importance — so a number alone is ambiguous even now.
+
+**The three names are "pH selectivity", "mouse cross-reactivity" and "human
+binding".** Use those exact words everywhere: in prose, in code comments, in
+docstrings, in terminal output and in findings files. "Affinity" names the
+measurement, not the objective, so "fails human binding" rather than "fails
+affinity". `docs/rules-reference.md` quotes the organisers' own list, which still
+says "Affinity against human EGFR" there because that is a record of their wording,
+not ours.
+
+---
+
+## Read this first
+
+You have read this file. **You have not read `docs/`.** Nothing in `docs/`,
+`results/findings/` or `data/derived/` is in your context unless you open it.
+
+**Always, at the start of every session:** open `docs/decisions-log.md`. It records
+where the project stands, in six sections — Settled, Open, Unverified, Resolved,
+Ruled out and Next actions — and it is authoritative for all of them. If a decision
+is not written there, it has not been made. Do not infer one.
+
+**Then, before the specific kinds of work below, open the file named:**
+
+| If you are about to… | Open first |
+|---|---|
+| Say anything about what the competition requires — the assay, the deadline, tags, buffers, novelty, submission format, how designs are selected | `docs/rules-reference.md`, then `docs/competition-qa-log.md` |
+| Set, change or defend an affinity target, or decide how candidates are ranked | "The affinity rule" below, then `docs/explainers/07-the-assay-and-what-it-changes.md` |
+| Write or change any script in `analysis/` | `analysis/egfr_common.py`, then "Anything computed twice must be computed once" below |
+| Quote any number in prose, a comment or terminal output | the file in `results/findings/` that produced it |
+| Write or change an explainer | "`docs/explainers/`" below, then `docs/glossary.md` |
+| Touch the trim, the fragment handed to the design run, or the campaign configuration | `results/findings/09-trimmed-target.md` and `11-trim-boundary.md`, then `docs/explainers/06-checking-the-trimmed-target.md` |
+| Touch the charge-pair filter, the rejection rules or the shortlist ordering | "The design rule" below, then the header comments in `analysis/10_charge_pair_filter.py` and `docs/explainers/05-input-and-filter.md` |
+| Change the anchor set, or weigh a risk attached to one anchor | "The design rule" below, then `results/findings/14-glycan-sequons.md` and `docs/explainers/08-sugar-chains-near-the-anchors.md` |
+| Change how the His tag is avoided, in the design loop or in the audit | the tag constants in `analysis/egfr_common.py`, then `analysis/15_histag_counterscreen.py` |
+| Spend anything on Modal, or start any campaign against EGFR | Next actions in `docs/decisions-log.md`, then "What this does not settle" in `docs/explainers/07-the-assay-and-what-it-changes.md` |
+| Install a file from `temp_docs_from_claude_chat/` | "Documents handed over from Claude chat" below |
+| State what the organisers have said about anything | `docs/competition-qa-log.md`. Never from memory, never from this file |
+| Write or change anything in `submission/` | "Submission hygiene" below |
+| Wonder whether something has already been settled | `docs/decisions-log.md`, then ask Kunal |
+
+**These are not suggestions.** Working from this file alone will produce output that
+contradicts decisions you cannot see, and has already done so once. If a task
+touches a row above and you have not opened that file in this session, open it
+before writing anything.
+
+---
+
+## Where things live
+
+| File or directory | Contains | Status |
+|---|---|---|
+| `docs/decisions-log.md` | Where the project stands. Settled, Open, Unverified, Resolved, Ruled out, Next actions | **Authoritative** |
+| `docs/rules-reference.md` | Official competition facts, from the competition page and FAQ | **Binding** |
+| `docs/competition-qa-log.md` | What the organisers have said in the Proteinbase Slack, with speaker and date. Grows across all five challenges | **Binding**, superseded by the competition page where they disagree |
+| `docs/glossary.md` | Every term any explainer names. One entry per term, added in the same commit as the explainer that introduces it | |
+| `docs/explainers/NN-*.md` | Plain-language walkthroughs, one per phase, numbered in the order the work happened | |
+| `results/findings/NN-*.md` | Computed output of the matching `analysis/` script | **Never hand-edited** |
+| `data/derived/*.csv` | Computed tables | **Never hand-edited** |
+| `analysis/egfr_common.py` | Anything two scripts both need: the numbering class, the anchor set, the contact calculation | |
+| `analysis/NN_*.py` | The analysis steps, numbered in the order they run | |
+| `design/configs/` | Campaign files for the design run, generated by `analysis/09` | Generated |
+| `design/modal/` | The Modal runner and its instrumentation | |
+| `submission/` | The submission CSV and the methods write-up | |
+| `explorer/` | Interactive explainers. Held to the explainer rules below | |
+| `temp_docs_from_claude_chat/` | Staging only. Nothing stays here | Gitignored |
+
+Where two of these disagree: a findings file beats a document, the competition page
+beats `docs/competition-qa-log.md`, and `docs/decisions-log.md` beats everything
+else about what we have decided.
+
+---
+
+## These come back to Kunal, in chat
+
+Do not decide them in the repository. Flag and stop.
+
+- Changing the target epitope or the anchor set
+- Changing the affinity direction, the pairing rule, or any rejection criterion
+- Starting a real EGFR campaign on Modal, as opposed to a smoke run
+- Anything that contradicts an entry under Commitments in `docs/decisions-log.md`
+- What goes into the submission, how many designs, and in what order
+- Posting anything in the Proteinbase Slack. **The workspace is read-only for us**
+- Reading another entrant's work. There is a standing decision not to, recorded
+  under Commitments, and it is not yours to revisit
 
 ---
 
@@ -35,6 +122,9 @@ once the numbering changed under it.
 
 | Question | Why it is blocked | What to do |
 |---|---|---|
+| The exact mouse EGFR construct used in the screen — residue range, vendor, catalogue number | Asked twice in the Proteinbase Slack on 1 October 2026 and never answered | Use the sequence from the competition page, and say in any document that the screening construct is unconfirmed |
+| Whether cynomolgus monkey cross-reactivity is in scope | The pre-launch announcement said mouse and cyno; the recorded objectives say human and mouse | Check the competition page. Do not assume either way. Decided 2 October 2026 to design for human and mouse only; see Settled in `docs/decisions-log.md` |
+| What novelty level 3 requires exactly | Adaptyv stated it twice in terms that may not match — "level 3 of 4" and "under 30% similar to anything existing" | Read `adaptyvbio.com/blog/novelty` before relying on either |
 | Whether the deadline is 4 or 5 October 2026 | The competition page, read 2 October 2026, says 4 October 2026, 23:59 Anywhere on Earth (UTC-12), with no extension shown. A one-day extension was announced in the Proteinbase Slack on 30 September 2026, inferred rather than quoted, and has not appeared on the page. The competition page is authoritative over Slack (`docs/decisions-log.md`) | Work to 4 October 2026, 23:59 Anywhere on Earth. Treat 5 October as a possible bonus day and do not spend it in advance |
 
 Record anything newly blocked in the Open or Unverified section of
@@ -338,7 +428,8 @@ the end, from settled conclusions.
 
 Working documents are committed as they go, because their form matches what they are:
 `CLAUDE.md`, `docs/decisions-log.md`, `docs/glossary.md`, `docs/rules-reference.md`,
-the explainers, and everything in `results/findings/` and `data/derived/`.
+`docs/competition-qa-log.md`, the explainers, and everything in `results/findings/`
+and `data/derived/`.
 
 Drafts of the not-yet-committed kind live on disk and are listed in `.gitignore`,
 which currently covers `README.draft.md` and `docs/competition-brief.md`. The tracked
@@ -421,15 +512,54 @@ below, because the pH at which it is half charged sits around 6.0 to 6.5.
 Both arrangements switch on in the same direction as pH falls, so they reinforce
 each other.
 
-Reject any candidate with a histidine on the binder facing target H418 or H433. That
-pair switches off as pH drops, because both become positive and repel, and it can
-cancel out a correctly built pair elsewhere. Reject such candidates rather than
-scoring them.
+**The current anchor set is the eight residues of the H370 patch:** E344, H358,
+D368, H370, E391, E400, E421 and E424. Six are acidic and two — H358 and H370 — are
+the target histidines the second row of the table applies to. These replaced the
+415–466 set at step 08; that older set, whose target histidines were H418 and H433,
+is the recorded fallback and is not what anything is currently aimed at.
 
-Also reject any candidate that contacts position 442. It is the only difference
-between human and mouse inside our epitope, and it is in cetuximab's contact set, so
-touching it risks species-specific behaviour at the one position where the species
-differ.
+**Reject any candidate with a histidine on the binder facing any histidine on the
+target.** That pair switches off as pH drops, because both become positive and
+repel, and it can cancel out a correctly built pair elsewhere. The rule applies to
+every target histidine the binder faces, including ones outside the anchor set,
+because the physical problem is identical. `analysis/10_charge_pair_filter.py`
+implements it that way and has a test case against H418 to prove it. Reject such
+candidates rather than scoring them.
+
+**Also reject any candidate that contacts position 442.** S442G is the single
+human/mouse difference inside the original 415–466 epitope and it sits in
+cetuximab's measured contact set, so touching it risks species-specific behaviour at
+the one position where the species differ. The rule stands whichever epitope is
+current.
+
+**The target carries a C-terminal histidine tag in the assay, and it will probably
+not be cleaved.** An acidic pocket built to hold a target histidine will hold the
+histidines of a tag just as readily, and a design that binds the tag looks
+pH-selective while binding anything His-tagged. This is handled twice over: the tag
+is given to BindCraft2 as an off-target inside the design loop
+(`HIS_TAG_SEQUENCE`, `HIS_TAG_WEIGHT` and `DETARGET_IPTM_CEILING` in
+`analysis/egfr_common.py`), and surviving candidates are audited afterwards by
+`analysis/15_histag_counterscreen.py`. Both the weight and the ceiling are starting
+values rather than tuned ones. Background: explainer 07.
+
+**The binder's own C-terminus is kept out of the interface** by BindCraft2's
+`termini_accessible` setting, because that end carries the tail the design is
+immobilised by. It is set in both campaign files written by `analysis/09`.
+
+**Every anchor sits within reach of a sugar-chain attachment point, and the demotion
+this gets in the ranking depends on which one.** `analysis/14_glycan_sequons.py`
+found two attachment points: N352, 10.4–14.3 Å from the five anchors E344, H358,
+D368, H370 and E391, present in both species; and N361, 16.2–16.9 Å from E400, E421
+and E424, a sequon in human and not in mouse (mouse has tyrosine there). Decided
+2 October 2026: a chain at N352 costs both species alike and is not demoted, because
+it leaves the mouse-to-human K_D ratio untouched; a chain at N361 is demoted,
+because whatever shielding it causes happens on the human target only, which moves
+that ratio directly. `analysis/10_charge_pair_filter.py` demotes — never excludes —
+a design leaning on E400, E421 or E424, the same shape as the pre-existing
+edge-reliance demotion of E424 near the trimmed target's cut edge, and the two stack
+for E424 itself. This is a tie-break on a plausible asymmetry, not a measured
+effect: nothing measures whether a chain at this distance actually reaches these
+three anchors. Explainer: `docs/explainers/08-sugar-chains-near-the-anchors.md`.
 
 Two limits to respect. The switch is partial rather than complete at pH 6.5, so
 stack three or four pairs instead of relying on one. And the pH at which a histidine
