@@ -222,8 +222,9 @@ first half of the work and the second half is ours:
   acidic anchors, aspartic or glutamic acid opposite H358 and H370
 - reject any candidate with a histidine on the binder facing a histidine on the
   target
-- then deliberately weaken the survivors, because the requirement is no *detectable*
-  binding at pH 7.4 and BindCraft2's built-in objective pushes the opposite way
+- then rank the survivors by how many correct pairs each carries, using
+  BindCraft2's own confidence ordering only as a tie-break (the earlier plan to
+  weaken them was withdrawn; see `docs/explainers/07-the-assay-and-what-it-changes.md`)
 
 That filtering and rescoring step is where the submission is decided. It needs
 candidates to operate on, which is why the pipeline is the blocker rather than a

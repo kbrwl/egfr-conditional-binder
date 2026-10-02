@@ -31,32 +31,35 @@ once the numbering changed under it.
 
 ---
 
-## The affinity rule: aim for weak binding
+## The affinity rule: maximise the pH gap
 
-This is the easiest thing in the project to lose track of, and losing it would spoil
-the submission without anything looking wrong. It contradicts what every standard
-design tool does by default, so it needs restating at each stage.
+Design for the largest achievable difference between binding at pH 6.5 and binding
+at pH 7.4, with affinity at pH 6.5 as high as the switch allows. This replaces an
+earlier rule of holding affinity down deliberately; the withdrawal is recorded in
+`docs/decisions-log.md` under Ruled out and explained in
+`docs/explainers/07-the-assay-and-what-it-changes.md`.
 
-The pH-selectivity requirement is a threshold rather than a ratio. "No detectable
-binding at pH 7.4" means the pH 7.4 state has to fall below what the measuring
-instrument can see at all. It is not a statement about the gap between two numbers.
+What the organisers said, on 30 September (`docs/competition-qa-log.md`): designs
+with a large K_D shift qualify even if they bind at both pH values, and designs with
+no binding at pH 7.4 together with high affinity at pH 6.5 rank higher. The
+instrument flows the target at a top concentration of 1000 nM and reports K_D over
+roughly 0.1 nM to 10 µM.
 
-- A binder at 10 nM at pH 6.5 and 200 nM at pH 7.4 is twentyfold selective and
-  fails, because 200 nM is easily detected.
-- A binder at 2 µM at pH 6.5 with nothing measurable at pH 7.4 passes, even though
-  it is a hundred times weaker and its ratio looks worse.
+What follows for a design:
 
-Standard design pipelines maximise binding strength by default, which produces
-exactly the failing case. Do not accept a pipeline's built-in objective. Aim for a
-baseline weak enough that the pH 7.4 state disappears under the detection floor,
-then build the largest switch achievable on top of that.
+- No binding at pH 7.4 is the best outcome and not the only qualifying one.
+- A binder made deliberately weak gives up the top of the ranking. At a K_D of
+  10 µM only about 9% of the sites on the chip are occupied at 1000 nM, so it can
+  read as no detectable binding at pH 6.5 as well, which fails human binding.
+- Charge-pair count leads the ranking, because the charge pairs are what produce the
+  switch. BindCraft2's own confidence ordering is a tie-break among candidates with
+  equal pair counts, used to prefer the higher-confidence interface.
+- A change that raises binding at pH 7.4 as much as at pH 6.5 has not widened the
+  gap. Say so when that happens.
 
-If a change makes a design bind more strongly at both pH values, it has probably
-made the submission worse. Say so when that happens.
-
-We also do not know where the detection floor sits, because the organisers have not
-said which assay they use. The margin we aim for is a judgement rather than a
-calculation, and should be described that way.
+We do not know how the organisers score a "large" K_D shift, as a ratio or as an
+absolute difference, or where they draw the line. The design target above is a
+judgement and should be described as one.
 
 ---
 
@@ -111,18 +114,19 @@ figure, drop a qualification, or leave out an inconvenient limit. If plain langu
 seems to require dropping a caveat, the sentence needs restructuring, not trimming.
 
 **Avoid the "X, not Y" contrast construction** unless it prevents a specific
-expensive mistake. It earns its place in "a threshold rather than a ratio", because
-that distinction stops a particular error that would cost the submission. Almost
-everywhere else it is only emphasis dressed as precision.
+expensive mistake. It earns its place when it separates two things that get
+confused at a cost, such as a binder that is weak and a binder that is selective:
+the first can read as no detectable binding at either pH. Almost everywhere else it
+is only emphasis dressed as precision.
 
 **Avoid dramatisation.** State what happened and what follows from it. In
 particular, make no claims about what other people usually do, what most teams skip,
 what standard practice overlooks, or how consequential something is. We have no
 basis for claims about other people's practice, and reaching for one is a reliable
 sign that the sentence is decoration rather than content. (The one exception already
-in this file is specific and checkable: design tools maximise affinity by default,
-which is a statement about a tool's objective function, not about the people using
-it.)
+in this file is specific and checkable: BindCraft2 ranks its own output by an
+interface-confidence score, which is a statement about a tool's objective function,
+not about the people using it.)
 
 **Bold and capitals only for warnings that genuinely must not be missed.** If most
 paragraphs carry emphasis, none of it registers.

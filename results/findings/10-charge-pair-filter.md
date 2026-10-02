@@ -13,14 +13,12 @@ against. UniProt is the public sequence archive whose numbering this
 project uses. mmCIF is the structure file format the design pipeline
 writes.
 
-**Ranked by correct pairs, deliberately not by binding strength.** The
-requirement is no *detectable* binding at pH 7.4, which is a threshold
-rather than a ratio, so a weak binder that clearly switches beats a
-strong one. The design pipeline maximises interface confidence by
-default and ranks its own output by `i_pDAE`; that ordering is replaced
-here rather than adjusted. The pipeline's own numbers are carried
-through untouched so they can be used to pick *downward* among the
-candidates that already switch.
+**Ranked by correct pairs first.** The pairs are what produce the pH
+switch, and the design pipeline has no interest in pH. It ranks its own
+output by `i_pDAE`, a measure of how confident it is in the interface;
+here that value is carried through and used only as the last tie-break,
+among candidates whose pair terms are all equal, with the more confident
+interface first. It never overrides a pair term.
 
 ```
 ========================================================================
@@ -33,11 +31,10 @@ ones that break a hard rule. Residue numbers are positions in the
 human record P00533 in UniProt, the public sequence archive, unless a
 line says they are the structure file's own.
 
-Ranked by correct pairs and deliberately not by binding strength. The
-requirement is no detectable binding at pH 7.4, which is a threshold
-and not a ratio, so a weak binder that clearly switches beats a strong
-one. The pipeline's own strength and confidence numbers are carried
-through untouched so they can be used to pick downward.
+Ranked by correct pairs first, because the pairs are what produce the pH
+switch. The pipeline's own i_pDAE (lower is better) is carried through and
+breaks ties among candidates whose pair terms are all equal. It never
+overrides a pair term and it does not discard a candidate.
 
 1. The test cases, built by hand and run every time
 
@@ -126,6 +123,12 @@ through untouched so they can be used to pick downward.
 
    Ranking: four correct pairs without E424 against four with it
      [PASS] order: four-correct-pairs then e424-pair-among-four
+
+   Ranking: three candidates level on every pair term, ordered by i_pDAE
+     [PASS] order: tie-z-confident then tie-a-doubtful then tie-m-no-metric
+
+   Ranking: more pairs but a worse i_pDAE against fewer pairs and a better one
+     [PASS] order: pairs-more-doubtful then pairs-fewer-confident
 
    8 cases, all passed.
 

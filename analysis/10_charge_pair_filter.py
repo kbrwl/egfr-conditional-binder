@@ -56,29 +56,33 @@ A candidate contacting position 442 is also rejected, which is a standing rule i
 original epitope and sits in cetuximab's measured contact set, so touching it
 risks species-specific behaviour at the one position where the species differ.
 
-WHY THIS RANKS BY PAIR COUNT AND DELIBERATELY NOT BY BINDING STRENGTH
----------------------------------------------------------------------
-This is the easiest thing in the project to get backwards, and getting it
-backwards would spoil the submission without anything looking wrong.
+WHY PAIR COUNT LEADS, AND CONFIDENCE ONLY BREAKS TIES
+-----------------------------------------------------
+The charge pairs are what produce the pH switch, so the number of correct pairs
+leads the ranking. The pipeline has no interest in pH, which means an interface it
+is confident about can carry no switch at all.
 
-The requirement is no *detectable* binding at pH 7.4. That is a threshold and not
-a ratio: the pH 7.4 state has to fall below what the measuring instrument can see
-at all. A binder at 10 nanomolar at pH 6.5 and 200 nanomolar at pH 7.4 is
-twentyfold selective and fails, because 200 nanomolar is easily detected. A binder
-at 2 micromolar with nothing measurable at pH 7.4 passes, though it is a hundred
-times weaker and its ratio looks worse.
+The organisers said on 30 September that designs with a large shift in
+dissociation constant qualify even when they bind at both pH values, and that
+designs with no binding at pH 7.4 and high affinity at pH 6.5 rank higher
+(`docs/competition-qa-log.md`). The quantity rewarded is the gap between the two
+conditions with the pH 6.5 end as high as the switch allows, so nothing here prefers
+weaker binding. An earlier version of this script did; that was withdrawn, see Ruled
+out in `docs/decisions-log.md`.
 
-So this script ranks by the number of correct charge pairs and nothing else. It
-carries the pipeline's own strength and confidence metrics through to its output
-untouched, so they can be used to pick *downward* among candidates that already
-switch. It does not fold them into a score, and it does not discard a candidate
-for being weak. The pipeline ranks its own output by `i_pDAE`, a measure of how
-confident it is in the interface; that ordering is replaced here, not adjusted.
+The pipeline's own confidence ordering, `i_pDAE` (lower is better), is carried
+through to the output and used as the last term of the ranking. Among candidates
+whose pair terms are all equal, the one with the more confident interface comes
+first. It never overrides a pair term, it is not folded into a score, and it does
+not discard a candidate. The pipeline ranks its own output by `i_pDAE` alone; this
+ordering puts the pair terms ahead of it. A candidate with no `i_pDAE` value sorts
+after one that has it.
 
 Note what is not claimed. Counting pairs says a switch is built, not that it
 works. How far a histidine's flipping point moves depends on its neighbours,
 which is much of why pH selectivity resists reliable prediction, and nothing here
-measures whether a switch clears an assay detection floor we have not been told.
+measures how large a shift the organisers will count as large, which they have not
+said.
 
 TESTING WITH NO CANDIDATES IN EXISTENCE
 ----------------------------------------
@@ -216,6 +220,10 @@ BREAKABLE_RULES = {
         "e424-pair-among-four",
         "a design leaning on E424, 6.6 angstroms from the cut in a trimmed "
         "model, would rank level with an equivalent design that does not"),
+    "pdae-tiebreak": (
+        "pdae tie-break",
+        "candidates with identical pair counts would be ordered by name, so the "
+        "more confident interface would not be preferred among equals"),
 }
 
 VERDICT_REJECTED = "rejected"
@@ -707,6 +715,37 @@ def run_tests(numbering, human, emit):
         failures.append("e424 ranking: the design leaning on E424 ranked "
                         "level with or above the equivalent one that does not")
     emit()
+
+    # The tie-break on the pipeline's own i_pDAE. The names are chosen so that
+    # ordering by name alone would put them in the wrong order, which is what makes
+    # the case fail when the term is switched off.
+    base = by_name["four-correct-pairs"]
+    level = [dict(base, design="tie-a-doubtful", metrics={"i_pDAE": "0.41"}),
+             dict(base, design="tie-m-no-metric"),
+             dict(base, design="tie-z-confident", metrics={"i_pDAE": "0.18"})]
+    ordered = [s["design"] for s in rank(level)]
+    want = ["tie-z-confident", "tie-a-doubtful", "tie-m-no-metric"]
+    ok = ordered == want
+    emit("   Ranking: three candidates level on every pair term, ordered by i_pDAE")
+    emit(f"     [{'PASS' if ok else 'FAIL'}] order: {' then '.join(ordered)}")
+    if not ok:
+        failures.append("pdae tie-break: level candidates were not ordered with "
+                        "the more confident interface first and the one with no "
+                        f"value last (got {ordered})")
+    emit()
+
+    fewer = dict(base, design="pairs-fewer-confident", supported_pairs=3,
+                 correct_pairs=3, correct_pairs_tight=3,
+                 metrics={"i_pDAE": "0.02"})
+    more = dict(base, design="pairs-more-doubtful", metrics={"i_pDAE": "0.90"})
+    ordered = [s["design"] for s in rank([fewer, more])]
+    ok = ordered[0] == "pairs-more-doubtful"
+    emit("   Ranking: more pairs but a worse i_pDAE against fewer pairs and a better one")
+    emit(f"     [{'PASS' if ok else 'FAIL'}] order: {' then '.join(ordered)}")
+    if not ok:
+        failures.append("pair count leads: a more confident interface outranked "
+                        "a candidate with more correct pairs")
+    emit()
     emit(f"   {len(test_cases(human))} cases, "
          f"{'all passed' if not failures else f'{len(failures)} assertion(s) failed'}.")
     emit()
@@ -752,8 +791,9 @@ def read_metrics_table(folder, emit):
     Looks for `3_Ranked/!_Ranked.csv`, which the pipeline ranks best-first by
     `i_pDAE`. Every column is carried through to our output as-is. We do not
     reorder by any of them and we do not recompute any of them: they are the
-    pipeline's answers, kept so a reader can pick downward among candidates that
-    already switch.
+    pipeline's answers, kept so a reader can see them beside the pair counts.
+    The one exception to not reordering is `i_pDAE`, which `rank` uses as its
+    final tie-break.
 
     Returns ({design name: {column: value}}, column names, where it came from).
     """
@@ -767,8 +807,8 @@ def read_metrics_table(folder, emit):
         candidate = matches[0] if matches else None
     if candidate is None or not candidate.is_file():
         emit("   No metrics table found. The pipeline's own numbers will be")
-        emit("   absent from the output, which means a reader cannot pick")
-        emit("   downward among the survivors and has only the pair counts.")
+        emit("   absent from the output, so the i_pDAE tie-break has nothing to")
+        emit("   work with and the ranking rests on the pair terms alone.")
         return {}, [], None
 
     with candidate.open(newline="") as handle:
@@ -883,11 +923,10 @@ def main(argv=None):
     emit("human record P00533 in UniProt, the public sequence archive, unless a")
     emit("line says they are the structure file's own.")
     emit()
-    emit("Ranked by correct pairs and deliberately not by binding strength. The")
-    emit("requirement is no detectable binding at pH 7.4, which is a threshold")
-    emit("and not a ratio, so a weak binder that clearly switches beats a strong")
-    emit("one. The pipeline's own strength and confidence numbers are carried")
-    emit("through untouched so they can be used to pick downward.")
+    emit("Ranked by correct pairs first, because the pairs are what produce the pH")
+    emit("switch. The pipeline's own i_pDAE (lower is better) is carried through and")
+    emit("breaks ties among candidates whose pair terms are all equal. It never")
+    emit("overrides a pair term and it does not discard a candidate.")
     emit()
 
     human = common.human_sequence()
@@ -962,14 +1001,12 @@ def main(argv=None):
         "against. UniProt is the public sequence archive whose numbering this\n"
         "project uses. mmCIF is the structure file format the design pipeline\n"
         "writes.\n\n"
-        "**Ranked by correct pairs, deliberately not by binding strength.** The\n"
-        "requirement is no *detectable* binding at pH 7.4, which is a threshold\n"
-        "rather than a ratio, so a weak binder that clearly switches beats a\n"
-        "strong one. The design pipeline maximises interface confidence by\n"
-        "default and ranks its own output by `i_pDAE`; that ordering is replaced\n"
-        "here rather than adjusted. The pipeline's own numbers are carried\n"
-        "through untouched so they can be used to pick *downward* among the\n"
-        "candidates that already switch.\n\n"
+        "**Ranked by correct pairs first.** The pairs are what produce the pH\n"
+        "switch, and the design pipeline has no interest in pH. It ranks its own\n"
+        "output by `i_pDAE`, a measure of how confident it is in the interface;\n"
+        "here that value is carried through and used only as the last tie-break,\n"
+        "among candidates whose pair terms are all equal, with the more confident\n"
+        "interface first. It never overrides a pair term.\n\n"
         "```\n" + "\n".join(out) + "\n```\n"
     )
     return 1 if failures else 0
@@ -1270,7 +1307,8 @@ def report_results(summaries, emit):
     emit()
     emit("   Ties are broken by how many of those pairs also have their charged")
     emit("   groups within reach of each other, then by how many distinct target")
-    emit("   positions are paired. Never by binding strength.")
+    emit("   positions are paired, then by the pipeline's own i_pDAE with the more")
+    emit("   confident interface first.")
     emit()
     emit("   | rank | design | correct | of those, in reach | unresolved | "
          "neutral | verdict |")
@@ -1302,9 +1340,26 @@ def report_results(summaries, emit):
     emit("   What this changes about the design. The shortlist is the candidates")
     emit("   that were not rejected, in this order. Choosing among them is a")
     emit("   judgement to make by hand using the pipeline's own numbers carried")
-    emit("   through alongside, and the direction to choose in is downward in")
-    emit("   binding strength among those that switch, not upward.")
+    emit("   through alongside. The aim is the widest gap between pH 6.5 and pH 7.4")
+    emit("   with affinity at pH 6.5 as high as the switch allows.")
     emit()
+
+
+def pipeline_confidence(summary):
+    """The pipeline's own `i_pDAE` for a candidate, lower meaning more confident.
+
+    A candidate with no value, or one that is not a number, gets infinity and so
+    sorts after every candidate that has one. With `--break-rule pdae-tiebreak`
+    every candidate gets the same value, which removes the term.
+    """
+    if BROKEN_RULE == "pdae-tiebreak":
+        return 0.0
+    value = (summary.get("metrics") or {}).get("i_pDAE")
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return float("inf")
+    return float("inf") if number != number else number
 
 
 def rank(summaries):
@@ -1312,16 +1367,21 @@ def rank(summaries):
 
     By supported pairs, meaning correct pairs not resting on a position near the
     trimmed target's cut edge (E424), then by all correct pairs, then by how many
-    of those have their charged groups within reach, then by how many distinct target positions are involved, then by name
-    so the order is stable between runs. No term here is a binding-strength
-    metric, and that is the point: the pipeline already ranks by interface
-    confidence and this replaces that ordering.
+    of those have their charged groups within reach, then by how many distinct
+    target positions are involved. Candidates still level after all of those are
+    ordered by the pipeline's own `i_pDAE`, the more confident interface first, and
+    last by name so the order is stable between runs.
+
+    The pair terms come first because the charge pairs are what produce the switch.
+    `i_pDAE` is deliberately the last term before the name: it breaks ties among
+    equals and never overrides a pair term.
     """
     return sorted(summaries,
                   key=lambda s: (-s["supported_pairs"],
                                  -s["correct_pairs"],
                                  -s["correct_pairs_tight"],
                                  -len(s["anchors_paired"]),
+                                 pipeline_confidence(s),
                                  s["design"]))
 
 
@@ -1365,9 +1425,7 @@ def write_outputs(summaries, all_pairs, emit, parse_only, had_candidates):
 
     # The shortlist holds every candidate that broke no hard rule, in order. A
     # candidate is dropped here for a histidine facing a histidine or a contact
-    # at 442, never for binding weakly, because the requirement is a detection
-    # threshold rather than a ratio and a weak clear switch is the better
-    # submission.
+    # at 442, never for the strength of its binding in either direction.
     survivors = [s for s in rank(summaries)
                  if s["verdict"] not in (VERDICT_REJECTED, VERDICT_UNSCORABLE)]
     with (CANDIDATES / "shortlist.csv").open("w", newline="") as handle:

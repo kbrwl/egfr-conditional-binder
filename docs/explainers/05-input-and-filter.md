@@ -63,12 +63,11 @@ this project calls **anchors**: E344, H358, D368, H370, E391, E400, E421 and E42
 The letter is the amino acid and the number is its position along the chain. Six are
 D or E and two are histidines. The binder is to be aimed at those eight.
 
-One more rule shapes everything below. The competition requires *no detectable*
-binding at pH 7.4, which is a threshold set by what the measuring instrument can
-see. A weak binder that clearly switches therefore beats a strong binder that
-switches by the same proportion, because the strong one may still be detectable at
-pH 7.4. Most design tools push towards strong binding by default, and the second half
-of this document is largely about not following that push.
+One earlier rule has been withdrawn and is not applied below. This project first
+aimed for deliberately weak binding; the organisers have since described how
+binding is scored, and the design target is now the largest gap between pH 6.5 and
+pH 7.4 with affinity at pH 6.5 as high as the switch allows. The reasoning is in
+`docs/explainers/07-the-assay-and-what-it-changes.md`.
 
 ---
 
@@ -365,18 +364,13 @@ The consequence governs the whole generation run: **the complex files are the on
 usable output.** The summary tables are the guest list. A run that returned tables
 and no complex files would have to be done again from scratch.
 
-## Why it refuses to prefer stronger binders
+## Why pair count leads the ranking
 
-The competition requires no *detectable* binding at pH 7.4. That is a threshold.
-Suppose a strong binder and a weak one both switch on by the same proportion when the
-pH drops. The strong one may still be detectable at pH 7.4, and so fails. The weak
-one may fall below what the instrument can see, and so passes.
-
-So script 10 ranks by good pairs, carries BindCraft2's own strength and confidence
-numbers through without ranking on them, and leaves them available for choosing
-*downward* among candidates that already switch. This is deliberately opposite to what
-BindCraft2 optimises for, and it is the easiest place in the project to damage the
-submission by doing the usual thing.
+Script 10 ranks by good pairs first, because the charge pairs are what produce the
+pH switch. BindCraft2's own confidence numbers are carried through and used only as
+a tie-break among candidates with equal pair counts, preferring the more confident
+interface. They do not override the pair count, since BindCraft2 has no interest in
+pH and a high-confidence interface with no charge pairs has no switch.
 
 ## What it checks before scoring anything
 
