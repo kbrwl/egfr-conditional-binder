@@ -108,16 +108,28 @@ image = (
         "/opt/target_numbering.py")
 )
 
-app = modal.App(APP_NAME)
+# The image is passed to the app so that every function runs inside it. The first
+# version of this file defined `image` above and never used it, so both functions
+# ran in Modal's default container, where /opt/BindCraft2 does not exist, and the
+# check below exited successfully having tested nothing.
+app = modal.App(APP_NAME, image=image)
 results = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
 weights = modal.Volume.from_name(WEIGHTS_VOLUME, create_if_missing=True)
 
 
-def _run(cmd, cwd=INSTALL_DIR):
-    """Run a shell command inside the BindCraft2 environment and stream output."""
+def _run(cmd, cwd=INSTALL_DIR, venv=True, want_output=False):
+    """Run a shell command inside the BindCraft2 environment and stream output.
+
+    `venv=False` skips activating BindCraft2's virtual environment, for commands
+    that are not part of it such as nvidia-smi: the activation path is relative to
+    `cwd`, so running those from "/" with it switched on fails before the command
+    starts. `want_output=True` returns (exit code, stdout) instead of the exit
+    code alone.
+    """
     import subprocess
 
-    full = f"cd {cwd} && . .venv/bin/activate && {cmd}"
+    activate = ". .venv/bin/activate && " if venv else ""
+    full = f"cd {cwd} && {activate}{cmd}"
     print(f"\n$ {cmd}\n", flush=True)
     proc = subprocess.run(["bash", "-lc", full], capture_output=True, text=True)
     if proc.stdout:
@@ -125,6 +137,8 @@ def _run(cmd, cwd=INSTALL_DIR):
     if proc.stderr:
         print("--- stderr ---", flush=True)
         print(proc.stderr, flush=True)
+    if want_output:
+        return proc.returncode, proc.stdout
     return proc.returncode
 
 
@@ -253,20 +267,38 @@ def check():
     a GPU one, the design run will work but take so long it looks broken, and the
     BindCraft2 troubleshooting notes call that out as the usual first fault.
     """
-    _run("nvidia-smi", cwd="/")
-    _run('python -c "'
-         "import jax; print('jax', jax.__version__); "
-         "print('devices', jax.devices()); "
-         "print('default backend', jax.default_backend())"
-         '"')
+    problems = []
+
+    rc, _ = _run("nvidia-smi", cwd="/", venv=False, want_output=True)
+    if rc != 0:
+        problems.append("nvidia-smi failed: no GPU is visible to the container")
+
+    rc, out = _run('python -c "'
+                   "import jax; print('jax', jax.__version__); "
+                   "print('devices', jax.devices()); "
+                   "print('default backend', jax.default_backend())"
+                   '"', want_output=True)
+    if rc != 0:
+        problems.append("JAX did not import inside BindCraft2's environment")
+    elif "default backend gpu" not in out:
+        problems.append("JAX is not using the GPU: its default backend is not "
+                        "'gpu', so a design run would fall back to the processor")
+
     # The subcommands and listing flags below are BindCraft2's own, read from its
     # cli.py on 1 October 2026. `--list-targets` is a flag of `design` rather
     # than of `bindcraft` itself, which the earlier version of this file had
     # wrong and which would have burned a GPU minute finding out.
-    _run("bindcraft design --help")
+    if _run("bindcraft design --help") != 0:
+        problems.append("`bindcraft design --help` failed: the command is not "
+                        "installed or not on the path")
     _run("bindcraft design --list-targets || true")
     _run("bindcraft design --list-settings | head -40 || true")
-    print("\nIf 'default backend' above is not 'gpu', stop and fix that first.")
+
+    # A check that exits successfully whatever happens inside it is not a check.
+    # The first version of this function did exactly that.
+    if problems:
+        raise RuntimeError("check FAILED:\n  - " + "\n  - ".join(problems))
+    print("\ncheck PASSED: GPU visible, JAX on the GPU backend, bindcraft installed.")
 
 
 @app.function(gpu=DEFAULT_GPU, timeout=60 * 60 * 4,
