@@ -148,7 +148,9 @@ relationship rather than expecting the two to agree.
 measured as a concentration, where a lower number means a tighter grip.
 Micromolar (µM) is
 a weak grip. Nanomolar (nM) is drug-grade, a thousand times tighter.
-Picomolar (pM) is a vise.
+Picomolar (pM) is a vise. The competition's instrument reports K_D over roughly
+0.1 nM to 10 µM, flowing the target at a top concentration of 1000 nM, so a grip
+weaker than about 1 µM may return no number at all rather than a weak one.
 
 **Anchor** — our own term for a residue on the target that the pH switch is built
 against. Not standard vocabulary; if you use it with someone outside the project
@@ -239,9 +241,13 @@ a surface can look more open in the file than it is in reality.
 **N-glycosylation** — the specific way those sugar chains are attached: through the
 nitrogen atom of an asparagine side chain, which is why it is "N". It happens only
 at asparagines in particular sequence contexts, so the attachment points are fixed
-and identifiable. N444, inside our epitope, is one of them. The 1.44 ångström
-distance measured from N444 to the neighbouring sugar is a chemical bond, which is
-how we know the chain is attached there rather than passing nearby.
+and identifiable. That context is the **sequon**, N-X-S/T, which has its own entry.
+N444, inside the old 415-466 epitope, is one of them. The 1.44 ångström distance
+measured from N444 to the neighbouring sugar is a chemical bond, which is how we
+know the chain is attached there rather than passing nearby. The target in the
+assay is confirmed glycosylated, expressed in HEK293 cells, and a structure shows
+only the first ordered sugar or two, so the real reach of a chain is longer than any
+distance measured from a structure.
 
 **Tethered and extended conformations** — EGFR's extracellular region does not
 hold one fixed shape. It folds shut on itself (**tethered**, also called closed
@@ -252,6 +258,14 @@ whichever form dominates in the assay buffer decides what a binder can actually
 reach. An epitope that is exposed in an open structure but covered in the closed
 one produces a design that is correct on paper and measures as nothing in the
 tube. Checked in `analysis/06_tethered_occlusion.py`.
+
+The organisers have since answered which form the screen uses: the **tethered**
+one, stated twice and recorded in `docs/competition-qa-log.md`. Our structure of
+record, 6ARU, is the extended form. `analysis/12_fragment_context_check.py`
+measured the eight H370 anchors in both forms and found none of them contacted from
+outside domain III in either, and domain III has nearly the same fold in both at
+1.08 ångström RMSD, so the epitope choice survives the answer. Whether the fragment
+handed to the design run should be cut from the tethered structure instead is open.
 
 **Domain III** — roughly residues 310–480. One of the two domains that grip EGF,
 and the patch both approved antibody drugs target. Folds into a solenoid, a
@@ -625,3 +639,136 @@ needs, so step 10 recomputes the pairing from the structure file.
 **RFdiffusion / ProteinMPNN** — the other standard design route. More control,
 more setup difficulty. RFdiffusion proposes 3D shapes; ProteinMPNN works out
 which amino acid sequence would fold into a given shape.
+
+---
+
+## The assay, the construct and the submission
+
+These are the conditions the designs are actually measured in. All of them come
+from the organisers rather than from anything this project computed; the
+attributions and dates are in `docs/competition-qa-log.md` and the consequences
+are worked through in `docs/explainers/07-the-assay-and-what-it-changes.md`.
+
+**SPR (surface plasmon resonance)** — the instrument the competition measures
+binding with. One partner is fixed to a metal-coated sensor chip, the other is
+washed over it in solution, and the instrument shines light at the underside of
+the chip and watches the reflection change as mass builds up on the other side.
+It needs no dye and no radioactive label and it watches in real time, so it sees
+both the sticking-on and the falling-off.
+
+**BLI (bio-layer interferometry)** — a second instrument measuring the same thing
+by a different optical trick. The organisers use it only to cross-check hits that
+SPR has already found.
+
+**Ligand and analyte** — in an assay of this kind, the **ligand** is the partner
+fixed to the chip and the **analyte** is the partner flowed over it in solution.
+Worth stating because the arrangement here runs the opposite way to the obvious
+guess: our designed binder is the ligand, stuck to the chip, and EGFR is the
+analyte flowed over it. The word ligand is used in a second, unrelated sense
+elsewhere in biology, for a small molecule a protein binds; the assay sense is the
+one meant here.
+
+**Immobilisation** — fixing a protein to the sensor surface so it cannot move. Our
+designs are immobilised at their C-terminal end, the end of the protein chain that
+carries the added tail. That end is therefore not free to take part in binding,
+which is a design constraint rather than a detail.
+
+**Association** — the rising part of an SPR trace, recorded while the analyte is
+flowing on and accumulating. The falling part, after the flow switches to plain
+buffer, is dissociation.
+
+**Negative control** — the same measurement run with something known not to bind,
+so it records what the instrument reads when nothing is happening. Every other
+trace is judged against it. The organisers count a design as binding if its
+association signal rises more than 300% above the negative control, in cases where
+the trace cannot be fitted to give a K_D.
+
+**No detectable binding** — the organisers' verdict when a trace can neither be
+fitted to give a K_D nor clear 300% above the negative control. It is a statement
+about what the instrument could see, so it depends on the instrument's range: top
+analyte concentration 1000 nM and a reportable window of roughly 0.1 nM to 10 µM.
+A binder weaker than about 1 µM may read as no detectable binding at pH 6.5 as
+well as at pH 7.4, which fails human binding rather than demonstrating pH
+selectivity. See also **detection floor**.
+
+**His tag** — a short run of histidine residues, usually six, added to the end of a
+protein so it can be caught and purified on a metal column. Both the human and the
+mouse target carry one at the C-terminus and the organisers expect to screen
+without removing them. This sits directly on our mechanism: our design rule builds
+acidic pockets to grip the target's own histidines, and such a pocket will grip the
+histidines of a tag as readily, while the tag is a floppy exposed tail and the real
+target histidines are held in a fold.
+
+**Twin-Strep tag** — a pair of short peptide tags that stick tightly to a
+streptavidin surface, used to catch a protein on a chip. It is how the target is
+captured and also the last element of the tail added to our designs.
+
+**GFP11** — the eleventh strand of green fluorescent protein, about sixteen
+residues. Alone it does nothing; supplied with the other ten strands it completes
+them and the pair glows, which is how the amount of protein on the chip gets
+measured. It is a beta strand, a flat extended piece of chain that pairs up
+edge-to-edge with other beta strands, so a design whose own edge is an exposed beta
+strand has a fused strand dangling beside it.
+
+**Linker** — a short, deliberately floppy run of residues joining two parts of a
+construct so that neither constrains the other's shape. The designs carry a
+linker–GFP11–linker–twin-Strep tail on the C-terminus.
+
+**HEK293** — a human embryonic kidney cell line, widely used to produce proteins.
+It matters here because a protein made in human cells carries human-like sugar
+chains, so the target in the assay is glycosylated rather than bare.
+
+**Glycan** — a branched tree of sugars attached to a protein after the chain is
+built. Glycans are large, they wave about, and a crystal structure resolves only
+the first one or two sugars that happen to hold still, so the area a glycan really
+covers is larger than any structure shows. A binding site beside one can look open
+in a model and be unreachable in practice.
+
+**Sequon** — the three-residue pattern that tells you where an N-linked glycan will
+be attached, written N-X-S/T: asparagine, then almost any residue, then serine or
+threonine. Proline in the middle position blocks attachment despite fitting the
+pattern. Because it is a pattern in the sequence, a sequon can be found by reading
+the sequence alone with no structure. So N-A-T is a sequon and N-A-V is not,
+valine being neither serine nor threonine.
+
+**Ionic strength** — a measure of how many charged particles are dissolved in a
+solution. The assay buffer sits at roughly 170 mM, matched between the two pH
+conditions, which is near the value in blood.
+
+**Screening (electrostatic)** — the cancelling-out of a charged group's pull by the
+cloud of oppositely charged ions that collects around it in solution. The higher
+the ionic strength, the more screening. The consequence for this project: a charge
+pair sitting out in the open, surrounded by water and ions, contributes much less
+grip than the same pair buried in the closed-off core of an interface where the
+water has been squeezed out. The word is also used loosely to mean testing a
+library of candidates, which is a different thing.
+
+**HEPES and MES** — two buffers, substances that hold a solution at a steady pH.
+HEPES works around pH 7.4 and MES around pH 6.5, so the assay uses HEPES for the
+neutral condition and swaps in MES for the acidic one. Everything else in the
+buffer is held the same and the ionic strength is matched, so a difference between
+the two conditions comes from the pH rather than from the salt.
+
+**Neutralisation assay** — a follow-up experiment asking whether a binder actually
+blocks what the target does, rather than merely sticking to it. The organisers will
+run these partly to catch designs that bind an added tag rather than the target.
+
+**MMseqs2** — a fast tool for searching a protein sequence against large databases
+of known sequences. The organisers run it to decide whether a design is new,
+against SwissProt, the Protein Data Bank, the USPTO and EBI patent databases,
+THPdb, PLAbDab and Proteinbase.
+
+**Novelty level** — the organisers' score for how unlike anything existing a
+submitted sequence is, on a scale of 4. Level 3 clears the submission gate, and the
+score is computed automatically on upload, so a design can be tested against the
+real checker before the deadline. One organiser also described the requirement as
+being under 30% similar to anything existing; whether those two statements describe
+the same threshold is recorded as unresolved in `docs/competition-qa-log.md`.
+
+**Protonation** — gaining a proton, which is a hydrogen atom stripped of its
+electron and carries one positive charge. A group that has gained one is
+**protonated**. Histidine is the only one of the twenty amino acids that switches
+between protonated and not across the pH range this competition measures: mostly
+uncharged at pH 7.4, and a useful fraction positively charged at pH 6.5. That
+gained charge is what the acidic residues on our binder are placed to grab, and it
+is the whole of the switch. See also **pKa** and **histidine switching**.
