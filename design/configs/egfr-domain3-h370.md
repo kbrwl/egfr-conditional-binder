@@ -80,11 +80,30 @@ renumber the target in the output. Neither has been checked. It matters because
 BindCraft2's output back into ours, and a renumbering there would break that
 silently.
 
+## The termini setting, and the variant that avoids the His tag
+
+`"termini_accessible": true` is set. Our designs are immobilised on the sensor chip
+by a C-terminal tail of linker, GFP11, linker and twin-Strep tag, so the C-terminal
+end of the binder must not be part of the binding surface. BindCraft2's property
+points both chain ends away from the target. It is geometry only: it says nothing
+about whether the tail expresses or folds.
+
+`egfr-domain3-h370-notag.json` is the same campaign with a second target added, the His tag
+GSHHHHHHGS at weight -0.5. A negative weight tells
+BindCraft2 to push the binder away from that target, so a design that grips the tag
+is rejected once its predicted interface confidence reaches
+0.4. The reason is that both the human and the mouse target
+carry a C-terminal His tag the organisers expect to leave on, and a binder that grips
+it looks pH-selective and binds anything with a His tag. Our pairing rule builds
+acidic pockets to grip the target's own histidines, which makes this project more
+exposed than most. **Not run.** Detargeting against a sequence target has not been
+tried, and the weight and the ceiling are starting values and not tuned ones.
+
 ## What this file deliberately does not do
 
-Nothing here constrains binding strength. The requirement is no *detectable*
-binding at pH 7.4, which is a threshold and not a ratio, so a weak binder that
-clearly switches beats a strong one. BindCraft2 maximises confidence and interface
-quality by default and this file does not stop it. That is handled downstream by
-`analysis/10_charge_pair_filter.py`, which ranks by correct charge pairs and
-deliberately does not rank by binding strength.
+It sets no limit on binding strength in either direction. The design target is the
+largest difference between pH 6.5 and pH 7.4 with affinity at pH 6.5 as high as the
+switch allows (`CLAUDE.md`), and BindCraft2's own objective already pushes towards
+confident interfaces. What BindCraft2 lacks is any interest in pH, which is why
+`analysis/10_charge_pair_filter.py` ranks by correct charge pairs first and uses
+BindCraft2's own confidence only to break ties.

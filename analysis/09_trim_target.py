@@ -119,6 +119,12 @@ CONFIG_DIR = ROOT / "design" / "configs"
 CAMPAIGN_NAME = "egfr-domain3-h370"
 HOTSPOT_CONFIG = CONFIG_DIR / f"{CAMPAIGN_NAME}.json"
 HOTSPOT_NOTE = CONFIG_DIR / f"{CAMPAIGN_NAME}.md"
+# The same campaign with the His tag added as an off-target to be avoided. Written
+# from the same dictionary as the file above so the two cannot disagree about the
+# hotspots, and kept separate because detargeting against a sequence target has
+# not been run yet.
+NOTAG_CONFIG = CONFIG_DIR / f"{CAMPAIGN_NAME}-notag.json"
+TAG_FASTA = ROOT / "data" / "sequences" / "his-tag-offtarget.fasta"
 
 # Binder length range handed to the design run, in amino acids. The molecule
 # category is still open in docs/decisions-log.md; 40-100 is the minibinder band
@@ -721,6 +727,7 @@ def main(argv=None):
         offset=offset, keep_uniprot=keep_uniprot, severed=severed,
         near_edge=near_edge)
     emit(f"   Wrote design/configs/{HOTSPOT_CONFIG.name}")
+    emit(f"   Wrote design/configs/{NOTAG_CONFIG.name} (adds the His tag as an off-target)")
     emit(f"   Wrote design/configs/{HOTSPOT_NOTE.name}")
     emit()
     emit("   WHAT IS CONFIRMED ABOUT THAT CONFIG AND WHAT IS NOT.")
@@ -975,9 +982,32 @@ def write_hotspot_config(chain_id, anchors, by_uniprot, offset, keep_uniprot,
         "binder_lengths": list(BINDER_LENGTHS),
         "number_of_final_designs": FINAL_DESIGNS,
         "max_trajectories": MAX_TRAJECTORIES,
+        # Points both chain ends of the binder away from the target. Our designs
+        # are immobilised on the chip by a C-terminal tail of linker, GFP11, linker
+        # and twin-Strep tag, so the C-terminal end must not be part of the
+        # binding surface. BindCraft2 provides this as a property, which adds a
+        # loss term steering both termini away and a final filter that the
+        # terminus direction cosine be at least 0.0, where +1 is away from the
+        # target and -1 is toward it. The 0.0 floor is the tool's default.
+        "termini_accessible": True,
     }
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     HOTSPOT_CONFIG.write_text(json.dumps(campaign, indent=2) + "\n")
+
+    # The variant that also avoids the His tag. The tag is a sequence target, so it
+    # is co-folded with the binder as a disordered region. A sequence target carries
+    # no residue numbers, so it takes no hotspots, and the default window of 10 to
+    # 40 residues sampled from it is switched off so the whole tag is used.
+    TAG_FASTA.parent.mkdir(parents=True, exist_ok=True)
+    TAG_FASTA.write_text(f">{common.HIS_TAG_NAME}\n{common.HIS_TAG_SEQUENCE}\n")
+    notag = dict(campaign)
+    notag["targets"] = list(campaign["targets"]) + [{
+        "name": common.HIS_TAG_NAME,
+        "target_path": "../../data/sequences/his-tag-offtarget.fasta",
+        "weight": common.HIS_TAG_WEIGHT,
+    }]
+    notag["crop_fasta_sequence"] = False
+    NOTAG_CONFIG.write_text(json.dumps(notag, indent=2) + "\n")
 
     rows = []
     for pos in sorted(anchors):
@@ -1063,14 +1093,33 @@ renumber the target in the output. Neither has been checked. It matters because
 BindCraft2's output back into ours, and a renumbering there would break that
 silently.
 
+## The termini setting, and the variant that avoids the His tag
+
+`"termini_accessible": true` is set. Our designs are immobilised on the sensor chip
+by a C-terminal tail of linker, GFP11, linker and twin-Strep tag, so the C-terminal
+end of the binder must not be part of the binding surface. BindCraft2's property
+points both chain ends away from the target. It is geometry only: it says nothing
+about whether the tail expresses or folds.
+
+`{NOTAG_CONFIG.name}` is the same campaign with a second target added, the His tag
+{common.HIS_TAG_SEQUENCE} at weight {common.HIS_TAG_WEIGHT}. A negative weight tells
+BindCraft2 to push the binder away from that target, so a design that grips the tag
+is rejected once its predicted interface confidence reaches
+{common.DETARGET_IPTM_CEILING}. The reason is that both the human and the mouse target
+carry a C-terminal His tag the organisers expect to leave on, and a binder that grips
+it looks pH-selective and binds anything with a His tag. Our pairing rule builds
+acidic pockets to grip the target's own histidines, which makes this project more
+exposed than most. **Not run.** Detargeting against a sequence target has not been
+tried, and the weight and the ceiling are starting values and not tuned ones.
+
 ## What this file deliberately does not do
 
-Nothing here constrains binding strength. The requirement is no *detectable*
-binding at pH 7.4, which is a threshold and not a ratio, so a weak binder that
-clearly switches beats a strong one. BindCraft2 maximises confidence and interface
-quality by default and this file does not stop it. That is handled downstream by
-`analysis/10_charge_pair_filter.py`, which ranks by correct charge pairs and
-deliberately does not rank by binding strength.
+It sets no limit on binding strength in either direction. The design target is the
+largest difference between pH 6.5 and pH 7.4 with affinity at pH 6.5 as high as the
+switch allows (`CLAUDE.md`), and BindCraft2's own objective already pushes towards
+confident interfaces. What BindCraft2 lacks is any interest in pH, which is why
+`analysis/10_charge_pair_filter.py` ranks by correct charge pairs first and uses
+BindCraft2's own confidence only to break ties.
 """)
     return campaign
 

@@ -227,6 +227,7 @@ with the antibody already removed by analysis/02.
    config file: 344,358,368,370,391,400,421,424
 
    Wrote design/configs/egfr-domain3-h370.json
+   Wrote design/configs/egfr-domain3-h370-notag.json (adds the His tag as an off-target)
    Wrote design/configs/egfr-domain3-h370.md
 
    WHAT IS CONFIRMED ABOUT THAT CONFIG AND WHAT IS NOT.

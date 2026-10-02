@@ -69,6 +69,31 @@ FUNCTIONAL_ATOM = {"D": ["CG"], "E": ["CD"],
 GLYCAN_NEAR = 15.0       # very likely shadowed some of the time
 GLYCAN_PLAUSIBLE = 25.0  # within reach of an extended chain
 
+# The tag on the target in the assay. Both the human and the mouse protein carry a
+# C-terminal His tag that the organisers expect to leave on (docs/competition-qa-log.md).
+# A binder that grips the tag looks pH-selective and binds anything with a His tag,
+# so the design run is told to avoid it as an off-target.
+#
+# The sequence is the six histidines with a serine-glycine flank on each side. The
+# flank is there because BindCraft2 samples a window of at least 10 residues from a
+# sequence target by default, and a bare six-residue peptide is shorter than that.
+# It also resembles a tag at the end of a chain more than a free peptide does.
+# UNVERIFIED: that BindCraft2 accepts this as an off-target has not been run.
+HIS_TAG_NAME = "HisTag"
+HIS_TAG_SEQUENCE = "GSHHHHHHGS"
+
+# A negative weight tells BindCraft2 to push the binder away from a target, and the
+# magnitude sets how hard relative to the binding objective. Half strength is the
+# value in BindCraft2's own cross-reactive example. It is a starting value and not
+# a tuned one.
+HIS_TAG_WEIGHT = -0.5
+
+# BindCraft2's own default ceiling on an off-target's interface confidence: a
+# design is rejected if the binder is predicted to bind an off-target at or above
+# this (max_detarget_iptm, docs/source/design-guide/02-setting-up-a-design.md).
+# It is the tool's default and has not been calibrated for this tag.
+DETARGET_IPTM_CEILING = 0.4
+
 # Two residues are counted as touching if any pair of their atoms is this close,
 # measured in angstroms (an angstrom is a ten-billionth of a metre). 4.5 is the
 # usual choice in the literature for protein-protein contact.

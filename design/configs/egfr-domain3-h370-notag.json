@@ -8,6 +8,11 @@
       "target_path": "../../data/structures/6aru_domain3.pdb",
       "chains": "A",
       "hotspots": "A320,A334,A344,A346,A367,A376,A397,A400"
+    },
+    {
+      "name": "HisTag",
+      "target_path": "../../data/sequences/his-tag-offtarget.fasta",
+      "weight": -0.5
     }
   ],
   "binder_lengths": [
@@ -16,5 +21,6 @@
   ],
   "number_of_final_designs": 200,
   "max_trajectories": 2000,
-  "termini_accessible": true
+  "termini_accessible": true,
+  "crop_fasta_sequence": false
 }
