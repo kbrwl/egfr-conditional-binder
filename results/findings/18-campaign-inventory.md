@@ -2,7 +2,7 @@
 
 Computed by `analysis/18_campaign_inventory.py`. Do not hand-edit; rerun the script.
 
-Campaign folder: `results/candidates/egfr-tight4-tight4`
+Campaign folder: `results/candidates/egfr-r1-long-r1-long`
 
 ## 1. Coverage
 
@@ -10,11 +10,11 @@ Every attempt the campaign made, and what is known about each. A record holding 
 
 | | count |
 |---|---|
-| attempts | 6 |
+| attempts | 10 |
 | accepted by bindcraft | 0 |
-| rejected by bindcraft | 6 |
+| rejected by bindcraft | 10 |
 | scored by us | 0 |
-| not scored by us | 6 |
+| not scored by us | 10 |
 | accepted but unscored | 0 |
 
 ## 2. Files retained
@@ -23,18 +23,22 @@ Retained means the file exists and was copied back. It is a separate question fr
 
 | stage | files | bytes |
 |---|---|---|
-| 1_Trajectories | 7 | 134,391 |
-| other | 45 | 54,998,527 |
+| 1_Trajectories | 21 | 10,541,032 |
+| other | 1 | 2,676 |
 
 ## 3. Tables the run wrote
 
-- `1_Trajectories/!_Trajectories.csv` — 6 rows, 14 columns
-- `1_Trajectories/egfr-domain3-h370-tight4_detarget_l31_37c084aa3b34c399/egfr-domain3-h370-tight4_detarget_l31_37c084aa3b34c399_losses.csv` — 240 rows, 30 columns
-- `1_Trajectories/egfr-domain3-h370-tight4_detarget_l41_8d70e8e0582565b7/egfr-domain3-h370-tight4_detarget_l41_8d70e8e0582565b7_losses.csv` — 280 rows, 30 columns
-- `1_Trajectories/egfr-domain3-h370-tight4_detarget_l60_f130f4efac9a6117/egfr-domain3-h370-tight4_detarget_l60_f130f4efac9a6117_losses.csv` — 100 rows, 30 columns
-- `1_Trajectories/egfr-domain3-h370-tight4_detarget_l68_341198730c9639d7/egfr-domain3-h370-tight4_detarget_l68_341198730c9639d7_losses.csv` — 250 rows, 30 columns
-- `1_Trajectories/egfr-domain3-h370-tight4_detarget_l79_ca6b16aa615baea5/egfr-domain3-h370-tight4_detarget_l79_ca6b16aa615baea5_losses.csv` — 250 rows, 30 columns
-- `1_Trajectories/egfr-domain3-h370-tight4_detarget_l88_520cd9438896db72/egfr-domain3-h370-tight4_detarget_l88_520cd9438896db72_losses.csv` — 280 rows, 30 columns
+- `1_Trajectories/!_Trajectories.csv` — 10 rows, 14 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l100_6a853d0897bc270f/egfr-domain3-h370-r1-long_detarget_l100_6a853d0897bc270f_losses.csv` — 100 rows, 30 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l100_cf5bf8f31b8a7748/egfr-domain3-h370-r1-long_detarget_l100_cf5bf8f31b8a7748_losses.csv` — 250 rows, 30 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l63_86868b8ece95bfa0/egfr-domain3-h370-r1-long_detarget_l63_86868b8ece95bfa0_losses.csv` — 240 rows, 30 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l67_9d835c085ebf8e22/egfr-domain3-h370-r1-long_detarget_l67_9d835c085ebf8e22_losses.csv` — 150 rows, 30 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l70_47af44f4006bcf71/egfr-domain3-h370-r1-long_detarget_l70_47af44f4006bcf71_losses.csv` — 250 rows, 30 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l74_6128581b478859ae/egfr-domain3-h370-r1-long_detarget_l74_6128581b478859ae_losses.csv` — 250 rows, 30 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l76_c05b4747060af5a1/egfr-domain3-h370-r1-long_detarget_l76_c05b4747060af5a1_losses.csv` — 250 rows, 30 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l81_5342e17194d92345/egfr-domain3-h370-r1-long_detarget_l81_5342e17194d92345_losses.csv` — 150 rows, 30 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l87_4d2f3c6736bfb423/egfr-domain3-h370-r1-long_detarget_l87_4d2f3c6736bfb423_losses.csv` — 250 rows, 30 columns
+- `1_Trajectories/egfr-domain3-h370-r1-long_detarget_l94_bc82ebce2c3cf818/egfr-domain3-h370-r1-long_detarget_l94_bc82ebce2c3cf818_losses.csv` — 100 rows, 30 columns
 
 ## 4. What could not be determined, and why
 

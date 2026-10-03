@@ -1619,6 +1619,34 @@ output would fail the gate for an unanticipated reason. Query and hits kept at
 **Owed: this was run by hand and should become a script before it is quoted
 anywhere final.**
 
+**ROUND ONE COMPLETE — 3 October 2026, 19:42 IST. Both campaigns ran their full
+ten trajectories and stopped by themselves.** Final: short band $2.89, long band
+$3.34, **$6.23 together**, against a $7 estimate and a $7 ceiling. Remaining
+budget about **$13.14**, which clears the $12 floor the round was sized around.
+
+| | short, 30-60 | long, 60-100 |
+|---|---|---|
+| trajectories | 10 | 10 |
+| reached the end of the pipeline | **1** | **0** |
+| candidates written | **10** | **0** |
+| accepted by BindCraft2 | 0 | 0 |
+| card time | $2.89 | $3.34 |
+| peak card memory | **8,894 MiB** | **17,227 MiB** |
+
+*The bands separated, and not on price.* Ten trajectories each. The short band
+carried one through to candidates; the long band carried none, and wrote no
+structure at any point in ten attempts. Where the long band stopped: harden 5,
+refine 2, screen 2, anneal 1. Its interface confidence during optimisation ran
+0.21-0.25, against 0.73-0.83 in the short band. On ten against ten this is no
+longer a one-event margin, and the reading is that a 60-100 residue binder is
+not finding this four-anchor face while a 30-60 one sometimes does.
+
+*A second reason to prefer the short band, measured rather than assumed:* peak
+card memory is 8,894 MiB against the long band's 17,227 of the L4's 23,034. Two
+short-band workers fit on one card and two long-band workers cannot. The
+throughput lever that has been theoretical since the first campaign is available
+in the short band only.
+
 **Round one, the three numbers it existed to measure — 3 October 2026, nine
 recorded trajectories per band.**
 
