@@ -209,8 +209,11 @@ it.
 as the sequence needing to be under 30% similar to anything existing. The scale
 is defined at `adaptyvbio.com/blog/novelty`.
 
-*The two statements are not obviously the same thing and this should be checked
-against the blog before relying on either. Recorded here as stated, unresolved.*
+*Resolved against the blog, 3 October 2026. The two statements are not the same
+thing, and the blog is the one to work from — see "What the levels actually are"
+in `docs/rules-reference.md`. In short: under 30% sequence similarity on its own
+gives level 4 only if structural similarity is also low. A design under 30% on
+sequence that still matches a known fold lands on level 3, which passes.*
 
 **How they check it** (Tudor, 1 October): in previous competitions they ran
 MMseqs2, a fast sequence-similarity search tool, against SwissProt, the Protein

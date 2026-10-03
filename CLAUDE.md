@@ -124,7 +124,6 @@ Do not decide them in the repository. Flag and stop.
 |---|---|---|
 | The exact mouse EGFR construct used in the screen — residue range, vendor, catalogue number | Asked twice in the Proteinbase Slack on 1 October 2026 and never answered | Use the sequence from the competition page, and say in any document that the screening construct is unconfirmed |
 | Whether cynomolgus monkey cross-reactivity is in scope | The pre-launch announcement said mouse and cyno; the recorded objectives say human and mouse | Check the competition page. Do not assume either way. Decided 2 October 2026 to design for human and mouse only; see Settled in `docs/decisions-log.md` |
-| What novelty level 3 requires exactly | Adaptyv stated it twice in terms that may not match — "level 3 of 4" and "under 30% similar to anything existing" | Read `adaptyvbio.com/blog/novelty` before relying on either |
 
 Record anything newly blocked in the Open or Unverified section of
 `docs/decisions-log.md`, which this table summarises rather than replaces.

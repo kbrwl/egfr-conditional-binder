@@ -117,7 +117,29 @@ said what and when.
   USPTO patent database, the EBI patent database, THPdb, PLAbDab and Proteinbase.
 - One organiser also described the requirement as the sequence being under 30%
   similar to anything existing. Whether this is the same threshold as level 3 is not
-  established. The definition is at the Adaptyv novelty blog linked above.
+  established. **It is not the same**: read against the blog on 3 October 2026,
+  under 30% on sequence gives level 4 only when structural similarity is also low.
+
+*The levels, from the blog.* Two measurements combine: sequence similarity by
+MMseqs2, and structural similarity by predicting the fold and matching it with
+FoldSeek and TM-align. "Moderate" structural similarity means over 70% of the
+sequence is covered by domains matching a known structure at TM-score 0.5 or
+better; "high" means the same coverage at 0.8 or better.
+
+| level | what it takes |
+|---|---|
+| 4, de novo | sequence 30% or under **and** structural below moderate |
+| 3, partly novel | exactly **one** of: sequence over 30%, or moderate structural |
+| 2, familiar | sequence over 70%; or high structural; or sequence over 30% **and** moderate structural |
+| 1, essentially known | sequence over 70% **and** at least moderate structural |
+
+*What follows for us.* The gate is level 3, so levels 3 and 4 both pass. A
+designed binder under 30% on sequence that still folds into a common shape, such
+as a helical bundle, scores level 3 and passes. Failing the gate takes landing on
+level 2, which from a de novo design means sequence similarity over 30% together
+with moderate structural similarity. So the thing to watch is sequence similarity,
+not the fold. This also removes the worry that a conventional-looking fold alone
+could disqualify a design.
 
 **Selection**
 
