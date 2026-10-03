@@ -38,6 +38,7 @@ Thumbs.db
 # our own reasoning lives in docs/decisions-log.md.
 /README.draft.md
 submission/methods.draft.md
+submission/slot-plan.draft.md
 docs/competition-brief.md
 
 # Staging area for documents handed over from Claude chat. Files land here, get
