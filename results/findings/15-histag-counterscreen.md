@@ -63,9 +63,24 @@ histidines, which a tag's histidines fit as readily.
 
 4. Real candidates
 
-   None given. Run again with --candidates pointing at a campaign
-   folder once the design run has produced one. Until then this step
-   has checked its rule and its configuration files and nothing else.
+   Metrics table: results/candidates/egfr-r1-short-r1-short/2_Refolded/!_Refolded.csv
+
+   | design | i_pTM_detarget | verdict |
+   |---|---|---|
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1 | 0.08 | no tag binding predicted |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10 | 0.11 | no tag binding predicted |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2 | 0.10 | no tag binding predicted |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3 | 0.10 | no tag binding predicted |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4 | 0.08 | no tag binding predicted |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5 | 0.08 | no tag binding predicted |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6 | 0.09 | no tag binding predicted |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7 | 0.10 | no tag binding predicted |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8 | 0.09 | no tag binding predicted |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9 | 0.09 | no tag binding predicted |
+
+   accepts the tag: 0
+   no tag binding predicted: 10
+   not recorded: 0
 
 ========================================================================
 5. What this changes about the design
@@ -83,9 +98,9 @@ histidines, which a tag's histidines fit as readily.
    interface does not show there is none. It can show a risk is present
    and cannot show it is absent.
 
-Wrote data/derived/15-tag-screen.csv (header only; no real candidates yet)
+Wrote data/derived/15-tag-screen.csv
 
 ========================================================================
-RESULT: PASSED. The rule is exercised and the campaign files carry what it depends on; no real candidates were supplied.
+RESULT: PASSED. 10 candidates screened.
 ========================================================================
 ```

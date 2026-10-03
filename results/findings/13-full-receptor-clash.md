@@ -57,9 +57,65 @@ back into the intact receptor and measures the overlap.
 
 3. Real candidates
 
-   None found under /Users/kunalbariwal/AI/EGFR Binder/egfr-conditional-binder/results/candidates. Nothing from the design run exists yet, which is why section 2
-   is the whole of this script's evidence. Rerun this step with --candidates
-   pointing at the run's output folder once there is one.
+   30 file(s) under results/candidates/egfr-r1-short-r1-short/2_Refolded
+
+   | design | verdict | overlaps <2.5 A | contacts | closest | nearest residue | interface to domain III |
+   |---|---|---|---|---|---|---|
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_monomer | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_EGFR_domain3 | clear | 0 | 0 | 11.15 A | 489 | 5 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3 | clear | 0 | 0 | 9.77 A | 491 | 76 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3 | clear | 0 | 0 | 10.41 A | 491 | 4 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_EGFR_domain3 | clear | 0 | 0 | 10.33 A | 489 | 2 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_EGFR_domain3 | clear | 0 | 0 | 11.06 A | 492 | 1 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_EGFR_domain3 | clashing | 1 | 8 | 1.96 A | 489 | 9 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_EGFR_domain3 | clear | 0 | 0 | 10.27 A | 491 | 9 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3 | clear | 0 | 0 | 9.92 A | 491 | 62 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3 | clear | 0 | 0 | 11.56 A | 489 | 55 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_EGFR_domain3 | clear | 0 | 0 | 10.51 A | 489 | 6 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_HisTag | not scored | 0 | 0 | — | — | 0 |
+   >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+
+   clear: 9
+   marginal: 0
+   clashing: 1
+   not scored: 20
 
 ========================================================================
 4. What this changes about the design
@@ -77,7 +133,7 @@ back into the intact receptor and measures the overlap.
    A real receptor can shift to accommodate a small overlap, which is why a
    marginal verdict is reported as marginal rather than as a failure.
 
-Wrote data/derived/13-candidate-clashes.csv (header only; no real candidates yet)
+Wrote data/derived/13-candidate-clashes.csv
 
 ========================================================================
 RESULT: PASSED. Every constructed case came back as it had to: a binder

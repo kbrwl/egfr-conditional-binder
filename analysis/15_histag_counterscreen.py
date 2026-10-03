@@ -113,6 +113,37 @@ TAG_FASTA = common.SEQ_DIR / "his-tag-offtarget.fasta"
 # The column BindCraft2 writes for an off-target's interface confidence.
 READING = "i_pTM_detarget"
 
+# What it actually wrote, on the first real output, 3 October 2026. There is no
+# `i_pTM_detarget` column in `2_Refolded/!_Refolded.csv`. Instead `i_pTM` carries
+# one value per target, separated by a semicolon and in the order the campaign
+# file lists them: `0.37;0.08` means 0.37 against EGFR and 0.08 against the tag.
+# Without this the screen read every candidate as 'not recorded' while the
+# reading sat in the table, which is the quietest way for a counter-screen to
+# fail — it reports nothing rather than reporting wrong.
+PACKED_READING = "i_pTM"
+
+
+def detarget_reading(row):
+    """The off-target interface confidence for one candidate, or None.
+
+    Prefers an explicit `i_pTM_detarget` column. Falls back to the second
+    semicolon-separated field of `i_pTM`, which is where the pipeline actually
+    puts it when the campaign declares one off-target. A row carrying a trailing
+    semicolon and nothing after it has no off-target reading, and returns None
+    rather than zero: absent is not the same as zero, and zero would read as a
+    clean pass.
+    """
+    direct = row.get(READING)
+    if direct not in (None, ""):
+        return direct
+    packed = row.get(PACKED_READING)
+    if not packed or ";" not in str(packed):
+        return None
+    fields = str(packed).split(";")
+    if len(fields) < 2 or not fields[1].strip():
+        return None
+    return fields[1].strip()
+
 VERDICT_ACCEPTS = "accepts the tag"
 VERDICT_CLEAR = "no tag binding predicted"
 VERDICT_UNRECORDED = "not recorded"
@@ -368,7 +399,7 @@ def main(argv=None):
         emit(f"   | design | {READING} | verdict |")
         emit("   |---|---|---|")
         for name, row in sorted(metrics.items()):
-            verdict, value = verdict_for(row.get(READING))
+            verdict, value = verdict_for(detarget_reading(row))
             rows.append((name, value, verdict))
             shown = "—" if value is None else f"{value:.2f}"
             emit(f"   | {name} | {shown} | {verdict} |")
