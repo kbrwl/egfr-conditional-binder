@@ -220,6 +220,12 @@ CONFIGS = {
     # anchors to the tight four on the N352 side. The one variable changed, so an
     # improvement in interface confidence can be attributed to it.
     "tight4": "design/configs/diagnostic/tight4-notag.json",
+    # Round one, 3 October 2026: the tight4 hotspots (E344, H358, D368, H370; config
+    # numbers A320, A334, A344, A346), same committed 310-480 fragment, same His-tag
+    # off-target, with the one variable between the two being the binder length band.
+    # `batch_r1_short` and `batch_r1_long` below say why.
+    "r1-short": "design/configs/diagnostic/r1-short-notag.json",
+    "r1-long": "design/configs/diagnostic/r1-long-notag.json",
 }
 
 # The interface-confidence floors, lowered. BindCraft2's defaults are
@@ -246,6 +252,18 @@ LOWERED_IPTM_FLOORS = {
     "min_iptm_mutate": 0.35,
     "min_iptm_final": 0.5,
 }
+
+# Round one's settings: the lowered floors above, plus `save_design_sequences`
+# turned on. Added 3 October 2026, after `egfr-tight4-tight4` reached the final
+# stage on two of its six trajectories (i_pTM 0.51 and 0.61 in the optimisation
+# losses, our highest readings against this target to date) and still left no
+# recoverable sequence or structure on disk or on the Modal volume -- every
+# `1_Trajectories/<design>/` folder held only `<design>_losses.csv`, a table of
+# scalar metrics, because `save_design_sequences` defaults to false. Without it,
+# a trajectory that clears every gate still writes nothing `analysis/10` or
+# `analysis/18` can read. `save_failed_trajectories` and `save_failed_refolds`
+# were already true and are left as they are.
+ROUND1_SETTINGS = dict(LOWERED_IPTM_FLOORS, save_design_sequences=True)
 
 # BindCraft2's own output subdirectories, inside the project folder. The numbering
 # check looks nowhere else; see the module docstring on the bug that caused.
@@ -296,6 +314,12 @@ image = (
                     f"{WORK_DIR}/design/configs/diagnostic/ext499-notag.json")
     .add_local_file(_local("design", "configs", "diagnostic", "tight4-notag.json"),
                     f"{WORK_DIR}/design/configs/diagnostic/tight4-notag.json")
+    # Round one's two length-band configs. Same target structure and His-tag
+    # off-target as tight4, already mounted above; no new data file needed.
+    .add_local_file(_local("design", "configs", "diagnostic", "r1-short-notag.json"),
+                    f"{WORK_DIR}/design/configs/diagnostic/r1-short-notag.json")
+    .add_local_file(_local("design", "configs", "diagnostic", "r1-long-notag.json"),
+                    f"{WORK_DIR}/design/configs/diagnostic/r1-long-notag.json")
     .add_local_file(_local("analysis", "target_numbering.py"),
                     "/opt/target_numbering.py")
 )
@@ -969,6 +993,80 @@ def batch_floors(trajectories: int = 8, config: str = "notag"):
     return _campaign(config, trajectories=trajectories,
                      run_name=f"egfr-floors-{config}",
                      extra_settings=LOWERED_IPTM_FLOORS)
+
+
+@app.function(gpu=DEFAULT_GPU, timeout=timeout_for_spend(3.5),
+              volumes={"/results": results, "/weights": weights})
+def batch_r1_short(trajectories: int = 10, config: str = "r1-short"):
+    """Round one, short band: the tight four hotspots, binder length narrowed to 30-60 aa.
+
+    `egfr-tight4-tight4` (`batch_tight4`) reached BindCraft2's final stage on two of
+    its six trajectories, at i_pTM 0.51 and 0.61 -- our highest interface-confidence
+    readings against this target to date -- while running the committed 30-100 aa
+    binder length band whole. That single wide band cannot say how much of the cost
+    of a trajectory comes from the binder's length, because any one trajectory could
+    have drawn a length from anywhere in it. Round one splits the band in two to
+    answer that: this function runs the bottom half, 30-60 aa; `batch_r1_long` runs
+    the top half, 60-100 aa.
+
+    Everything else is held exactly as `batch_tight4` set it: the tight four hotspots
+    (E344, H358, D368, H370; config numbers A320, A334, A344, A346), the committed
+    310-480 fragment, the His-tag off-target, and `termini_accessible`. The one
+    deliberate difference between this function and `batch_r1_long` is the length
+    band named in each one's name. Binder length is also the one variable on that
+    list that changes compute cost per trajectory -- a longer chain is a larger
+    folding problem for BindCraft2's structure predictor to solve at every stage --
+    so it is the variable round two's size will be read off of, once both bands have
+    a measured card-time-per-trajectory figure to compare.
+
+    `extra_settings` is `ROUND1_SETTINGS`, not `LOWERED_IPTM_FLOORS` alone, because
+    of what the tight4 run above did not leave behind: its two trajectories that
+    reached the final stage wrote a `<design>_losses.csv` table of scores and
+    nothing else, no sequence and no structure, because `save_design_sequences`
+    defaults to false and nothing in that run turned it on. `ROUND1_SETTINGS` is the
+    same lowered floors with that setting turned on, so a trajectory that again
+    clears every gate this time leaves something `analysis/10` or `analysis/18` can
+    actually read.
+
+    Ten trajectories by default, inside this function's $3.50 card-time ceiling --
+    sized to get a per-trajectory cost reading for the short band without spending
+    the budget meant to also cover the long band in `batch_r1_long`.
+    """
+    return _campaign(config, trajectories=trajectories,
+                     run_name=f"egfr-r1-short-{config}", extra_settings=ROUND1_SETTINGS)
+
+
+@app.function(gpu=DEFAULT_GPU, timeout=timeout_for_spend(3.5),
+              volumes={"/results": results, "/weights": weights})
+def batch_r1_long(trajectories: int = 10, config: str = "r1-long"):
+    """Round one, long band: the tight four hotspots, binder length narrowed to 60-100 aa.
+
+    The counterpart to `batch_r1_short`, which that function's docstring explains in
+    full: both are round one of splitting the committed 30-100 aa binder length band
+    that `egfr-tight4-tight4` (`batch_tight4`) ran whole, in order to measure how
+    much of a trajectory's cost tracks the binder's length rather than the hotspot
+    set or the fragment, neither of which changes between the two functions.
+
+    This one runs the top half of the band, 60-100 aa, against the same tight four
+    hotspots (E344, H358, D368, H370; config numbers A320, A334, A344, A346), the
+    same committed 310-480 fragment, and the same His-tag off-target as
+    `batch_r1_short`. The length band is the only deliberate difference between the
+    two functions.
+
+    `extra_settings` is `ROUND1_SETTINGS` for the same reason it is in
+    `batch_r1_short`: `egfr-tight4-tight4` reached the final stage on two of its six
+    trajectories and still left no recoverable sequence or structure, because
+    `save_design_sequences` defaults to false and was never turned on there.
+    `ROUND1_SETTINGS` carries the same lowered interface floors with that setting
+    turned on.
+
+    Ten trajectories by default, inside this function's own $3.50 card-time
+    ceiling, run alongside `batch_r1_short` rather than instead of it -- the
+    comparison that sizes round two needs a cost-per-trajectory figure for both
+    bands, not just one.
+    """
+    return _campaign(config, trajectories=trajectories,
+                     run_name=f"egfr-r1-long-{config}", extra_settings=ROUND1_SETTINGS)
 
 
 @app.function(timeout=60 * 10, volumes={"/results": results})
