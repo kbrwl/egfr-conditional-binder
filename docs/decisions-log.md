@@ -1619,6 +1619,37 @@ output would fail the gate for an unanticipated reason. Query and hits kept at
 **Owed: this was run by hand and should become a script before it is quoted
 anywhere final.**
 
+**Round one, the three numbers it existed to measure — 3 October 2026, nine
+recorded trajectories per band.**
+
+| | short, 30-60 | long, 60-100 |
+|---|---|---|
+| trajectories recorded | 9 | 9 |
+| reached the end of the stage pipeline | **1** | **0** |
+| candidates written | **10** | 0 |
+| accepted by BindCraft2 | 0 | 0 |
+| card time | $2.51 | $2.77 |
+| cost per trajectory | **$0.279** | **$0.308** |
+| cost per candidate | **$0.25** | undefined |
+
+*Cost per accepted design is undefined in both bands, again, because the
+numerator is zero.* Cost per candidate is defined for the short band and is the
+figure that sizes round two, because a candidate is what our own screens can
+read and BindCraft2's acceptance is not our criterion.
+
+*The band difference is in completion, not in price.* Per trajectory the short
+band is about 10% cheaper, which is less than the length ratio would suggest and
+not on its own a reason to prefer it. What separates them is that the short band
+carried one trajectory through to candidates and the long band carried none in
+nine. On n=9 each that is suggestive and not settled: one completed trajectory
+against zero is a difference of one event.
+
+*Charge-pair survival, the longest-standing unmeasured quantity, now has a
+denominator:* 0 of 10 candidates reach three correct pairs. Best is two, and
+both designs carrying two are rejected for contacting 442. Six are submittable
+at one pair or none. All ten come from one backbone, so this is one backbone's
+answer rather than ten.
+
 **Round one launched, 3 October 2026.** Two campaigns of ten trajectories each,
 `batch_r1_short` (30-60 aa) and `batch_r1_long` (60-100 aa), on the tight4 anchors
 and the committed 310-480 fragment, with the lowered floors and
