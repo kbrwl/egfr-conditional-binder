@@ -1573,6 +1573,25 @@ that is blank for a surviving attempt and otherwise names the stage that stopped
 and each attempt's losses table is joined by the folder it sits in rather than by a
 column.
 
+**Never quote the 26-trajectory total as one rate — it pools configurations that
+were testing different things.** Counted from each campaign's own trajectory
+table, 3 October 2026:
+
+| configuration | trajectories | reached the final stage |
+|---|---|---|
+| eight hotspots (validate, diagnose, floors, ext499 probe) | 20 | 0 |
+| four hotspots, the tight4 set | 6 | 2 |
+
+Pooled as "26 attempts, 0 accepted" the project looks stuck. Split, the narrowed
+configuration is the only one that has ever reached the last gate, and it did so
+on BindCraft2's **default** floors, not the lowered ones. Quote rates per
+configuration with their denominator from here on.
+
+*What the split does not prove.* These campaigns differ in more than hotspot
+count — the floors and, for one of them, the fragment also moved — so 2 of 6
+against 0 of 20 is not a controlled comparison. It is the reason the current
+round holds everything except length fixed.
+
 **Round one launched, 3 October 2026.** Two campaigns of ten trajectories each,
 `batch_r1_short` (30-60 aa) and `batch_r1_long` (60-100 aa), on the tight4 anchors
 and the committed 310-480 fragment, with the lowered floors and
