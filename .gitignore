@@ -37,6 +37,7 @@ Thumbs.db
 # conclusions. The official facts they contain live in docs/rules-reference.md;
 # our own reasoning lives in docs/decisions-log.md.
 /README.draft.md
+submission/methods.draft.md
 docs/competition-brief.md
 
 # Staging area for documents handed over from Claude chat. Files land here, get
