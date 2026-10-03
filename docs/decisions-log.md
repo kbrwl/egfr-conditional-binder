@@ -18,12 +18,9 @@ No candidate sequence exists yet.
 
 Anthropic x Adaptyv Protein Design Competition, Challenge 1 (of 5).
 Official page: proteinbase.com/competitions/anthropic-adaptyv-2026/challenges/egfr
-Deadline 4 October 2026, 23:59 AoE (Anywhere on Earth: the deadline has not passed
-until it has passed in every time zone, which is UTC-12). **The organisers may have extended it to
-5 October;** that is inferred from a Slack announcement and unconfirmed by the competition
-page, so plan against 4 October (see Unverified). The competition page is authoritative over
-Slack, which is our own standing precedence rule, so this stands even though an extension would
-be welcome. Summarised in the Blocked table in `CLAUDE.md`.
+Deadline **6 October 2026, 23:59 AoE** (Anywhere on Earth: the deadline has not passed
+until it has passed in every time zone, which is UTC-12). Settled 3 October 2026 from the
+organisers' official Slack announcement; see Settled.
 
 Four further challenges follow weekly until 1 November 2026. Everything built
 here — the analysis scripts, the numbering guard, the findings format — should be
@@ -79,6 +76,13 @@ Deliverable is sequences plus written methods. No lab work by us.
 ---
 
 ## Settled
+
+**Deadline: 6 October 2026, 23:59 AoE (3 October 2026).** The organisers announced in the
+Proteinbase Slack that challenge 1 is extended to 6 October because some teams received
+Modal credits late; challenge 2 starts on time, so the two overlap by about two days. This
+replaces the 4 October date and the inferred 5 October one. The competition page was to be
+updated to match; re-read it, and if it disagrees, ask. See `docs/rules-reference.md` and
+`docs/competition-qa-log.md` section 13a.
 
 **Numbering convention: full UniProt P00533, always.**
 UniProt is the public archive of protein sequences; P00533 is its record for human
@@ -828,12 +832,6 @@ RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
   output and, once the local copies were synchronised, step 01's difference counts
   and step 06's occlusion numbers. A separate constant for the trim boundary would
   avoid that, and should be introduced rather than moving `D3_END`.
-
-- **The 5 October deadline.** Tudor announced on 30 September that challenge 1 is extended by
-  one day for the Modal credit delays, which makes it 5 October 23:59 Anywhere on Earth. The
-  new date is inferred from that announcement and was not quoted. The competition page, read
-  on 2 October, still says 4 October with no extension. **Plan against 4 October** until the
-  page confirms it.
 
 - **How far a sugar chain reaches.** Step 05's bands of 15 and 25 Å rest on a reach of 20–30 Å
   from a complex glycan, from memory. They are cautious on purpose. The ordering of the anchors
@@ -1659,7 +1657,7 @@ independent and only one of them costs money.
    organisers listed, and test against the real checker, which scores automatically on
    upload. Read `adaptyvbio.com/blog/novelty` first. Spread the twenty slots across anchor
    subsets and size categories. Upload an early safe batch and replace it, one submission per
-   24 hours. Plan against 4 October 23:59 AoE. Write the reasoning, because selection reads
+   24 hours. Deadline is now 6 October 23:59 AoE. Write the reasoning, because selection reads
    the documentation.
 8. **Rewrite `docs/explainers/04-design-pipeline.md` after the first real pipeline run,** with
    what happened in place of what was planned. Its figures are external, read on 1 October,

@@ -31,19 +31,18 @@ Where a Slack statement and the competition page disagree, the page wins.
 
 ## Dates
 
-Challenge 1 deadline: **4 October 2026, 23:59 Anywhere on Earth**.
+Challenge 1 deadline: **6 October 2026, 23:59 Anywhere on Earth** *(Slack, official)*.
 
 "Anywhere on Earth" is a defined deadline convention: the deadline has not passed
 until it has passed in every time zone, which is UTC−12, so about midday UTC on
-5 October.
+7 October.
 
-**Possible extension to 5 October *(Slack)*.** On 30 September the organiser Tudor
-announced that challenge 1 is extended by one day because of the Modal credit
-delays, and the second challenge still starts on time, so challenges 1 and 2
-overlap by a day. That would make the deadline **5 October 2026, 23:59 Anywhere on
-Earth**. The new date is inferred from the announcement and was not quoted. The
-competition page, read on 2 October, still says 4 October and mentions no
-extension. Until the page confirms it, 4 October is the date to plan against.
+**Settled 3 October 2026.** The original date was 4 October. An earlier Slack message
+(Tudor, 30 September) was read as a one-day extension to 5 October. The official
+announcement in the Proteinbase Slack supersedes that: challenge 1 is extended to
+**6 October 23:59 AoE** because some teams received Modal credits late. The competition
+page was still to be updated to match when this was recorded; if the page and this file
+disagree, re-read the page. Challenge 2 starts on time, so the two overlap by about two days.
 
 Four further challenges follow weekly until 1 November 2026.
 

@@ -125,7 +125,6 @@ Do not decide them in the repository. Flag and stop.
 | The exact mouse EGFR construct used in the screen — residue range, vendor, catalogue number | Asked twice in the Proteinbase Slack on 1 October 2026 and never answered | Use the sequence from the competition page, and say in any document that the screening construct is unconfirmed |
 | Whether cynomolgus monkey cross-reactivity is in scope | The pre-launch announcement said mouse and cyno; the recorded objectives say human and mouse | Check the competition page. Do not assume either way. Decided 2 October 2026 to design for human and mouse only; see Settled in `docs/decisions-log.md` |
 | What novelty level 3 requires exactly | Adaptyv stated it twice in terms that may not match — "level 3 of 4" and "under 30% similar to anything existing" | Read `adaptyvbio.com/blog/novelty` before relying on either |
-| Whether the deadline is 4 or 5 October 2026 | The competition page, read 2 October 2026, says 4 October 2026, 23:59 Anywhere on Earth (UTC-12), with no extension shown. A one-day extension was announced in the Proteinbase Slack on 30 September 2026, inferred rather than quoted, and has not appeared on the page. The competition page is authoritative over Slack (`docs/decisions-log.md`) | Work to 4 October 2026, 23:59 Anywhere on Earth. Treat 5 October as a possible bonus day and do not spend it in advance |
 
 Record anything newly blocked in the Open or Unverified section of
 `docs/decisions-log.md`, which this table summarises rather than replaces.

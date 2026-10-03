@@ -263,13 +263,10 @@ pre-registration existed only to anticipate how much compute the organisers woul
 need for selection, and designs can be submitted directly.
 
 **Deadline.** Amir confirmed on 29 September that it was Sunday 4 October,
-anywhere on Earth. Tudor then announced on 30 September that the challenge is
-extended by one day because of the Modal credit delays, which puts it at
-**5 October anywhere on Earth**. The second challenge still starts on time, so
-challenges 1 and 2 overlap by a day.
-
-*The extension was announced in Slack and the new date is inferred from it rather
-than quoted. Confirm against the competition page before relying on it.*
+anywhere on Earth. Tudor's 30 September message announced an extension for the Modal
+credit delays, read at the time as one day (5 October). **Superseded: the official
+announcement gives 6 October 2026, 23:59 anywhere on Earth** (section 13a). The second
+challenge still starts on time, so challenges 1 and 2 overlap by about two days.
 
 ## 12. Public data the organisers have released
 
@@ -299,6 +296,15 @@ classifiers, making it more usable for this work. Several participants in
 **Accelerated models.** Amir, 29 September: Anthropic has published accelerated
 versions of popular open-source design and folding models, averaging 4–5x
 speed-ups. `github.com/anthropics/uplifting-biomolecular-modeling`.
+
+## 13a. Deadline extended to 6 October (recorded 3 October 2026)
+
+Official announcement in the Proteinbase Slack, relayed to this project on 3 October:
+challenge 1 is extended to **6 October 2026, 23:59 Anywhere on Earth**, because some
+teams received their Modal credits late. The competition page is to be updated to match.
+Challenge 2 starts on time, so the challenges overlap by about two days. This supersedes
+the earlier reading of Tudor's 30 September message as a one-day extension to 5 October.
+Message author and exact wording were not captured at the time of recording.
 
 ## 14. Asked and still unanswered as of 2 October
 
