@@ -2,7 +2,8 @@
 
 Read this first in any new chat. Update it when something moves between sections.
 
-Last updated: 2 October 2026, evening. The Proteinbase Slack was read and its
+Last updated: 3 October 2026. Deadline extended to 6 October (Settled); round one
+launched as two length-band campaigns (Pipeline status). The Proteinbase Slack was read and its
 answers recorded (assay, construct, selection, submission); the marginal-affinity rule
 was withdrawn; Modal was linked and its first check found to have tested nothing;
 sugar-chain sequons, the tethered cut and the His-tag screen were written; and the
@@ -1565,6 +1566,19 @@ real schema, which had been guessed at: the decision lives in a `terminated` col
 that is blank for a surviving attempt and otherwise names the stage that stopped it,
 and each attempt's losses table is joined by the folder it sits in rather than by a
 column.
+
+**Round one launched, 3 October 2026.** Two campaigns of ten trajectories each,
+`batch_r1_short` (30-60 aa) and `batch_r1_long` (60-100 aa), on the tight4 anchors
+and the committed 310-480 fragment, with the lowered floors and
+`save_design_sequences` on. Ceiling $3.50 of card time each.
+
+*Why that setting was added.* The tight4 run reached the final stage twice and left
+no recoverable sequence: every trajectory folder holds a `_losses.csv` of scalar
+metrics and nothing else, on disk and on the volume alike, because
+`save_design_sequences` defaults to false. Checked before spending anything.
+
+*What round one measures:* acceptance per band, charge-pair survival with a real
+denominator, and cost per accepted design per band. Round two is sized from those.
 
 ---
 
