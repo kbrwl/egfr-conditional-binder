@@ -44,6 +44,11 @@ announcement in the Proteinbase Slack supersedes that: challenge 1 is extended t
 page was still to be updated to match when this was recorded; if the page and this file
 disagree, re-read the page. Challenge 2 starts on time, so the two overlap by about two days.
 
+**The page was read on 3 October 2026 and still showed 4 October.** So the
+6 October date rests entirely on the announcement as relayed to this project, with
+no independent confirmation. If that relay is mistaken the deadline is sooner than
+everything here is planned against, which makes it worth confirming directly.
+
 Four further challenges follow weekly until 1 November 2026.
 
 ---
