@@ -113,7 +113,17 @@ STAGE_DIRS = ("1_Trajectories", "2_Refolded", "3_Ranked")
 # that stopped it. That makes it better than a plain yes-or-no column, because the
 # stage is itself the reason, which is what this step exists to record.
 ACCEPT_COLUMNS = ("Accepted", "accepted", "Passed", "passed", "Success",
-                  "success", "PassedFilters", "passed_filters")
+                  "success", "PassedFilters", "passed_filters",
+                  # What BindCraft2 v1.0.1 actually writes, found on the first
+                  # real output 3 October 2026: `2_Refolded/!_Refolded.csv` has
+                  # an `outcome` column reading `accepted` or `rejected`. Without
+                  # this name the verdict sat unread and the step guessed from
+                  # which folder a file was in instead.
+                  "outcome")
+
+# Values in an accept column that mean the design was accepted. `accepted` is
+# here for the `outcome` column above; the rest predate it.
+ACCEPTED_VALUES = ("1", "true", "yes", "y", "accepted", "pass", "passed")
 TERMINATED_COLUMN = "terminated"
 
 # The stages an attempt passes through, in order, as BindCraft2 names them in its
@@ -299,9 +309,18 @@ def bindcraft_verdicts(tables):
                     record["bindcraft_accept_column"] = TERMINATED_COLUMN
                     record["termination_reason"] = STAGE_MEANING.get(
                         stage, f"stopped at the {stage} stage")
-                elif accept_column is None:
-                    record["bindcraft_accepted"] = "true"
-                    record["bindcraft_accept_column"] = TERMINATED_COLUMN
+                else:
+                    # A blank `terminated` means the trajectory ran to the end of
+                    # the stage pipeline. **That is not the same as a design being
+                    # accepted** and must not be recorded as one. An earlier
+                    # version asserted acceptance here, and on the round-one short
+                    # band it reported one accepted design where BindCraft2
+                    # accepted none: the one trajectory that completed went on to
+                    # produce ten candidates and every one was then rejected.
+                    # Acceptance is a per-design verdict and comes from the accept
+                    # column or from a structure in 3_Ranked/; this table is
+                    # per-trajectory and cannot carry it.
+                    record["completed_pipeline"] = True
             # Keep every metric the table carried, prefixed by its table, so two
             # tables reporting the same metric name do not overwrite each other.
             for key, value in row.items():
@@ -381,7 +400,7 @@ def build_ledger(campaign, scored_by_design=None):
             or name in stages["3_Ranked"]
         declared = record.get("bindcraft_accepted")
         if declared is not None:
-            accepted = str(declared).strip().lower() in ("1", "true", "yes", "y")
+            accepted = str(declared).strip().lower() in ACCEPTED_VALUES
             accepted_from = f"table column {record.get('bindcraft_accept_column')}"
         else:
             accepted = in_ranked
