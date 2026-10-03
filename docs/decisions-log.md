@@ -1592,6 +1592,33 @@ count — the floors and, for one of them, the fragment also moved — so 2 of 6
 against 0 of 20 is not a controlled comparison. It is the reason the current
 round holds everything except length fixed.
 
+**Novelty, first check on real sequences — 3 October 2026. No significant
+similarity to anything in Swiss-Prot.** MMseqs2 18-8cc5c, the ten 48-residue
+sequences from the short band against Swiss-Prot release of the same date
+(575,748 sequences), sensitivity 7.5.
+
+The raw percent identities look alarming and are not: best hits run 31-42%
+identity over the whole query. **Every one of them is statistical noise.** The
+best e-value across 2,239 hits is 0.30 and none reaches 0.001. An e-value of
+0.30 means a hit that good is expected by chance in a database this size; one of
+7.4e+03 means thousands are. A 48-residue query finds 35-40% identity over
+40-odd residues by chance routinely, and that is not homology. The organisers'
+own wording is that a design is de novo if it hits nothing "with any homology",
+which is a significance question rather than a raw-identity one.
+
+*Limits, and they are large.* Swiss-Prot only: the organisers also search the
+Protein Data Bank, two patent databases, THPdb, PLAbDab and Proteinbase, none of
+which was searched here. Nothing structural was run, and per the novelty blog
+the structural half is what decides between level 3 and level 4. And all ten
+sequences are ProteinMPNN redesigns of a single backbone, so this is one
+backbone checked, not ten.
+
+*What it changes:* nothing yet, but it removes the specific worry that de novo
+output would fail the gate for an unanticipated reason. Query and hits kept at
+`data/derived/19b-novelty-query.fasta` and `19b-novelty-swissprot-hits.m8`.
+**Owed: this was run by hand and should become a script before it is quoted
+anywhere final.**
+
 **Round one launched, 3 October 2026.** Two campaigns of ten trajectories each,
 `batch_r1_short` (30-60 aa) and `batch_r1_long` (60-100 aa), on the tight4 anchors
 and the committed 310-480 fragment, with the lowered floors and
