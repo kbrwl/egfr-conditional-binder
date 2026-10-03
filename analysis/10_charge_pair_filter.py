@@ -852,6 +852,20 @@ def find_candidate_structures(folder):
     If that folder is not there, every mmCIF below the path is taken instead and
     the run says so, because an output layout that has moved should produce a
     visible fallback rather than an empty result.
+
+    **To score the designs the pipeline rejected, pass `--candidates` the
+    `2_Refolded/` directory itself rather than the campaign folder.** Checked on
+    3 October 2026: `2_Refolded/` holds every scored candidate including the
+    rejected ones, and pointing at it takes the fallback branch above, which finds
+    them and still skips the `_monomer` files. No extra flag is needed for this
+    and none should be added. The metrics table will be missing, which
+    `read_metrics_table` reports and continues through, so the ranking rests on
+    the pair terms alone.
+
+    Why that matters: pointed at the campaign folder, this reads `3_Ranked/`
+    alone, so a campaign that accepts nothing is scored as nothing, even when
+    structures exist that our own rule might pass. The two gates measure
+    different things and the pipeline's verdict is not ours.
     """
     ranked = folder / "3_Ranked"
     if ranked.is_dir():
