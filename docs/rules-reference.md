@@ -151,9 +151,25 @@ could disqualify a design.
 
 **Submission mechanics**
 
-- Up to 20 proteins per submission, each chain 10 to 250 amino acids.
-- **One submission every 24 hours.**
+- Up to 20 designs for Track 3 (40 for Track 1), each chain 10 to 250 amino acids.
 - Track 3 needs no confirmation email: designs can be submitted directly.
+
+**CONFLICT, unresolved as of 3 October 2026 — how many times we may submit.**
+
+| source | says |
+|---|---|
+| the competition page, read 3 October | "One submission per participant per challenge" |
+| a participant quoting the submission page in Slack, 1 October | "one submission every 24 hours" |
+
+Our standing rule is that the page beats Slack, and the page is the stricter of
+the two. **Plan on having exactly one submission.** The wording may only mean one
+CSV file rather than several, and may still permit replacing it — but that reading
+is not established, and acting on it risks spending the entire entry on a draft.
+
+This matters because a strategy of "submit something safe early and improve it
+later" is only sound under the 24-hour reading. Under the page's reading it would
+end the entry. Resolve by asking the organisers, or by checking whether the
+submission portal itself offers a replace option, before submitting anything.
 
 ---
 
