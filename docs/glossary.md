@@ -594,6 +594,55 @@ allocation and file output are all exercised at once. Running your own target fi
 means a failure cannot be attributed, because a bad epitope, a wrong setting and a
 broken install all look the same.
 
+**Design stage** — one named phase of a single design attempt. BindCraft2 runs an
+attempt through screen, refine, anneal, harden and mutate, then a final check, and
+most stages measure the attempt against a minimum and drop it if it falls short. The
+stage an attempt was dropped at, and the metric named alongside it, together are the
+reason it failed, which is why `analysis/18_campaign_inventory.py` records both for
+every attempt.
+
+**`Target_pLDDT`, and how it differs from `pLDDT.<target>`** — two confidence
+readings with similar names that are checked at different times, and conflating them
+produced a wrong diagnosis in this project on 2 October 2026.
+`pLDDT.<target>` is the model's confidence in the whole predicted complex and is
+checked at **every** stage, against 0.6 at screen rising to 0.7 at the end.
+`Target_pLDDT` is its confidence in the target's own shape and is checked at the
+**final stage only**, against a default of 0.6. A rejection message names whichever
+metric stopped the attempt, and that name is what to act on; a setting whose name
+merely resembles it may govern a gate the attempt never reached. See also
+**design stage**.
+
+**Container** — a sealed, prepackaged computing environment that carries its own
+operating system files, libraries and installed software, so a job runs the same way
+wherever it is started. The rented machine runs our job inside one. Nothing of ours
+is inside it unless we put it there, which is why the campaign's own files have to be
+attached explicitly.
+
+**Container image** — the recipe a container is built from, and the stored result of
+building it. Ours installs Linux, the graphics-card libraries and BindCraft2 from
+source, which takes about 20 GB, so it is built once and reused. Files can either be
+baked into the image, which makes editing one force a rebuild, or attached when a
+container starts, which does not. This project attaches them.
+
+**Card-hour** — one hour of one rented graphics card. This is the unit the price is
+quoted in (an L4 is $0.80 a card-hour) and the unit a campaign's size is worked out
+in. Two cards running for one hour and one card running for two hours are both two
+card-hours and cost the same, so it measures spend rather than elapsed time.
+
+**Candidates per card-hour** — how many designs clear BindCraft2's own quality
+thresholds per hour of rented card. The figure that turns a budget into a campaign
+size. It cannot be carried across from one target to another, because run time grows
+with the size of the complex being modelled, nor across cards, because their speeds
+differ.
+
+**Charge-pair survival rate** — of the designs BindCraft2 accepts, the share that
+also reach this project's floor of three correct charge pairs
+(`analysis/10_charge_pair_filter.py`). It exists as a separate number because
+BindCraft2's thresholds and ours measure different things: BindCraft2 has no pH term
+anywhere in what it optimises, so the pH switch is selected for entirely afterwards.
+A low rate means we are paying for designs that are confident interfaces and not pH
+switches.
+
 **ipTM (interface predicted TM-score)** — a confidence score that structure
 prediction software reports for a complex of two proteins, running from 0 to 1, where
 higher is better. It answers "how sure is the model that these two pieces sit

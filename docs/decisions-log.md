@@ -2,11 +2,15 @@
 
 Read this first in any new chat. Update it when something moves between sections.
 
-Last updated: 2 October 2026, afternoon. The Proteinbase Slack was read and its
+Last updated: 2 October 2026, evening. The Proteinbase Slack was read and its
 answers recorded (assay, construct, selection, submission); the marginal-affinity rule
 was withdrawn; Modal was linked and its first check found to have tested nothing;
 sugar-chain sequons, the tethered cut and the His-tag screen were written; and the
-i_pDAE direction was corrected.
+i_pDAE direction was corrected. Then the first campaign against our own target ran:
+it starts and the His-tag detargeting works, but every attempt is stopped at
+BindCraft2's target-confidence gate by our own fragment, and whether that is the
+fragment or the predictor is being tested now (Pipeline status, Next actions item 2).
+No candidate sequence exists yet.
 
 ---
 
@@ -835,9 +839,15 @@ RFdiffusion + ProteinMPNN gives more control at higher setup cost. Not chosen.
   from a complex glycan, from memory. They are cautious on purpose. The ordering of the anchors
   by distance is more reliable than the labels.
 
-- **Detargeting against a sequence target.** That BindCraft2 accepts the His tag as an
-  off-target alongside a structured target, and what it does to run time and hit rate, has not
-  been run. The weight of −0.5 and the ceiling of 0.4 are starting values.
+- **Detargeting against a sequence target — the first half is answered, 2 October 2026.**
+  That BindCraft2 accepts the His tag as an off-target alongside a structured target is no
+  longer unverified: its reference says `targets[].target_path` takes "PDB, mmCIF or FASTA",
+  and the validation run loaded `HisTag (detarget) | 10 residues` beside the structured
+  target and designed against both. The tag was avoided, at `i_pTM.HisTag = 0.05` on the one
+  trajectory that ran. **What is still unverified is the cost and the rate:** what
+  detargeting does to run time and to the share of attempts accepted cannot be read from a
+  single trajectory, and no trajectory has yet been accepted at all. The weight of −0.5 and
+  the ceiling of 0.4 remain starting values and nothing has tuned them.
 
 - **Domain III boundaries.** 310–480 is the working definition used throughout.
   Confirm against the official annotation. Note that step 06 avoided depending on
@@ -1352,6 +1362,212 @@ EGFR campaign runner: restrict the file copy, or at least the numbering check's
 input list, to the run's own output directories (`1_Trajectories/`,
 `2_Refolded/`, `3_Ranked/`) rather than globbing the whole install tree.
 
+**The first EGFR campaign runner exists, and the first run against our own target
+started up — 2 October 2026, about 17:15 IST.** `design/modal/egfr_campaign.py`, a
+new file rather than an edit to the smoke script, so the arrangement known to work
+stays available to go back to. The two restrictions above are both implemented, in
+two separate places, because they fail differently. Explained in
+`docs/explainers/10-running-the-campaign.md`.
+
+*Next actions item 2 is answered for the notag file.* `egfr-domain3-h370-notag.json`
+starts against the real fragment. BindCraft2 loaded both targets —
+`EGFR_domain3 (target) | 171 residues` with our eight hotspots, and
+`HisTag (detarget) | 10 residues` — resolved `termini_accessible` as a design
+property, and drew a binder length of 79 from the 30–100 band. Cost $0.20 for one
+trajectory, 890 s wall-clock including model compilation. **The plain file has not
+been run**, because the notag one started and is the one to prefer.
+
+*Three things checked from BindCraft2's own documentation before spending, which
+move Unverified items.* `targets[].target_path` takes "PDB, mmCIF or FASTA", so a
+sequence off-target is a supported shape; `crop_fasta_sequence: false` means use the
+whole sequence; and `termini_accessible` is valid in a campaign file even though it
+is absent from the 134 names `--list-settings` prints, because that list covers only
+what `--set` accepts. The last one is recorded because it looks like a defect and is
+not.
+
+*The detargeting works.* `i_pTM.HisTag = 0.05` — the binder did not engage the tag.
+One trajectory, so this is an existence result rather than a rate.
+
+*Measured on the L4, which had never been measured.* Peak card memory 8,915 MiB of
+23,034 MiB, less than half the card, so the earlier arithmetic suggesting roughly
+12.4 GB a worker was pessimistic and two workers should fit. The run used one worker
+only because BindCraft2 holds fan-out to the trajectory budget. 890 s for one
+trajectory with compilation included, against 184.7 s a trajectory on the A100 smoke
+run with two workers, so **no clean speed ratio between the cards exists yet**: the
+two figures differ in card, worker count, compilation and target size at once.
+
+**The campaign is blocked at BindCraft2's target-confidence gate, and the cause is
+the target rather than the binder.** The trajectory was stopped at the screen stage,
+the first and cheapest, on `pLDDT.EGFR_domain3 = 0.35` against the filter
+`Target_pLDDT >= 0.6`. That is the predictor's confidence in our own 171-residue
+fragment inside the complex. BindCraft2 said so itself: "1 trajectories ran and none
+were accepted, so the settings rather than the budget are what to change."
+
+*The first reading of this was wrong, and the correction is the useful part.* It was
+argued that the gate would stop essentially every attempt, on the grounds that the
+same figure on the PD-L1 smoke run was 0.93 with a standard deviation of 0.01 across
+ten accepted designs, making it nearly a property of the target. **That inference
+does not hold.** The 0.01 was measured across accepted designs only — a set already
+filtered by the very gate in question — and was then applied to an unfiltered
+screen-stage sample. Survivor variance is not sample variance, and this repository's
+own rule that a comparison must be honest about its method is exactly what the
+argument broke.
+
+Disproved by measurement the same evening: the relaxed-floor diagnostic ran the same
+nominal trajectory against the same fragment and reported `pLDDT.EGFR_domain3 = 0.72`
+at screen, where the validation run had reported 0.35 and been rejected. So target
+confidence varies substantially between runs of the same trajectory, and the 0.6 gate
+rejects **some unknown fraction** of attempts rather than all of them. A pilot against
+the committed fragment would have produced candidates, more slowly and more wastefully
+than planned, rather than none.
+
+What stands: the pilot was still right not to launch, because its size rested on rates
+nothing had measured. What falls: the reason given for it. Measuring the distribution
+of target confidence is now what the relaxed-floor diagnostic is for, and it is the
+number the boundary decision needs.
+
+*Two explanations were offered and one of them rested on reading the wrong metric.*
+**One:** the fragment does not hold its shape, which is the standing Unverified
+entry — the cut severs the C470–C499 disulfide. **Two:** the predictor is the
+problem. BindCraft2 runs AlphaFold with no evolutionary information (`extra_msa` is
+zeroed in `bindcraft/af2.py`), which is far harder for a large beta-solenoid than for
+PD-L1's compact and much-studied fold, and ESMFold rates this same fragment 80.6
+over the whole fragment and 82.9 across the anchors
+(`results/findings/11-trim-boundary.md`), above the usual reliable-backbone
+convention of about 70. That much stands, and the disagreement between the two
+predictors about this fragment is not resolved.
+
+**What does not stand is the argument from the filter's default name.** It was
+claimed that the floor comes from `DEFAULT_DISORDERED_TARGET_PLDDT = 0.6` and is
+therefore meant for targets supplied as a bare sequence rather than as a structure
+whose coordinates are held. That constant governs `Target_pLDDT`, which is a
+different metric from the one the rejections name, so the argument was about
+something that was not happening.
+
+**The two metrics, read from `bindcraft/filters.py` and `settings/core/reference.json`
+on 2 October 2026, because conflating them produced a wrong diagnosis once already:**
+
+| metric | gated by | thresholds |
+|---|---|---|
+| `pLDDT.<target>` | `min_plddt_<stage>` (`filters.py:826`) | screen 0.6, refine 0.6, mutate 0.6, anneal 0.65, harden 0.65, final 0.7 |
+| `Target_pLDDT` | `min_target_plddt_final` | final stage only; default 0.6 |
+| `i_pTM.<target>` | `min_iptm_<stage>` | screen and refine ungated, anneal 0.5, harden 0.5, mutate 0.5, final 0.7 |
+
+Every rejection seen so far names `pLDDT.<target>` or `i_pTM.<target>`, so the
+per-stage settings are what bind and `Target_pLDDT` has never been reached.
+**The interface floors at the middle stages are 0.5 and not 0.7;** 0.7 applies only at
+the final stage. An earlier note in this log read the anneal rejections against 0.7,
+which overstated how far short those designs fell.
+
+*Two cheap tests were launched to separate them, about $2 together, authorised by
+the owner in chat on 2 October.* Test A runs the same campaign against a fragment
+extended to 310–499, giving the severed disulfide its partner back, with **no filter
+changed**: if it clears 0.6 on its own, the fragment was the problem and no
+rejection rule needs touching. Test B keeps the committed 310–480 fragment and
+lowers only `min_target_plddt_final` to 0.25, below the 0.35 observed, to see
+whether designs then clear the remaining gates and to get a first rate.
+
+**Test B was mis-specified and is useful anyway.** `min_target_plddt_final` governs
+`Target_pLDDT` at the final stage only, so it relaxed a gate no trajectory reaches and
+left `min_plddt_screen = 0.6` — the gate that actually rejected the validation
+trajectory — untouched. The override was verified to have reached the filter list
+(`Target_pLDDT >= 0.25` was printed) which made it look effective; what was not
+checked was whether that filter was the one firing. The lesson is narrow and worth
+keeping: the rejection message names the metric, and that name is what a diagnostic
+should be built against, not a setting whose name resembles it.
+
+Because the changed setting binds only at a stage nothing reached, Test B is in
+substance **ten trajectories on the committed fragment under default settings**, which
+is the small pilot that was wanted. It was left running for that reason rather than
+restarted.
+
+**RESULT, both diagnostics complete, 2 October 2026, 21:07 IST: eleven trajectories
+against our own target, zero accepted designs, no candidate sequence.** Test A ran
+one trajectory on the extended fragment for $0.48; Test B ran its full ten on the
+committed fragment for $2.33, finishing on its trajectory budget rather than on its
+spend ceiling. Total spent to date about $6.29 of the $30, leaving about $23.71.
+
+*Where the eleven stopped, and on which gate.* Six at screen on `pLDDT` against its
+0.6 floor, three at harden and two at anneal on `i_pTM` against its 0.5 floor.
+Nothing reached the mutate or final stages, so **no structure was ever written** and
+`3_Ranked/` is empty in both campaigns. Binder lengths were drawn across the whole
+30–100 band — 31, 41, 41, 47, 60, 66, 68, 79, 88, 94 — so the failure is not confined
+to one size.
+
+*The bottleneck is interface confidence, and the margin is the useful number.*
+`i_pTM` readings across every stage of every trajectory ran from 0.20 to 0.62. The
+middle-stage floor is 0.5 and the final gate is 0.7, so **even the best trajectory
+seen never reached what the final gate requires**, and four of the eleven died on the
+middle floor. Complex confidence `pLDDT` was the lesser problem: it ran 0.38 to 0.86
+against a 0.6 floor and most trajectories cleared it.
+
+*The His-tag detargeting works, and this is now a rate rather than an anecdote.*
+Thirty-two `i_pTM.HisTag` readings across the eleven trajectories ran from 0.01 to
+0.08, every one far below the 0.4 ceiling `egfr_common.DETARGET_IPTM_CEILING` sets.
+The binder consistently ignores the tag. That half of the design rule is working as
+intended, on the only evidence we have.
+
+*The card is settled and oversized rather than marginal.* Peak memory 9,037 MiB of
+the L4's 23,034, so 39% of the card for one worker. Two workers would fit, which is
+the available throughput lever and was never exercised because BindCraft2 holds
+fan-out to the trajectory budget.
+
+*Cost per trajectory, measured: $0.231.* Mean design time 1,040 s over ten
+trajectories, taken from the trajectory table's own `Timing` column rather than
+wall-clock divided by count, because wall-clock is distorted by worker count and by
+the compilation in trajectory 1. The spread matters for sizing: an attempt that dies
+at screen averages 487 s and one that reaches harden averages 1,792 s, so a campaign
+that fails early is cheaper per attempt than one that fails late. An earlier estimate
+in this log of about $72 for 150 trajectories came from Test A's single deep run and
+was the worst case; the measured mean gives about **$37 for 150 trajectories**, and
+the remaining budget buys about **103**.
+
+**Both rates the pilot existed to measure come back undefined, and that is the
+finding.** Candidates per card-hour is zero over eleven trajectories and about 3.6
+card-hours — not a small rate but an undefined one. The charge-pair survival rate
+cannot be computed at all, because `analysis/10` reads structures and none exist.
+Zero of eleven is consistent by the rule of three with a true acceptance rate
+anywhere from 0 to about 27%, so eleven attempts cannot pin it down; what it does
+give is moderate evidence against PD-L1's 33%, which would produce eleven
+consecutive failures about 1% of the time. **A main run sized from these rates
+cannot be proposed, because the arithmetic has a zero in it.** What the numbers
+support instead is that the obstacle is interface confidence against this epitope,
+and that is where a decision is needed rather than more trajectories at the same
+settings.
+
+*First trajectory from each, which is one sample each and not a result.* The
+extended fragment reached `pLDDT.EGFR_domain3` 0.82 at screen and 0.87 at refine,
+clearing the untouched 0.6 gate; the committed fragment under the relaxed gate
+reached 0.72 and 0.80. Both passed their screen and refine stages. Consistent with
+the severed C470–C499 disulfide mattering, and far too thin to conclude from, given
+the run-to-run spread recorded above — the committed fragment alone has now produced
+0.35 and 0.72 at the same stage. Interface confidence moved in opposite directions,
+rising 0.28 to 0.60 on the extended fragment and falling 0.36 to 0.20 on the
+committed one, against a filter needing 0.70. Worth watching rather than believing. The
+diagnostic fragment and config are in `data/structures/6aru_domain3_ext499.pdb` and
+`design/configs/diagnostic/`, kept apart from the generated campaign files;
+`design/configs/diagnostic/README.md` records what each answers. Over the residues
+the two fragments share the atom records are byte-identical, so they differ only in
+where they stop. **Neither test changes a committed decision.** The boundary is
+still 310–480 and the filter floor is still BindCraft2's default; moving either is
+the owner's call and would belong in `analysis/09` behind its own constant.
+
+**Every attempt is now recorded, not only the ones that survive.**
+`analysis/18_campaign_inventory.py` writes one row per attempt with the outcome at
+both gates and the reason, because `analysis/10` reads `3_Ranked/` alone and so
+never saw anything BindCraft2 discarded — which is most of what a campaign is paid
+for. It imports step 10's rules rather than restating them, the way step 15 already
+does. Outputs are `data/derived/18-trajectory-ledger.csv`,
+`data/derived/18-file-inventory.csv` (every retained file with a SHA-256
+fingerprint, so the record survives in tracked files even where the bulk structures
+are not committed) and `results/findings/18-campaign-inventory.md`. Run on the
+validation output it recorded the single attempt as rejected at screen, with its
+100-round optimisation trace and its final state. It also discovered BindCraft2's
+real schema, which had been guessed at: the decision lives in a `terminated` column
+that is blank for a surviving attempt and otherwise names the stage that stopped it,
+and each attempt's losses table is joined by the folder it sits in rather than by a
+column.
+
 ---
 
 ## Commitments made in advance
@@ -1409,11 +1625,15 @@ independent and only one of them costs money.
    nothing because PD-L1 is not our target, but it proves the script can read what the
    pipeline really writes. Check the direction `i_pDAE` is ranked in `!_Ranked.csv` against
    the correction under Settled.
-2. **Validate both campaign files start up before a real run.** `termini_accessible` and the
-   tag off-target have never been run. A start-up check with `--set max_trajectories=1`
-   against the real fragment costs cents and answers whether BindCraft2 accepts a short
-   sequence as an off-target. It needs the config, the fragment and the sequence file passed
-   into the container. Do not start the EGFR campaign before this.
+2. **Validate both campaign files start up before a real run — DONE for the notag file,
+   2 October 2026.** It starts, both targets load, `termini_accessible` resolves and the tag
+   is accepted as a sequence off-target and avoided. $0.20. The plain file was not run
+   because the notag one started and is the one to prefer; it stays the fallback.
+   **A new blocker took its place:** the campaign is stopped at BindCraft2's
+   `Target_pLDDT >= 0.6` gate by our own fragment scoring 0.35 (Pipeline status). Two cheap
+   tests are in flight to decide whether that is the fragment or the predictor. **Item 4
+   does not start until that is settled**, because at the measured behaviour a full campaign
+   would accept nothing.
 3. **Owner decisions that shape the campaign file:** how to handle sugar chains near the
    anchors, and whether to design against human and mouse together (both under Open); which
    anchor cluster; and the molecule category. Geometry points to a minibinder of 40–100
