@@ -363,7 +363,7 @@ being computed twice and disagreeing.
 
 Two things it produces are worth knowing about:
 
-- `data/derived/18-file-inventory.csv` lists every retained file with its size and a
+- `data/derived/18-file-inventory-<campaign>.csv` lists every retained file with its size and a
   **SHA-256 fingerprint** — a short code derived from the file's contents, such that
   two files with the same code hold the same bytes. This is what lets a structure be
   shown later to be the one this inventory described rather than assumed to be.

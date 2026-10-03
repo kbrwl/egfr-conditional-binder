@@ -71,10 +71,10 @@ A missing column becomes a blank cell and a line in the findings saying which
 column was missing; it never becomes a silently wrong verdict.
 
 Outputs:
-  data/derived/18-trajectory-ledger.csv   one row per attempt, every gate
-  data/derived/18-file-inventory.csv      one row per retained file, with its size
+  data/derived/18-trajectory-ledger-<campaign>.csv   one row per attempt, every gate
+  data/derived/18-file-inventory-<campaign>.csv      one row per retained file, with its size
                                           and fingerprint
-  results/findings/18-campaign-inventory.md
+  results/findings/18-campaign-inventory-<campaign>.md
 
 Run standalone:  python analysis/18_campaign_inventory.py --campaign DIR
                  python analysis/18_campaign_inventory.py --self-test
@@ -478,12 +478,19 @@ def write_outputs(rows, files, notes, tables, campaign, emit=print):
                       "our_verdict", "our_correct_pairs", "our_reasons",
                       "trace_rounds", "final_state",
                       "tables", "metric_count"]
-    with (DERIVED / "18-trajectory-ledger.csv").open("w", newline="") as handle:
+    # Named after the campaign, so running this on a second campaign does not
+    # overwrite the first. The fixed names this used to write meant the long
+    # band's ledger replaced the short band's on 3 October 2026, and the two
+    # campaigns being separable is the whole point of recording per
+    # configuration rather than pooling. `stem` is the campaign folder's name.
+    stem = Path(campaign).name
+    with (DERIVED / f"18-trajectory-ledger-{stem}.csv").open(
+            "w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=ledger_columns)
         writer.writeheader()
         writer.writerows(rows)
 
-    with (DERIVED / "18-file-inventory.csv").open("w", newline="") as handle:
+    with (DERIVED / f"18-file-inventory-{stem}.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(
             handle, fieldnames=["path", "stage", "suffix", "bytes", "sha256"])
         writer.writeheader()
@@ -528,7 +535,7 @@ def write_outputs(rows, files, notes, tables, campaign, emit=print):
                  "separate question from whether it is committed to version "
                  "control: bulk design output deliberately is not, because it is "
                  "large, and `.gitignore` admits only the final shortlist. The "
-                 "fingerprints are in `data/derived/18-file-inventory.csv`, which "
+                 "fingerprints are in `data/derived/18-file-inventory-" + stem + ".csv`, which "
                  "is tracked, so the record survives even where the structures "
                  "themselves are not committed.")
     lines.append("")
@@ -563,11 +570,11 @@ def write_outputs(rows, files, notes, tables, campaign, emit=print):
                  "limits: a predicted structure scored against a predicted "
                  "interface, with the pH switch inferred from geometry and never "
                  "measured.")
-    (FINDINGS / "18-campaign-inventory.md").write_text("\n".join(lines) + "\n")
+    (FINDINGS / f"18-campaign-inventory-{stem}.md").write_text("\n".join(lines) + "\n")
 
-    emit(f"   data/derived/18-trajectory-ledger.csv   {len(rows)} attempts")
-    emit(f"   data/derived/18-file-inventory.csv      {len(files)} files")
-    emit(f"   results/findings/18-campaign-inventory.md")
+    emit(f"   data/derived/18-trajectory-ledger-{stem}.csv   {len(rows)} attempts")
+    emit(f"   data/derived/18-file-inventory-{stem}.csv      {len(files)} files")
+    emit(f"   results/findings/18-campaign-inventory-{stem}.md")
     return counts
 
 

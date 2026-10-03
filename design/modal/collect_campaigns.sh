@@ -131,8 +131,8 @@ done
 
 echo ""
 echo "============================================================"
-echo "Done. The ledger is data/derived/18-trajectory-ledger.csv and the"
-echo "findings are results/findings/18-campaign-inventory.md."
+echo "Done. The ledger is data/derived/18-trajectory-ledger-<campaign>.csv and the"
+echo "findings are results/findings/18-campaign-inventory-<campaign>.md."
 echo "Both are tracked, so the record survives even though the bulk"
 echo "structures under results/candidates/ are not committed."
 echo "============================================================"

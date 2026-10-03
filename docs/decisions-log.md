@@ -1562,10 +1562,10 @@ the owner's call and would belong in `analysis/09` behind its own constant.
 both gates and the reason, because `analysis/10` reads `3_Ranked/` alone and so
 never saw anything BindCraft2 discarded — which is most of what a campaign is paid
 for. It imports step 10's rules rather than restating them, the way step 15 already
-does. Outputs are `data/derived/18-trajectory-ledger.csv`,
-`data/derived/18-file-inventory.csv` (every retained file with a SHA-256
+does. Outputs are `data/derived/18-trajectory-ledger-<campaign>.csv`,
+`data/derived/18-file-inventory-<campaign>.csv` (every retained file with a SHA-256
 fingerprint, so the record survives in tracked files even where the bulk structures
-are not committed) and `results/findings/18-campaign-inventory.md`. Run on the
+are not committed) and `results/findings/18-campaign-inventory-<campaign>.md`. Run on the
 validation output it recorded the single attempt as rejected at screen, with its
 100-round optimisation trace and its final state. It also discovered BindCraft2's
 real schema, which had been guessed at: the decision lives in a `terminated` column

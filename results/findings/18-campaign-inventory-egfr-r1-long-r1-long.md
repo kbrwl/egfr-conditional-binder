@@ -19,7 +19,7 @@ Every attempt the campaign made, and what is known about each. A record holding 
 
 ## 2. Files retained
 
-Retained means the file exists and was copied back. It is a separate question from whether it is committed to version control: bulk design output deliberately is not, because it is large, and `.gitignore` admits only the final shortlist. The fingerprints are in `data/derived/18-file-inventory.csv`, which is tracked, so the record survives even where the structures themselves are not committed.
+Retained means the file exists and was copied back. It is a separate question from whether it is committed to version control: bulk design output deliberately is not, because it is large, and `.gitignore` admits only the final shortlist. The fingerprints are in `data/derived/18-file-inventory-egfr-r1-long-r1-long.csv`, which is tracked, so the record survives even where the structures themselves are not committed.
 
 | stage | files | bytes |
 |---|---|---|
