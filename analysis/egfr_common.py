@@ -29,6 +29,7 @@ import numpy as np
 from Bio import Align
 from Bio.Align import substitution_matrices
 from Bio.PDB import MMCIFParser, NeighborSearch, PDBParser
+from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 from Bio.PDB.Polypeptide import is_aa
 from Bio.Data.IUPACData import protein_letters_3to1
 
@@ -626,11 +627,38 @@ def load_complex(path):
     the same parser real design output will go through.
 
     Shared by steps 10 and 13 so the two cannot read one file differently.
+
+    **BindCraft2 writes no occupancy column, and Biopython requires one.**
+    Found 3 October 2026 on the first real design output this project produced:
+    every file under `2_Refolded/` lists eighteen `_atom_site` fields and
+    `_atom_site.occupancy` is not among them, so Biopython 1.88 raises
+    `KeyError: '_atom_site.occupancy'` and no design can be scored at all.
+
+    Occupancy is the fraction of copies of the molecule in which an atom sits at
+    the given position. It is a measurement from crystallography, where parts of
+    a real crystal genuinely differ; a predicted structure has exactly one
+    position per atom, so the concept does not apply and the pipeline is right
+    not to invent a column. We fill it with 1.0, meaning fully occupied, which
+    is what every atom of a predicted structure is. This changes no coordinate
+    and no identity; it supplies a field the parser demands and nothing here
+    reads.
+
+    The fallback is used only when the column is genuinely absent. A file that
+    carries occupancies keeps its own.
     """
     path = Path(path)
     suffix = path.suffix.lower()
-    parser = MMCIFParser(QUIET=True) if suffix == ".cif" else PDBParser(QUIET=True)
-    return parser.get_structure(path.stem, str(path))[0]
+    if suffix != ".cif":
+        return PDBParser(QUIET=True).get_structure(path.stem, str(path))[0]
+
+    contents = MMCIF2Dict(str(path))
+    if "_atom_site.occupancy" not in contents:
+        atom_count = len(contents["_atom_site.id"])
+        contents["_atom_site.occupancy"] = ["1.00"] * atom_count
+    parser = MMCIFParser(QUIET=True)
+    parser._mmcif_dict = contents
+    parser._build_structure(path.stem)
+    return parser._structure_builder.get_structure()[0]
 
 
 def identify_chains(model, numbering, human, emit=None):

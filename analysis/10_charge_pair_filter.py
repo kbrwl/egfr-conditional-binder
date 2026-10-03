@@ -866,6 +866,15 @@ def find_candidate_structures(folder):
     alone, so a campaign that accepts nothing is scored as nothing, even when
     structures exist that our own rule might pass. The two gates measure
     different things and the pipeline's verdict is not ours.
+
+    **`*_HisTag.cif` is excluded.** With an off-target in the campaign, the
+    pipeline writes one complex per target per candidate, so each candidate
+    produces both `_EGFR_domain3.cif` and `_HisTag.cif`. The second is the
+    binder against the purification tag and carries no EGFR interface at all.
+    Scored here it produced ten rows reading "no returned chain resembles the
+    input target", which is correct and useless. The tag is step 15's business.
+    The suffix is the off-target's `name` in the campaign file; if that name
+    changes, this changes with it.
     """
     ranked = folder / "3_Ranked"
     if ranked.is_dir():
@@ -874,7 +883,8 @@ def find_candidate_structures(folder):
         if found:
             return found, "3_Ranked/"
     found = sorted(p for p in folder.rglob("*.cif")
-                   if not p.stem.endswith("_monomer"))
+                   if not p.stem.endswith("_monomer")
+                   and not p.stem.endswith("_HisTag"))
     return found, "every mmCIF below the folder (3_Ranked/ not found)"
 
 
@@ -1538,6 +1548,11 @@ def write_outputs(summaries, all_pairs, emit, parse_only, had_candidates):
                        "total_pairs", "target_numbering",
                        "target_positions_paired",
                        "target_positions_contacted"]
+    # The same rename `summary_row` applies, so the header and the rows cannot
+    # disagree about what a pipeline column is called when it collides with one
+    # of ours.
+    metric_columns = [f"bindcraft_{c}" if c in summary_columns else c
+                      for c in metric_columns]
     with (DERIVED / "10-candidate-summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(
             handle, fieldnames=summary_columns + metric_columns)
@@ -1583,7 +1598,17 @@ def write_outputs(summaries, all_pairs, emit, parse_only, had_candidates):
 
 
 def summary_row(summary):
-    return dict(
+    """One output row: our verdict columns, then the pipeline's own, untouched.
+
+    **A column name can appear on both sides.** The pipeline's metrics table has
+    its own `design` column holding the same name ours does, which made
+    `dict(design=..., **metrics)` raise `TypeError: got multiple values for
+    keyword argument 'design'` on the first real output, 3 October 2026. Where
+    the two collide, ours wins the plain name and the pipeline's keeps its value
+    under `bindcraft_<name>`, so a collision loses no data and cannot pass
+    silently.
+    """
+    ours = dict(
         design=summary["design"],
         verdict=summary["verdict"],
         reasons="; ".join(summary["reasons"]),
@@ -1602,8 +1627,10 @@ def summary_row(summary):
         target_positions_paired=" ".join(str(p)
                                          for p in summary["anchors_paired"]),
         target_positions_contacted=" ".join(str(p) for p
-                                            in summary["target_positions"]),
-        **summary.get("metrics", {}))
+                                            in summary["target_positions"]))
+    for name, value in summary.get("metrics", {}).items():
+        ours[f"bindcraft_{name}" if name in ours else name] = value
+    return ours
 
 
 if __name__ == "__main__":

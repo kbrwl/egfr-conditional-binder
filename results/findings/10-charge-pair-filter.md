@@ -182,23 +182,87 @@ candidate.
 
 3. Real candidates
 
-   None given. Run again with --candidates pointing at a campaign
-   folder once the design run has produced one. The tests above
-   are what can be checked before then, and they check the rule
-   rather than the pipeline's output format.
+   results/candidates/egfr-r1-short-r1-short/2_Refolded
+   10 candidate complex(es), from every mmCIF below the folder (3_Ranked/ not found)
+
+   Metrics table: !_Refolded.csv, 10 rows, 50 columns.
+   Every column is carried through to our output unchanged. None
+   of them is used to rank anything here.
+   Of those, the ones describing interface quality, confidence or
+   charge: i_pDAE, i_pTM, pLDDT, pTM, i_pAE, Unbound_Binder_pLDDT, Target_pLDDT, Interface_Residues_detarget, Interface_Residues, Hotspot_Contact_Fraction, Off_Epitope_Contact_Fraction, Interface_BuriedArea, Interface_BuriedArea_Fraction, Surface_Hydrophobicity, Interface_Hydrophobicity, SS_pLDDT, Binder_pI, Binder_Net_Charge
+
+   Which chain is the target and which the binder, by measurement:
+
+   | chain | residues | translate | read as human EGFR | share |
+   |---|---|---|---|---|
+   | A | 171 | 171 | 171 | 1.00 |
+   | B | 48 | 45 | 1 | 0.02 |
+
+   Target is chain A; binder is B.
+   Taken from the measurement above rather than from the letter.
+   The pipeline puts the target on A and the binder on B, which is
+   the reverse of BindCraft version 1, so a parser that assumed a
+   letter would read the wrong molecule and report a full set of
+   plausible nonsense.
+
+   Target numbering, first candidate against the structure the run
+   was handed (6aru_domain3.pdb):
+   target numbering identical: all 171 residues present at the input's own numbers, same amino acids.
+   Every candidate is checked the same way, and one that cannot be
+   reconciled is refused rather than scored.
+
+   Scored 10 candidates, 105 contact pairs.
+
+   Cross-check against the pipeline's own interface list:
+     9 of 10 candidates have our 4.5 A
+     contact set containing the pipeline's 4.0 A one,
+     which is what a looser cutoff should give. A residue the
+     pipeline reports that we do not would be a real disagreement
+     and stops the run.
+
+3b. The candidates, ranked by correct pairs
+
+   Ties are broken first by how many correct pairs rest on E424, near the
+   trimmed target's cut edge, then by how many rest on E400, E421 or E424,
+   the three anchors nearest the human-only N361 sugar-chain attachment
+   point (docs/explainers/08-sugar-chains-near-the-anchors.md) -- both
+   demotions, never exclusions. Remaining ties are broken by how many of
+   those pairs also have their charged groups within reach of each other,
+   then by how many distinct target positions are paired, then by the
+   pipeline's own i_pDAE with the more confident interface first.
+
+   | rank | design | correct | N361-side | of those, in reach | unresolved | neutral | verdict |
+   |---|---|---|---|---|---|---|---|
+   | 1 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3 | 2 | 0 | 2 | 0 | 29 | rejected (contacts 442) |
+   | 2 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3 | 2 | 0 | 1 | 0 | 37 | rejected (contacts 442) |
+   | 3 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3 | 1 | 0 | 1 | 0 | 18 | below the pair target |
+   | 4 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3 | 1 | 0 | 1 | 0 | 2 | below the pair target |
+   | 5 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_EGFR_domain3 | 0 | 0 | 0 | 0 | 1 | rejected (binder histidine faces target histidine H433) |
+   | 6 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_EGFR_domain3 | 0 | 0 | 0 | 0 | 1 | below the pair target |
+   | 7 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_EGFR_domain3 | 0 | 0 | 0 | 0 | 1 | below the pair target |
+   | 8 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_EGFR_domain3 | 0 | 0 | 0 | 0 | 3 | below the pair target |
+   | 9 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_EGFR_domain3 | 0 | 0 | 0 | 0 | 3 | below the pair target |
+   | 10 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_EGFR_domain3 | 0 | 0 | 0 | 0 | 2 | rejected (binder histidine faces target histidine H433) |
+
+   0 candidates reach 3 correct pairs, of which 0 reach 4.
+   4 rejected for breaking a hard rule.
+   0 not scored, because the target numbering could not be reconciled with the input.
+   6 below the pair target, kept and ranked last rather
+   than discarded.
+
+   What this changes about the design. The shortlist is the candidates
+   that were not rejected, in this order. Choosing among them is a
+   judgement to make by hand using the pipeline's own numbers carried
+   through alongside. The aim is the widest gap between pH 6.5 and pH 7.4
+   with affinity at pH 6.5 as high as the switch allows.
 
 4. Files written
 
-   data/derived/10-candidate-pairs.csv      0 contact pairs
-   data/derived/10-candidate-summary.csv    0 candidates
-   results/candidates/shortlist.csv         0 not rejected
-
-   All three are empty apart from their headers, because no real
-   candidate exists yet. They are written anyway so the columns
-   the design run has to fill are visible before it runs rather
-   than after.
+   data/derived/10-candidate-pairs.csv      105 contact pairs
+   data/derived/10-candidate-summary.csv    10 candidates
+   results/candidates/shortlist.csv         6 not rejected
 
 ========================================================================
-RESULT: PASSED. The rule is exercised and correct on every test case; no real candidates were supplied.
+RESULT: PASSED. 10 candidates: 0 meet the pair target, 4 rejected, 0 not scored (numbering), 6 below the target and kept.
 ========================================================================
 ```
