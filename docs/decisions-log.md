@@ -727,13 +727,19 @@ competition page, read on 2 October, names human and mouse only, and so does
 `docs/rules-reference.md`. The page is authoritative, and it names two species, so no GPU time
 or campaign slot is spent on cyno.
 
-One cheap check is worth doing once the campaign is sized and running, because it costs no card
-time: fetch the *Macaca fascicularis* EGFR sequence from UniProt, align it, and check whether the
-eight H370-cluster anchors and the sequons from step 14 are conserved. If they are, the methods
-write-up can say the epitope is conserved in cyno as well, at no cost; if not, the write-up can
-name which anchors would break. This is a write-up improvement, not a design input, so it is
-deferred until Next actions item 4 (generating candidates) is under way — not done now, because
-the campaign is not yet sized or running (Pipeline status).
+The cheap check this entry deferred has now been done, 3 October 2026:
+`analysis/19_cyno_conservation.py`, `results/findings/19-cyno-conservation.md`. All eight
+H370-cluster anchors hold the same amino acid in *Macaca fascicularis* as in human, and the
+attachment points for sugar chains nearest them — N352, N361 and N413 — are present in cyno
+too, N361 included, which is the one human has and mouse lacks. The offset between the cyno
+entry's own numbering and ours is zero, measured across all 171 positions of domain III. The
+only difference anywhere in domain III is S348T, which is not an anchor and is the same
+position that differs in mouse. **This changed no decision and was not expected to.** Cyno is
+not an objective, no GPU time or campaign slot went to it, and the demotion of E400, E421 and
+E424 over N361 stands, because that asymmetry is between human and mouse and mouse
+cross-reactivity is the objective. What it buys is a sentence the methods write-up may use,
+with the limits the finding records: the cyno UniProt entry is unreviewed, this is sequence
+analysis with no cyno structure examined, and nothing about binding was measured.
 
 **What does novelty level 3 mean?** Simon Dürr said level 3 clears the gate (29 September and
 1 October) and on 1 October also described the requirement as the sequence being under 30%

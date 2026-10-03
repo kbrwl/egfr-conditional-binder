@@ -1,0 +1,11 @@
+Where data/sequences/egfr-macaque-uniprot.fasta came from.
+Written by analysis/19_cyno_conservation.py when it fetched the file.
+Do not hand-edit: the script checks the fingerprint below on every run.
+cynomolgus_monkey_accession: A0A2K5WKD8
+cynomolgus_monkey_url: https://rest.uniprot.org/uniprotkb/A0A2K5WKD8.fasta
+rhesus_macaque_accession: P55245
+rhesus_macaque_url: https://rest.uniprot.org/uniprotkb/P55245.fasta
+date_fetched_utc: 2026-10-03
+time_fetched_utc: 10:00:30
+bytes: 2152
+sha256: 7d19ee71ad0890ad1681108f808af182add8538948f08c160c609c2f48a3edb6

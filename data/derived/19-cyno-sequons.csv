@@ -1,0 +1,13 @@
+uniprot_pos,human_residues,cyno_residues_aligned,mouse_residues_aligned,cyno_status,mouse_status,nearest_to_current_anchor,past_readable_part
+128,NKT,NKT,NRT,both,both,False,False
+175,NMS,NMS,NMS,both,both,False,False
+196,NGS,NGS,NGS,both,both,False,False
+352,NAT,NAT,NAT,both,both,True,False
+361,NCT,NCT,YCT,both,human only,True,False
+413,NRT,NRT,NWT,both,both,True,False
+444,NIT,NIT,NIT,both,both,False,False
+528,NVS,NVS,NVS,both,both,False,False
+568,NIT,NIT,NIT,both,both,False,False
+603,NNT,NNT,NNT,both,both,False,False
+623,NCT,NCT,NCT,both,both,False,False
+639,NGP,NGS,-,cyno only,-,False,True

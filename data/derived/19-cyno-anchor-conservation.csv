@@ -1,0 +1,17 @@
+anchor_set,uniprot_pos,challenge_pos,role,human_aa,cyno_aa,rhesus_aa,mouse_aa,identical_in_cyno,charge_verdict
+current H370 face,344,320,acidic,E,E,E,E,True,identical
+current H370 face,358,334,target histidine,H,H,H,H,True,identical
+current H370 face,368,344,acidic,D,D,D,D,True,identical
+current H370 face,370,346,target histidine,H,H,H,H,True,identical
+current H370 face,391,367,acidic,E,E,E,E,True,identical
+current H370 face,400,376,acidic,E,E,E,E,True,identical
+current H370 face,421,397,acidic,E,E,E,E,True,identical
+current H370 face,424,400,acidic,E,E,E,E,True,identical
+old 415-466 epitope (the recorded fallback),416,392,acidic,D,D,D,D,True,identical
+old 415-466 epitope (the recorded fallback),418,394,target histidine,H,H,H,H,True,identical
+old 415-466 epitope (the recorded fallback),421,397,acidic,E,E,E,E,True,identical
+old 415-466 epitope (the recorded fallback),424,400,acidic,E,E,E,E,True,identical
+old 415-466 epitope (the recorded fallback),433,409,target histidine,H,H,H,H,True,identical
+old 415-466 epitope (the recorded fallback),455,431,acidic,E,E,E,E,True,identical
+old 415-466 epitope (the recorded fallback),458,434,acidic,D,D,D,D,True,identical
+old 415-466 epitope (the recorded fallback),460,436,acidic,D,D,D,D,True,identical

@@ -1,0 +1,2 @@
+uniprot_pos,challenge_pos,human_aa,cyno_aa,label,also_differs_in_mouse,inside_fallback_epitope
+348,324,S,T,S348T,True,False
