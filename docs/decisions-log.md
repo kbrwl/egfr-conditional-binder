@@ -1750,18 +1750,38 @@ throughput lever that has been theoretical since the first campaign is available
 in the short band only, and reaching it needs the estimator override corrected at
 the end of this section rather than a campaign setting.
 
-**Round one, the three numbers it existed to measure — 3 October 2026, nine
-recorded trajectories per band.**
+**Round one, the three numbers it existed to measure — corrected 5 October 2026. The
+denominator was nine and should have been ten.**
+
+This entry was written at 18:51 on 3 October, before the two defects in
+`analysis/18_campaign_inventory.py` were fixed at 22:48 and 22:50 that evening. It
+counted nine trajectories per band. The regenerated ledger counts ten in each, and so
+does BindCraft2's own `1_Trajectories/!_Trajectories.csv`, which holds ten rows for each
+band. Ten is also what both campaigns were launched with and what the round-one-complete
+entry above already said. Every rate below was divided by nine and is restated here over
+ten, recomputed from the `design=` field of each trajectory's own `Timing` column.
 
 | | short, 30-60 | long, 60-100 |
 |---|---|---|
-| trajectories recorded | 9 | 9 |
+| trajectories recorded | **10** | **10** |
 | reached the end of the stage pipeline | **1** | **0** |
 | candidates written | **10** | 0 |
 | accepted by BindCraft2 | 0 | 0 |
-| card time | $2.51 | $2.77 |
-| cost per trajectory | **$0.279** | **$0.308** |
-| cost per candidate | **$0.25** | undefined |
+| card time | **$2.81** | **$3.32** |
+| cost per trajectory | **$0.281** | **$0.332** |
+| cost per candidate | **$0.281** | undefined |
+| billed by Modal | **$3.16** | **$3.72** |
+
+*The short band's cost per trajectory barely moved, and that is a coincidence rather
+than a reason to relax.* The old figure divided an understated card time by an
+understated count, $2.51 over 9, and landed at $0.279 against the true $0.281. The long
+band's moved from $0.308 to $0.332, and cost per candidate from $0.25 to $0.281, which
+is 12% higher. Two errors cancelling is not two errors absent.
+
+*Card time and billed cost are different quantities and this log had been conflating
+them.* Card time is the GPU-seconds BindCraft2 reports; billed cost is what Modal
+charges, which also covers container start-up and processor time. The billed row is read
+from `modal billing report` and is the figure the remaining balance moves by.
 
 *Cost per accepted design is undefined in both bands, again, because the
 numerator is zero.* Cost per candidate is defined for the short band and is the
@@ -1888,6 +1908,17 @@ The band is set with `--set binder_lengths`, so the committed campaign file
 `design/configs/diagnostic/r1-short-notag.json` still reads as round one ran it and the
 change lives in `design/modal/egfr_campaign.py::batch_r2_short`.
 
+*Two empty directories from the stopped launch remain on the results volume*, at
+`egfr-r2-short-r1-short/1_Trajectories/`, named `..._l56_003973b7910e174a` and
+`..._l32_bff21b2c8fb3f37a`. Both were created when those trajectories began and both
+hold no files, because the run was stopped before either wrote anything. They were left
+in place rather than deleted from a volume a live run is writing to. They carry no rows
+in `!_Trajectories.csv` and no structures, so neither step 10 nor step 18 can count
+them; the identifiers are recorded here so that if round two's denominator ever looks
+two too high, the cause is already known. Given that this log has just had one
+denominator corrected, leaving an unexplained pair of directories would have been the
+wrong kind of tidy.
+
 *Cost of finding out:* $0.23, the 1,048 seconds the first launch ran before it was
 stopped. The relaunch ceiling is $7.75, which is the $8.00 the owner authorised less
 that. **This is a prediction about how the budget is spent, not a measured improvement:**
@@ -1906,6 +1937,31 @@ the commitment is not conditional on which repository it is.
 Recorded because `submission/methods.md` leans on that commitment when it claims
 independent derivation, and a commitment that has survived an occasion to break it is
 evidence where a commitment merely written down is not.
+
+**A mislabelled quantity in the staged methods document, caught in verification and
+corrected before submission — 5 October 2026.** `submission/methods.md` called the
+figures 31, 39 and 19 "charged contacts". They are not. The column that produces them is
+`total_pairs` in `data/derived/10-candidate-summary.csv`, which counts **every**
+residue-residue contact pair between the binder and the target face at the 4.5 angstrom
+heavy-atom cutoff, charged or not. For the leading design, 2 of its 31 contacts are
+charge pairs and 29 are neutral.
+
+The numbers were right and the name was wrong, which is the harder kind to catch: the
+figures reconciled against the findings file on sight because the figures were never in
+question. Corrected in three places by the owner's instruction — section 9.1's ranking
+description, section 9.2's second ground for demoting 442, and the column header in
+section 9.4's design table — and the document was then searched for "charged contact"
+and "charged position" with no further occurrence. Every remaining use of "charge" in
+that document refers to the charge-pairing rule, the charged anchor positions or the
+charge groups, and all are correct.
+
+The same mislabel appears in the execution plan's own step 5a appendix template and in
+step 7; the corrected label is used in the appendix generated from it.
+
+**This does not belong in section 10 of the methods document.** That section is for
+claims this project's own computation disproved, and this was a drafting error found
+during verification. Keeping the two apart matters: a document that files its typos
+alongside its retracted findings makes both harder to weigh.
 
 ---
 
