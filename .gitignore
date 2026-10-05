@@ -41,6 +41,16 @@ submission/methods.draft.md
 submission/slot-plan.draft.md
 docs/competition-brief.md
 
+# A status note written directly to the owner on 3 October 2026, as one side of
+# a conversation: it opens by answering something he had said, and closes with a
+# section asking him to make three decisions. That is private working
+# correspondence, not a record of work, and the repository is cited by the
+# submission and will be read cold by someone evaluating it. Untracked on
+# 5 October 2026 rather than rewritten, because its content is already carried
+# properly by docs/decisions-log.md and submission/methods.md. The file stays on
+# disk; only the tracking is removed.
+submission/STATUS-EXPLAINED.md
+
 # Staging area for documents handed over from Claude chat. Files land here, get
 # installed at their proper paths, and the staged copy is deleted in the same
 # commit. Nothing is committed from here in place. See CLAUDE.md, "Documents

@@ -1963,6 +1963,42 @@ claims this project's own computation disproved, and this was a drafting error f
 during verification. Keeping the two apart matters: a document that files its typos
 alongside its retracted findings makes both harder to weigh.
 
+**Repository publication audit — 5 October 2026.** `submission/methods.md` was to cite
+the repository by URL, which makes the repository part of the submission and read by
+whoever evaluates it. Audited before that link went out.
+
+*Secrets: none, in the working tree or anywhere in history.* Searched every tracked file
+and the full diff of all 74 commits for keys, tokens, credentials, private-key blocks
+and password assignments. Every apparent hit is the word "token" used for string parsing
+in `analysis/00`, `01`, `10` and `19`, or the phrase "secreted proteins" in the numbering
+documentation. No `.env`, no credential file, nothing Modal-related tracked. Two files
+exist only in history, `docs/explainers/02-prior-art.md` and `docs/competition-brief.md`,
+and both are ordinary explanatory prose.
+
+*Private conversation: one file, removed from tracking.*
+`submission/STATUS-EXPLAINED.md` is written as one side of an exchange with the owner —
+it opens by answering something he had said, and closes with a section asking him to
+decide three things. Untracked with `git rm --cached` and added to `.gitignore` on
+5 October 2026; the file stays on disk. It was not rewritten into a public document,
+because its content is already carried by this log and by `submission/methods.md`.
+
+*Everything else flagged by the scan was a false positive and stays.* Second person
+appears in `docs/glossary.md`, the explainers and `CLAUDE.md`, and in every case it is
+the explanatory register this project writes in for a reader learning the field — "you
+cannot watch a protein move", "lining up two sequences so you can compare them".
+`CLAUDE.md` addresses the agent reading it, which is a record of how the work was
+directed rather than correspondence. No commit message in the history contains internal
+dialogue.
+
+*The repository is private, so the URL is withheld.* `gh repo view` reports
+`kbrwl/egfr-conditional-binder` as PRIVATE and an unauthenticated fetch returns 404. The
+sentence in `submission/methods.md` that would have carried the link now says a full
+working record exists and that the repository is private at the time of submission, on
+the reasoning that a dead link is worse than no link. **Making it public was not done
+here.** Publishing a repository is the owner's decision and an outward-facing one, and
+nothing in the audit requires it: the history is clean, so the repository could be made
+public safely if he chooses, and the sentence would then be worth restoring.
+
 ---
 
 ## Commitments made in advance
