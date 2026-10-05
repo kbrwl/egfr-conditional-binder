@@ -309,12 +309,59 @@ Challenge 2 starts on time, so the challenges overlap by about two days. This su
 the earlier reading of Tudor's 30 September message as a one-day extension to 5 October.
 Message author and exact wording were not captured at the time of recording.
 
+## 15. The 4 October intake (recorded 5 October 2026)
+
+Read from the Proteinbase Slack by a person and installed here as reported speech.
+Nothing in this section was computed by us.
+
+### Tudor-Stefan Cotet, Adaptyv, 4 October 2026, `#anthropic_adaptyv_competition`
+
+**15.1 Deadline.** Confirmed as **6 October 2026, 23:59 Anywhere on Earth**. No change
+to what section 13a already records.
+
+**15.2 Which species is tested at which pH.** Human EGFR is tested at **both** pH 6.5
+and pH 7.4. Mouse EGFR is tested at **pH 6.5 only**. Tudor corrected an earlier
+statement of his own, in his words: *"We'll measure both human and mouse at pH 6.5,
+since that's where we assume both would be bound. And only human at 7.4 to ensure we
+see no/minimal binding."*
+
+**15.3 The constructs, which closes a gap open since 30 September.** The targets are the
+**full ectodomains in the tethered form**: human Met 1 – Ser 645 and mouse Met 1 –
+Ser 647, both from Sino Biological, catalogue numbers **10001-H08H** and **51091-M08H**.
+This answers the question section 14 records as asked twice and unanswered.
+
+**15.4 The signal peptide is present.** The constructs start at Met 1, so residues 1–24
+are in the test article rather than cleaved off. Tudor said designs aimed near residue 25
+should model 1–24, and noted that this differs from the previous competition's construct.
+
+**15.5 Do not prepend an initiator methionine.** In his words: *"We'll add it when we
+create the constructs in our software automatically."*
+
+**15.6 Resubmission is allowed.** In his words: *"You can submit once every 24 hours.
+Your most recent submission will be the 'designated' one or you can choose one to
+designate too."* This resolves the conflict section 11 records between the submission
+page and Slack, in favour of the 24-hour cadence.
+
+**15.7 A standalone novelty-check pipeline was promised for 5 October**, by Simon Dürr
+and Tudor. Whether it was released is recorded in `docs/decisions-log.md`.
+
+### Amir Shanehsazzadeh, Anthropic, 4 October 2026
+
+**15.8 Proton-PottsMPNN.** Amir pointed all entrants at Proton-PottsMPNN (Jacobsen et
+al., bioRxiv 2026.09.30.755438; code at `github.com/christian-creator/ProtonPottsMPNN`).
+It represents protonated and deprotonated histidine, aspartate and glutamate as distinct
+sequence tokens, so protonation preference is specified inside the design model rather
+than screened for afterwards. It was used to design 8,407 de novo PD-L1 binders engaging
+under acidic conditions, screened by yeast display, recovering 237 and 288 unique
+pH-dependent designs across two sorts. Our decision on it is recorded under Ruled out in
+`docs/decisions-log.md`.
+
 ## 14. Asked and still unanswered as of 2 October
 
-- The exact mouse EGFR construct, residue range and vendor. Olga Lavinda asked
-  twice, on 1 October, and got no reply. Our own construct check on 30 September
-  was against the sequence on the competition page, so this is a confirmation we
-  do not have.
+- ~~The exact mouse EGFR construct, residue range and vendor.~~ **Answered on
+  4 October; see 15.3.** Olga Lavinda asked twice, on 1 October, and got no reply at the
+  time. Our own construct check on 30 September was against the sequence on the
+  competition page.
 - Whether extra metric columns are tolerated in the submission CSV beyond the
   three in the template. Asked by Jose Farias on 1 October, unanswered.
 - **Whether cynomolgus monkey cross-reactivity is in scope for challenge 1.**

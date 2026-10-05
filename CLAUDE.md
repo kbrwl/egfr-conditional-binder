@@ -122,7 +122,7 @@ Do not decide them in the repository. Flag and stop.
 
 | Question | Why it is blocked | What to do |
 |---|---|---|
-| The exact mouse EGFR construct used in the screen — residue range, vendor, catalogue number | Asked twice in the Proteinbase Slack on 1 October 2026 and never answered | Use the sequence from the competition page, and say in any document that the screening construct is unconfirmed |
+| ~~The exact mouse EGFR construct used in the screen~~ | **Answered 4 October 2026** | Mouse Met 1 – Ser 647, Sino Biological 51091-M08H, full ectodomain in the tethered form. Human is Met 1 – Ser 645, 10001-H08H. The signal peptide is present in both. Stop calling the screening construct unconfirmed. See `docs/rules-reference.md` and `docs/competition-qa-log.md` 15.3 |
 | Whether cynomolgus monkey cross-reactivity is in scope | The pre-launch announcement said mouse and cyno; the recorded objectives say human and mouse | Check the competition page. Do not assume either way. Decided 2 October 2026 to design for human and mouse only; see Settled in `docs/decisions-log.md` |
 
 Record anything newly blocked in the Open or Unverified section of

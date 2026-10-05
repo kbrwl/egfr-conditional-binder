@@ -93,6 +93,17 @@ said what and when.
   with no binding at pH 7.4 and high affinity at pH 6.5 rank higher.
 - Mouse cross-reactivity means a mouse-to-human K_D ratio of about 1.
 
+**The target constructs, stated 4 October 2026** (`competition-qa-log.md` 15.3, 15.4)
+
+- Full ectodomains in the tethered form, both from Sino Biological: **human Met 1 –
+  Ser 645, catalogue 10001-H08H**, and **mouse Met 1 – Ser 647, catalogue 51091-M08H**.
+- **The signal peptide is present.** The constructs begin at Met 1, so residues 1–24 are
+  in the test article rather than cleaved. Designs aimed near residue 25 should model
+  1–24. This differs from the previous competition's construct.
+- **Human is tested at pH 6.5 and pH 7.4. Mouse is tested at pH 6.5 only** (15.2).
+- **Do not prepend an initiator methionine to a submitted sequence**; the organisers add
+  it when they build the constructs (15.5).
+
 **Buffer**
 
 - At pH 7.4: 10 mM HEPES, 150 mM NaCl, 0.2% Tween-20, 3 mM EDTA.
@@ -159,22 +170,22 @@ could disqualify a design.
 - Up to 20 designs for Track 3 (40 for Track 1), each chain 10 to 250 amino acids.
 - Track 3 needs no confirmation email: designs can be submitted directly.
 
-**CONFLICT, unresolved as of 3 October 2026 — how many times we may submit.**
+**RESOLVED 4 October 2026 — we may submit once every 24 hours, and replace.**
 
 | source | says |
 |---|---|
 | the competition page, read 3 October | "One submission per participant per challenge" |
 | a participant quoting the submission page in Slack, 1 October | "one submission every 24 hours" |
+| **Tudor-Stefan Cotet, Adaptyv, 4 October** | **"You can submit once every 24 hours. Your most recent submission will be the 'designated' one or you can choose one to designate too."** |
 
-Our standing rule is that the page beats Slack, and the page is the stricter of
-the two. **Plan on having exactly one submission.** The wording may only mean one
-CSV file rather than several, and may still permit replacing it — but that reading
-is not established, and acting on it risks spending the entire entry on a draft.
+Resolved by an organiser statement rather than by re-reading the page, which is why
+the page's stricter wording is not what governs here: an organiser addressing the
+question directly is the better evidence of intent, and the page's "one submission"
+means one designated entry rather than one upload. See `competition-qa-log.md` 15.6.
 
-This matters because a strategy of "submit something safe early and improve it
-later" is only sound under the 24-hour reading. Under the page's reading it would
-end the entry. Resolve by asking the organisers, or by checking whether the
-submission portal itself offers a replace option, before submitting anything.
+**The standing rule to plan on exactly one submission is deleted.** Submitting
+something safe early and improving it later is sound, which is what that rule
+previously forbade.
 
 ---
 
@@ -275,8 +286,7 @@ Recorded because these are gaps in the official information, not our opinions ab
 them. What we decided to do about each is in `decisions-log.md`.
 
 - The exact residue boundaries of domain III.
-- The exact mouse EGFR construct: residue range and vendor. Asked twice in Slack on
-  1 October and not answered.
+
 - Whether extra metric columns are tolerated in the submission CSV beyond the three
   in the template. Asked on 1 October and not answered.
 - **Whether cynomolgus monkey cross-reactivity is in scope for this challenge.** A
