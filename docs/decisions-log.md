@@ -1999,6 +1999,34 @@ here.** Publishing a repository is the owner's decision and an outward-facing on
 nothing in the audit requires it: the history is clean, so the repository could be made
 public safely if he chooses, and the sentence would then be worth restoring.
 
+**The two-worker lever costs throughput rather than buying it — measured 5 October
+2026, and this is the finding round two was most likely to produce.** Both workers
+completed their first trajectory at 3,256 s and 3,270 s of design time, a mean of
+3,263 s. Round one's single worker averaged 1,264 s with its first at 1,783 s.
+
+*Two concurrent workers therefore deliver one trajectory per 1,632 s of wall clock,
+against one worker's 1,264 s.* Both round-two figures include compilation; subtracting
+the 519 s compilation cost round one showed gives a steady-state estimate of 1,372 s per
+trajectory, still worse than one worker. Against the $7.75 ceiling, which buys 34,875 s
+of card time, that is **21 to 25 trajectories at two workers where one worker would have
+given about 28**.
+
+So the lever that has been described as available throughput since the first campaign is
+not throughput at all. Two workers fit in the card's memory, which is what was ever
+checked, and sharing one L4's compute between them costs more than the concurrency
+returns. The memory arithmetic was right and the inference from it was wrong.
+
+*The run was not relaunched at one worker.* Doing so would discard two completed
+trajectories and pay the compilation again for an expected 26 against the 21 to 25 this
+run will reach, a difference inside the noise of a two-trajectory measurement and not
+worth restarting the only campaign still running on the last full day. The $7.75 ceiling
+stands and nothing else was spent.
+
+*What this is worth carrying to challenge 2.* Before spending on parallel workers again,
+measure throughput rather than memory. The question is not whether two workers fit but
+whether two workers finish more trajectories an hour than one, and on an L4 with a
+256-residue complex the answer is no.
+
 ---
 
 ## Commitments made in advance
