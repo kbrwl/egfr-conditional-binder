@@ -1,0 +1,8 @@
+design,closest_pdb_entry,query_coverage,tm_score_over_query,sequence_identity,structural_verdict,novelty_level,reason,hits_considered,near_boundary
+egfr-ph-h370-01,3vs8-assembly1_C,1.000,0.7468,0.0090,moderate,3,exactly one condition met: moderate structural,91,no
+egfr-ph-h370-02,7m56-assembly1_A,0.958,0.7010,0.0130,moderate,3,exactly one condition met: moderate structural,81,no
+egfr-ph-h370-03,3vs9-assembly2_B,1.000,0.6977,0.0140,moderate,3,exactly one condition met: moderate structural,11,no
+egfr-ph-h370-04,7oom-assembly1_B,0.938,0.6436,0.1150,moderate,3,exactly one condition met: moderate structural,16,no
+egfr-ph-h370-05,3vs9-assembly2_B,1.000,0.7669,0.0090,moderate,3,exactly one condition met: moderate structural,51,yes
+egfr-ph-h370-06,3vs9-assembly2_B,1.000,0.7216,0.0090,moderate,3,exactly one condition met: moderate structural,73,no
+egfr-ph-h370-07,3vs9-assembly2_B,1.000,0.7832,0.0090,moderate,3,exactly one condition met: moderate structural,20,yes
