@@ -44,10 +44,10 @@ everything else about what was decided.
 | question | go to |
 |---|---|
 | what was submitted, and why those designs | `submission/methods.md` sections 8 and 9 |
-| why this target surface and not another | `docs/explainers/03-*`, then the epitope table in `methods.md` section 3 |
-| how the pH switch is built | `methods.md` section 4, then `analysis/10_charge_pair_filter.py` header |
-| what the project got wrong | `methods.md` section 10, then Resolved and Ruled out in `docs/decisions-log.md` |
-| what is still unresolved | `methods.md` section 11, then Open and Unverified in `docs/decisions-log.md` |
+| why this target surface and not another | `docs/explainers/03-*`, then the epitope table in `submission/methods.md` section 3 |
+| how the pH switch is built | `submission/methods.md` section 4, then `analysis/10_charge_pair_filter.py` header |
+| what the project got wrong | `submission/methods.md` section 10, then Resolved and Ruled out in `docs/decisions-log.md` |
+| what is still unresolved | `submission/methods.md` section 11, then Open and Unverified in `docs/decisions-log.md` |
 | the numbers behind any claim | `results/findings/NN-*.md`, which is the output of `analysis/NN_*.py` |
 | every design attempt ever made | `data/derived/18-trajectory-ledger-*.csv` |
 
@@ -122,7 +122,7 @@ produced the findings files, and drafted the documents.
 - The target epitope and the anchor set. Changing either is listed in `CLAUDE.md` under
   "These come back to Kunal, in chat" as a decision the tooling may not make on its own.
 - The pairing rule, the affinity direction, and every rejection criterion, including the
-  decision to demote one of them during final selection. See `methods.md` section 9.2.
+  decision to demote one of them during final selection. See `submission/methods.md` section 9.2.
 - Every dollar of GPU spend. No campaign against the real target was started without an
   explicit authorisation, and the authorisations are recorded with their date and their
   ceiling in `docs/decisions-log.md`.
@@ -139,7 +139,7 @@ produced the findings files, and drafted the documents.
   quietly dropped, and anything computed twice must be computed once.
 
 The three claims this project withdrew after its own computation disproved them are
-listed in `methods.md` section 10. They are kept deliberately. A design record
+listed in `submission/methods.md` section 10. They are kept deliberately. A design record
 containing only its successes cannot be checked.
 
 ---
