@@ -73,6 +73,17 @@ MAX_DESIGNS = 20
 MINIBINDER_RANGE = (40, 100)
 
 
+def backbone_of(design):
+    """The trajectory a candidate came from, which is its backbone.
+
+    BindCraft2 names a design `<campaign>_l<length>_<hash>[_candidateN][_<target>]`.
+    Everything up to `_candidate` identifies the trajectory, so two candidates
+    sharing that stem are two sequences written onto one backbone.
+    """
+    stem = design.split("_candidate", 1)[0]
+    return stem
+
+
 def clashing_designs():
     """Designs with at least one hard overlap against the intact receptor.
 
@@ -104,17 +115,58 @@ def main():
     print(f"shortlist           {len(shortlist)} candidates step 10 did not reject")
     print(f"clashing on intact  {len(clashing)} removed here and nowhere else")
 
-    chosen, dropped = [], []
+    eligible, dropped = [], []
     for row in shortlist:
         if row["design"] in clashing:
             dropped.append(row)
             continue
-        chosen.append(row)
-        if len(chosen) >= args.max_designs:
-            break
+        eligible.append(row)
 
     for row in dropped:
         print(f"  removed {row['design']}: hard overlap against the intact receptor")
+
+    # Slots are spread across backbones rather than filled straight down the
+    # ranking. A backbone here is one design trajectory: BindCraft2 produces a
+    # backbone and then ProteinMPNN writes many sequences onto it, so ten
+    # candidates from one trajectory are ten variants of one shape. Round one
+    # produced exactly that -- ten sequences, one backbone, pairwise identity 73
+    # to 94 per cent.
+    #
+    # Design diversity is one of the axes selection is scored on, and more to
+    # the point a second backbone is a second attempt at the problem while a
+    # second sequence on the same backbone is not. So the order is: the best
+    # design from each backbone, then the second best from each, and so on.
+    # Within a backbone the order is step 10's ranking, untouched.
+    #
+    # With a single backbone this is exactly the ranking order, which is what
+    # the round-one submission was, so the rule changes nothing until a second
+    # backbone exists.
+    by_backbone = {}
+    for row in eligible:
+        stem = backbone_of(row["design"])
+        by_backbone.setdefault(stem, []).append(row)
+
+    chosen = []
+    rank_of_backbone = {stem: i for i, stem in enumerate(by_backbone)}
+    depth = 0
+    while len(chosen) < args.max_designs:
+        took = False
+        for stem in sorted(by_backbone, key=lambda s: rank_of_backbone[s]):
+            rows = by_backbone[stem]
+            if depth < len(rows):
+                chosen.append(rows[depth])
+                took = True
+                if len(chosen) >= args.max_designs:
+                    break
+        if not took:
+            break
+        depth += 1
+
+    print(f"backbones           {len(by_backbone)} distinct "
+          f"({', '.join(f'{len(v)} candidate(s)' for v in by_backbone.values())})")
+    if len(by_backbone) > 1:
+        print("  slots spread across backbones: best from each, then second "
+              "from each, and so on")
 
     if not chosen:
         sys.exit("nothing survived both screens; no submission written")
