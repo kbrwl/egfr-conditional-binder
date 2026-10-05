@@ -2004,12 +2004,31 @@ public safely if he chooses, and the sentence would then be worth restoring.
 completed their first trajectory at 3,256 s and 3,270 s of design time, a mean of
 3,263 s. Round one's single worker averaged 1,264 s with its first at 1,783 s.
 
-*Two concurrent workers therefore deliver one trajectory per 1,632 s of wall clock,
-against one worker's 1,264 s.* Both round-two figures include compilation; subtracting
-the 519 s compilation cost round one showed gives a steady-state estimate of 1,372 s per
-trajectory, still worse than one worker. Against the $7.75 ceiling, which buys 34,875 s
-of card time, that is **21 to 25 trajectories at two workers where one worker would have
-given about 28**.
+*The first version of this entry put the penalty at 29% and that was wrong, because the
+comparison was not like for like.* It divided round two's mean by round one's mean while
+the two rounds had different mixes of how far their trajectories got, and how far a
+trajectory gets is most of what it costs: an attempt stopped at the screen stage is
+cheap and one that runs to the final gate is not. Round two's first four all ran deep,
+which made two workers look far worse than they are; by six trajectories its raw mean
+had fallen to 1,233 s a trajectory, which made them look better than one worker. Neither
+figure meant anything.
+
+*Matched by the stage each trajectory stopped at, the penalty is consistent and about
+2.2 times:*
+
+| stopped at | one worker (round one) | two workers (round two) | ratio |
+|---|---|---|---|
+| screen | 412 s (n=1) | 897 s (n=2) | 2.18 |
+| harden | 1,400 s (n=2) | 3,211 s (n=3) | 2.29 |
+| final | 1,530 s (n=1) | 3,365 s (n=1) | 2.20 |
+
+So a trajectory takes about 2.22 times as long when two workers share the card, and two
+of them run at once, which leaves throughput about **11% worse than a single worker**
+rather than 29%. The denominators are small — one to three trajectories a stage — and
+the three stages agreeing to within 0.11 is what makes the figure worth quoting at all.
+
+Against the ceiling that is roughly **24 trajectories at two workers where one worker
+would have given about 27**.
 
 So the lever that has been described as available throughput since the first campaign is
 not throughput at all. Two workers fit in the card's memory, which is what was ever
