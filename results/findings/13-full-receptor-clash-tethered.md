@@ -29,12 +29,12 @@ back into the intact receptor and measures the overlap.
    face does not stop one particular binder approaching at an angle that
    puts part of it inside domain II or domain IV.
 
-1. The intact receptor: 6aru.pdb  (6ARU, extended)
+1. The intact receptor: 1nql.pdb  (1NQL, tethered)
 
-   receptor chain A, 99.7% identity to human EGFR
+   receptor chain A, 99.8% identity to human EGFR
    residues the design run saw (domain III, 310-480): 171
-   residues it did not see, which this step measures against: 438
-   other chains in the file, left out of the measurement: B, C
+   residues it did not see, which this step measures against: 441
+   other chains in the file, left out of the measurement: B
 
    An overlap below 2.5 A is two sets of atoms in the same place.
    Between 2.5 and 4.5 A is touching, which the receptor
@@ -46,14 +46,15 @@ back into the intact receptor and measures the overlap.
    No design run has returned anything yet, so these are the only candidates
    this script has ever scored. Each one exercises one branch.
 
-   | constructed candidate | what it is | expected | got | overlaps | RMSD |
-   |---|---|---|---|---|---|
-   | binder-on-open-face | a binder out from the anchor face, where a real one would sit | clear | clear | 0 | 0.00 A |
-   | binder-inside-domain-iv | a binder in the volume the rest of the receptor occupies | clashing | clashing | 55 | 0.00 A |
-   | target-wrong-shape | a target whose shape is not 6ARU's, so the binder cannot be placed | not scored | not scored | 0 | 5.98 A |
-   >  target-wrong-shape: the target does not lie on 6ARU: RMSD 5.98 A over 171 CA atoms, above the 2.5 A limit. The binder cannot be placed, so no clash figure would mean anything
-   | binder-only-file | a binder-only file, which the run's output really does contain | not scored | not scored | 0 | — |
-   >  binder-only-file: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
+   The constructed cases are built against 6ARU's geometry and are not run
+   here. A synthetic binder placed on 6ARU's open face sits inside the
+   tethered receptor, because the domains move 23.4 A between the two
+   forms, so those cases invert and would report a failure of the fixture
+   rather than of the screen. What stands in for them is the per-candidate
+   superposition below: a target that does not lie on this receptor is
+   refused rather than scored, and that guard does not depend on which
+   conformation is loaded.
+
 
 3. Real candidates
 
@@ -81,40 +82,40 @@ back into the intact receptor and measures the overlap.
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_monomer | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_monomer: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_EGFR_domain3 | clear | 0 | 0 | 11.15 A | 489 | 5 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_EGFR_domain3 | clear | 0 | 0 | 11.15 A | 492 | 6 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3 | clear | 0 | 0 | 9.77 A | 491 | 76 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3 | clear | 0 | 0 | 9.76 A | 489 | 70 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3 | clear | 0 | 0 | 10.41 A | 491 | 4 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3 | clear | 0 | 0 | 10.80 A | 492 | 7 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_EGFR_domain3 | clear | 0 | 0 | 10.33 A | 489 | 2 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_EGFR_domain3 | clear | 0 | 0 | 11.07 A | 489 | 3 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_EGFR_domain3 | clear | 0 | 0 | 11.06 A | 492 | 1 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_EGFR_domain3 | clear | 0 | 0 | 10.77 A | 492 | 5 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_EGFR_domain3 | clashing | 1 | 8 | 1.96 A | 489 | 9 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_EGFR_domain3 | marginal | 0 | 4 | 3.10 A | 489 | 8 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_EGFR_domain3 | clear | 0 | 0 | 10.27 A | 491 | 9 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_EGFR_domain3 | clear | 0 | 0 | 10.89 A | 489 | 10 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3 | clear | 0 | 0 | 9.92 A | 491 | 62 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3 | clear | 0 | 0 | 9.96 A | 489 | 58 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3 | clear | 0 | 0 | 11.56 A | 489 | 55 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3 | clear | 0 | 0 | 11.54 A | 489 | 51 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
-   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_EGFR_domain3 | clear | 0 | 0 | 10.51 A | 489 | 6 |
+   | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_EGFR_domain3 | clear | 0 | 0 | 11.71 A | 489 | 7 |
    | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_HisTag | not scored | 0 | 0 | — | — | 0 |
    >  egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_HisTag: no chain in this file reads as human EGFR, so which molecule is the target cannot be established
 
    clear: 9
-   marginal: 0
-   clashing: 1
+   marginal: 1
+   clashing: 0
    not scored: 20
 
 ========================================================================
@@ -133,11 +134,15 @@ back into the intact receptor and measures the overlap.
    A real receptor can shift to accommodate a small overlap, which is why a
    marginal verdict is reported as marginal rather than as a failure.
 
-Wrote data/derived/13-candidate-clashes.csv
+Wrote data/derived/13-candidate-clashes-tethered.csv
 
 ========================================================================
-RESULT: PASSED. Every constructed case came back as it had to: a binder
-on the open face reads clear, one inside domain IV reads clashing, and a
-target that is not 6ARU is refused rather than scored.
+RESULT: SCREENED, NOT SELF-TESTED. No constructed case runs against this
+receptor, because the fixtures are built from 6ARU's geometry and invert
+when the domains move. Every candidate above was placed by a superposition
+this run reports and refuses to score when it is poor, but the pass/fail
+behaviour of the clash rule itself is not demonstrated here. Read these
+verdicts as a comparison against the extended run, not as an independent
+result.
 ========================================================================
 ```

@@ -1,0 +1,5 @@
+anchor_uniprot_pos,anchor_aa,atom_measured_from,distance_to_mature_n_terminus_a,first_resolved_residue,structure
+344,E,CB (FALLBACK),49.253,27,1nql.pdb
+358,H,imidazole centroid,47.213,27,1nql.pdb
+368,D,CG,58.912,27,1nql.pdb
+370,H,imidazole centroid,61.267,27,1nql.pdb

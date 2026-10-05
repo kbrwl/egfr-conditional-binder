@@ -134,6 +134,28 @@ CANDIDATES = ROOT / "results" / "candidates"
 FULL_RECEPTOR = STRUCT / "6aru.pdb"
 TRIMMED_TARGET = STRUCT / "6aru_domain3.pdb"
 
+# The intact receptor this screen places candidates back into. 6ARU is the
+# extended conformation and is the default, because it is the structure the
+# fragment handed to the design run was cut from, so a candidate's target
+# coordinates lie on it by construction.
+#
+# The organisers confirmed on 4 October 2026 that the assay uses the TETHERED
+# form, which is 1NQL. A binder that fits the extended receptor and not the
+# tethered one would pass this screen and still be unable to bind what is
+# actually on the chip. --receptor tethered runs the same screen against 1NQL so
+# the two verdicts can be compared. Domain III has the same fold in both (1.08 A
+# over the domain), so the superposition that places each candidate still works;
+# what differs is where the rest of the receptor sits around it.
+#
+# A candidate whose verdict differs between the two is FLAGGED, not dropped. The
+# tethered reading is the relevant one for the assay, but this screen places a
+# predicted binder into a crystal structure of a different conformation, and
+# that is a cruder operation than its single verdict suggests.
+RECEPTORS = {
+    "extended": (STRUCT / "6aru.pdb", "6ARU, extended"),
+    "tethered": (STRUCT / "1nql.pdb", "1NQL, tethered"),
+}
+
 DOMAIN_III = (common.D3_START, common.D3_END)
 
 # Two atoms this close cannot both be there: it is an overlap of the atoms
@@ -514,12 +536,26 @@ def main(argv=None):
     parser.add_argument("--candidates", type=Path, default=None, metavar="DIR",
                         help="a design-run output folder to screen. Without it, "
                              "only the constructed tests run.")
+    parser.add_argument("--receptor", choices=sorted(RECEPTORS), default="extended",
+                        help="which intact receptor to place candidates back "
+                             "into: 'extended' is 6ARU, the structure the "
+                             "design fragment was cut from and the default; "
+                             "'tethered' is 1NQL, the conformation the assay "
+                             "actually uses. Outputs are suffixed so the two "
+                             "runs do not overwrite each other.")
     parser.add_argument("--break-rule", choices=list(BREAKABLE_RULES),
                         default=None,
                         help="switch one rule off, to confirm the matching test "
                              "then fails. Expected to fail.")
     args = parser.parse_args(argv)
     BROKEN_RULE = args.break_rule
+
+    global FULL_RECEPTOR
+    FULL_RECEPTOR, receptor_label = RECEPTORS[args.receptor]
+    # The default run keeps the original filenames, so nothing that already
+    # reads 13-candidate-clashes.csv has to learn a new path. The tethered run
+    # writes beside it rather than over it.
+    suffix = "" if args.receptor == "extended" else f"-{args.receptor}"
 
     out = []
 
@@ -557,7 +593,7 @@ def main(argv=None):
         emit()
 
     context = receptor_context()
-    emit(f"1. The intact receptor: {FULL_RECEPTOR.name}")
+    emit(f"1. The intact receptor: {FULL_RECEPTOR.name}  ({receptor_label})")
     emit()
     emit(f"   receptor chain {context['chain']}, "
          f"{context['identity']:.1f}% identity to human EGFR")
@@ -583,7 +619,42 @@ def main(argv=None):
          "candidates")
     emit("   this script has ever scored. Each one exercises one branch.")
     emit()
-    failures = run_tests(context, human, emit)
+    # The constructed cases place a synthetic binder at coordinates chosen
+    # against 6ARU: one on the open face, one inside the volume domain IV
+    # occupies. Those coordinates do not mean the same thing in 1NQL, where the
+    # domain I-II region sits 23.4 A away from where 6ARU puts it, so a binder
+    # built to sit on 6ARU's open face lands inside the tethered receptor. Run
+    # against 1NQL the two cases invert and report a failure that is an artefact
+    # of the fixture rather than a fault in the screen.
+    #
+    # So they run against the receptor they were built for, and the tethered run
+    # says plainly that it has no constructed cases of its own. What vouches for
+    # the tethered run instead is the superposition it reports per candidate: if
+    # the candidate's target does not lie on the receptor, the screen refuses to
+    # score it rather than guessing, and that guard is receptor-independent.
+    #
+    # Building a second set of fixtures against 1NQL is the real fix and is not
+    # done here; it is recorded as owed in docs/decisions-log.md.
+    if args.receptor == "extended":
+        failures = run_tests(context, human, emit)
+    else:
+        failures = []
+        emit("   The constructed cases are built against 6ARU's geometry and "
+             "are not run")
+        emit("   here. A synthetic binder placed on 6ARU's open face sits "
+             "inside the")
+        emit("   tethered receptor, because the domains move 23.4 A between the "
+             "two")
+        emit("   forms, so those cases invert and would report a failure of the "
+             "fixture")
+        emit("   rather than of the screen. What stands in for them is the "
+             "per-candidate")
+        emit("   superposition below: a target that does not lie on this "
+             "receptor is")
+        emit("   refused rather than scored, and that guard does not depend on "
+             "which")
+        emit("   conformation is loaded.")
+        emit()
     emit()
 
     results = []
@@ -650,7 +721,7 @@ def main(argv=None):
     # A deliberately broken run must not replace a real findings file.
     write_files = BROKEN_RULE is None
     DERIVED.mkdir(parents=True, exist_ok=True)
-    csv_path = DERIVED / "13-candidate-clashes.csv"
+    csv_path = DERIVED / f"13-candidate-clashes{suffix}.csv"
     with (csv_path.open("w") if write_files else open(os.devnull, "w")) as fh:
         fh.write("design,verdict,hard_overlaps,contacts,closest_a,"
                  "closest_uniprot_pos,domain3_contacts,superposition_rmsd_a,"
@@ -676,19 +747,33 @@ def main(argv=None):
         emit(f"RESULT: {len(failures)} CHECK(S) FAILED —")
         for failure in failures:
             emit(f"  - {failure}")
-    else:
+    elif args.receptor == "extended":
         emit("RESULT: PASSED. Every constructed case came back as it had to: a "
              "binder")
         emit("on the open face reads clear, one inside domain IV reads clashing, "
              "and a")
         emit("target that is not 6ARU is refused rather than scored.")
+    else:
+        emit("RESULT: SCREENED, NOT SELF-TESTED. No constructed case runs "
+             "against this")
+        emit("receptor, because the fixtures are built from 6ARU's geometry and "
+             "invert")
+        emit("when the domains move. Every candidate above was placed by a "
+             "superposition")
+        emit("this run reports and refuses to score when it is poor, but the "
+             "pass/fail")
+        emit("behaviour of the clash rule itself is not demonstrated here. Read "
+             "these")
+        emit("verdicts as a comparison against the extended run, not as an "
+             "independent")
+        emit("result.")
     emit("=" * 72)
 
     if not write_files:
         return 1 if failures else 0
 
     FINDINGS.mkdir(parents=True, exist_ok=True)
-    (FINDINGS / "13-full-receptor-clash.md").write_text(
+    (FINDINGS / f"13-full-receptor-clash{suffix}.md").write_text(
         "# Would each designed binder still fit in the intact receptor?\n\n"
         "Computed output of `analysis/13_full_receptor_clash.py`. "
         "Do not hand-edit.\n\n"

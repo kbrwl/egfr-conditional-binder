@@ -1,0 +1,31 @@
+design,verdict,hard_overlaps,contacts,closest_a,closest_uniprot_pos,domain3_contacts,superposition_rmsd_a,matched_ca_atoms,reason
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_monomer,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_EGFR_domain3,clear,0,0,11.146,492,6,0.986,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3,clear,0,0,9.756,489,70,0.990,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3,clear,0,0,10.801,492,7,0.985,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_EGFR_domain3,clear,0,0,11.066,489,3,0.986,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_EGFR_domain3,clear,0,0,10.769,492,5,0.984,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_EGFR_domain3,marginal,0,4,3.098,489,8,0.988,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_EGFR_domain3,clear,0,0,10.892,489,10,0.988,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3,clear,0,0,9.963,489,58,0.984,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3,clear,0,0,11.542,489,51,0.982,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_EGFR_domain3,clear,0,0,11.711,489,7,0.985,171,
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_HisTag,not scored,0,0,,,0,,0,no chain in this file reads as human EGFR; so which molecule is the target cannot be established
