@@ -2116,6 +2116,31 @@ for two workers on one card, the discovery that the padding-bucket partition pin
 workers to length ranges, and a survival denominator three times larger than round one's.
 None of that is a candidate, and all of it is what challenge 2 should be sized from.
 
+**What this entry actually cost, from three sources that do not agree — reconciled
+6 October 2026.** Two of the three agree to the cent and the third is the outlier.
+
+| source | reads | how it was obtained |
+|---|---|---|
+| `modal billing report`, 29 line items summed | **$25.7570** | per-app itemisation, 1-6 October |
+| the workspace credit balance | **$25.76** | $30.00 allowance less the $4.24 remaining the account page shows |
+| `modal billing summary`, Metered Cost | $27.18 | the aggregate field |
+
+*The itemised report and the credit balance agree at $25.76.* The summary field is
+$1.42 higher and is the one to discount: this log already records it reading $25.11 and
+then $24.49 three minutes apart during round two, and $22.37 then $22.17 earlier the
+same evening, so it is eventually consistent and revises both ways. A balance is a
+settled figure and an itemisation can be checked line by line; an aggregate that moves
+between polls is neither.
+
+**So real spend is $25.76**, and `submission/methods.md` was corrected from the $27.18
+it had taken from the summary. It now reads "about USD 26 of rented GPU time, entirely
+inside a USD 30 monthly free allowance; no payment was made" — a rounded figure with a
+stated bound, which no later reading of an account page can contradict, where a figure
+quoted to the cent from a field that drifts invites exactly that.
+
+*No payment was made.* Billed Cost reads $0.00 throughout; the whole entry sat inside
+the Starter plan's monthly free compute.
+
 ---
 
 ## Commitments made in advance
