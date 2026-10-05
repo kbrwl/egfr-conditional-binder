@@ -69,7 +69,7 @@ is not written there, it has not been made. Do not infer one.
 | Install a file from `temp_docs_from_claude_chat/` | "Documents handed over from Claude chat" below |
 | State what the organisers have said about anything | `docs/competition-qa-log.md`. Never from memory, never from this file |
 | Write or change anything in `submission/` | "Submission hygiene" below |
-| Wonder whether something has already been settled | `docs/decisions-log.md`, then ask Kunal |
+| Wonder whether something has already been settled | `docs/decisions-log.md`, then ask the project owner |
 
 **These are not suggestions.** Working from this file alone will produce output that
 contradicts decisions you cannot see, and has already done so once. If a task
@@ -103,7 +103,7 @@ else about what we have decided.
 
 ---
 
-## These come back to Kunal, in chat
+## These come back to the project owner, in chat
 
 Do not decide them in the repository. Flag and stop.
 
@@ -169,9 +169,10 @@ judgement and should be described as one.
 
 ## Who you are writing for
 
-The project owner is a product manager with no biology background, who last studied
-it at school, and who is reading every line of this repository in order to
-understand it rather than take it on trust.
+The project owner has no biology background and is reading every line of this
+repository in order to understand it rather than take it on trust. That is the
+reader every document here is written for; nothing else about them is relevant to
+how it should be written.
 
 - Explain what a computation measures and why the answer matters before running it,
   in enough detail that the result can be judged rather than just received.

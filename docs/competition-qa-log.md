@@ -16,11 +16,15 @@ Read on 2 October 2026 from the `proteinbase.slack.com` workspace, channels
 
 Names and roles, so attributions below are readable:
 
-- **Tudor-Stefan Cotet** (`tudor@adaptyvbio.com`) — Adaptyv, running the competition.
-  Source of nearly all the assay detail.
-- **Simon Dürr** (`simond@adaptyvbio.com`) — Adaptyv, owns the novelty scoring.
-- **Amir Shanehsazzadeh** (`ashanehsazzadeh@anthropic.com`) — Anthropic.
-- **Bailey Bova** (`bailey@anthropic.com`) — Anthropic, community and access.
+- **the competition lead** — Adaptyv, running the competition. Source of nearly all
+  the assay detail.
+- **the novelty lead** — Adaptyv, owns the novelty scoring.
+- **an Anthropic organiser** — Anthropic.
+- **an Anthropic community organiser** — Anthropic, community and access.
+
+Attributions below use these roles rather than names. Dates, quoted wording, and
+whether a statement corrected an earlier one are all preserved, because that is what
+makes this log evidence.
 
 ---
 
@@ -28,7 +32,7 @@ Names and roles, so attributions below are readable:
 
 **Method.** Surface plasmon resonance, abbreviated SPR, as the main assay.
 Bio-layer interferometry, abbreviated BLI, only to cross-check hits.
-(Tudor, 30 September.)
+(the competition lead, 30 September.)
 
 Both are instruments that measure two proteins sticking together without
 attaching a dye or a radioactive label to either one. One partner is fixed to a
@@ -37,14 +41,14 @@ watches the mass accumulating on the surface in real time.
 
 **Which partner is fixed.** **The designs are immobilised and the target is
 flowed over them.** The target is caught on the surface through a C-terminal
-twin-Strep tag, described as the default and changeable. (Tudor, 30 September.)
+twin-Strep tag, described as the default and changeable. (the competition lead, 30 September.)
 
 This is the reverse of the arrangement most people assume. The protein in
 solution, called the **analyte**, is EGFR. The protein stuck to the chip, called
 the **ligand**, is our binder.
 
 **Concentrations.** Top analyte concentration 1000 nM, with a usable affinity
-window of roughly 0.1 nM to 10 µM. (Tudor, 30 September.)
+window of roughly 0.1 nM to 10 µM. (the competition lead, 30 September.)
 
 Affinity is reported as **KD**, the dissociation constant, in units of
 concentration. Lower means tighter. A KD of 1 nM is a strong binder; 10 µM is
@@ -54,7 +58,7 @@ return a number.
 ## 2. What counts as binding, and as not binding
 
 A design counts as **binding** at a given pH if either of these holds
-(Tudor, 30 September):
+(the competition lead, 30 September):
 
 1. the sensor trace can be fitted to give a KD, or
 2. where no fit is possible, the association signal rises more than 300% above
@@ -69,7 +73,7 @@ to fit.
 ## 3. How the pH objective is ranked
 
 Asked directly whether no detectable binding at 7.4 is a hard requirement, or
-whether a large KD shift with binding at both pHs also qualifies, Tudor answered
+whether a large KD shift with binding at both pHs also qualifies, the competition lead answered
 on 30 September:
 
 > Designs that show a large KD shift will also qualify, but designs that show no
@@ -79,13 +83,13 @@ Two separate things follow. Binding at both pHs is not disqualifying if the
 shift is large. And the top of the ranking wants **high affinity at pH 6.5**
 together with nothing at 7.4.
 
-Measurement pH values are 6.5 and 7.4. Tudor noted on 28 September that this is
+Measurement pH values are 6.5 and 7.4. The competition lead noted on 28 September that this is
 deliberately harder than measuring at 6.0 or 5.0 would be, and pointed at
 PubMed 36458200 as the source of the conditions.
 
 ## 4. What counts as mouse cross-reactive
 
-A KD ratio of mouse over human of **around 1**. (Tudor, 30 September.) He
+A KD ratio of mouse over human of **around 1**. (the competition lead, 30 September.) He
 pointed at the same paper, Mol Ther Oncolytics
 `S2372-7705(22)00136-X`, as the comparison.
 
@@ -94,7 +98,7 @@ at 2 µM binds both and is not cross-reactive by this definition.
 
 ## 5. Buffer and ionic strength
 
-Base buffer, used for the pH 7.4 condition (Tudor, 29 September):
+Base buffer, used for the pH 7.4 condition (the competition lead, 29 September):
 
 | component | concentration | what it is |
 |---|---|---|
@@ -103,11 +107,11 @@ Base buffer, used for the pH 7.4 condition (Tudor, 29 September):
 | Tween-20 | 0.2% | detergent, stops proteins sticking to plastic and to each other |
 | EDTA | 3 mM | mops up stray metal ions |
 
-For the acidic condition HEPES is replaced with **MES** (Tudor, 30 September).
+For the acidic condition HEPES is replaced with **MES** (the competition lead, 30 September).
 MES is a buffer whose useful range covers pH 6.5, where HEPES has none.
 
 **Total ionic strength is matched between the two conditions with NaCl, at
-approximately 170 mM.** (Tudor, 29 September.)
+approximately 170 mM.** (the competition lead, 29 September.)
 
 That matching is deliberate and it matters to us. Ionic strength is how many
 charged particles are floating in the solution. A high one surrounds every
@@ -118,20 +122,20 @@ Because the level is physiological rather than low, a charge pair sitting out in
 the open on the surface contributes less than the same pair would in a
 low-salt buffer.
 
-Tudor added that these are the organisers' standard platform conditions,
+The competition lead added that these are the organisers' standard platform conditions,
 described in `nature.com/articles/s41587-026-03187-0`.
 
 ## 6. The target as it will actually exist
 
 | property | value | source |
 |---|---|---|
-| conformation | **tethered** (the closed, inactive form) | Tudor, 29 September |
-| expression system | HEK293 cells | Tudor, 30 September |
-| glycosylation | **glycosylated** | Tudor, 30 September |
-| tags, both species | C-terminal His tag | Tudor, 30 September |
-| capture tag | C-terminal twin-Strep | Tudor, 30 September |
+| conformation | **tethered** (the closed, inactive form) | the competition lead, 29 September |
+| expression system | HEK293 cells | the competition lead, 30 September |
+| glycosylation | **glycosylated** | the competition lead, 30 September |
+| tags, both species | C-terminal His tag | the competition lead, 30 September |
+| capture tag | C-terminal twin-Strep | the competition lead, 30 September |
 
-On 30 September Tudor restated the whole of it in one line: the wet-lab screen is
+On 30 September the competition lead restated the whole of it in one line: the wet-lab screen is
 against the glycosylated, tethered EGFR, and that is why domain III was suggested
 as the place to aim.
 
@@ -139,7 +143,7 @@ as the place to aim.
 **tethered** or closed form, domain II folds back and clips onto domain IV, and
 the receptor is inactive. In the **extended** or open form it unfolds and the
 receptor can pair up with another copy and switch the cell on. Different surfaces
-are exposed in each. Asked which one to target, Tudor said the tethered form, and
+are exposed in each. Asked which one to target, the competition lead said the tethered form, and
 said the competition page would be updated to say so.
 
 **On glycosylation.** A **glycan** is a tree of sugars attached to the protein
@@ -156,7 +160,7 @@ This came up as a joke and turned serious. Jonathan Ouyang asked on 30 September
 what stops someone simply designing a binder against the His tag, and noted that
 histidine is exactly the residue that responds to pH.
 
-Tudor's answers, same day:
+The competition lead's answers, same day:
 
 - the tags are unlikely to be cleaved, and the screening will probably use
   His-tagged EGFR as-is
@@ -165,7 +169,7 @@ Tudor's answers, same day:
 - in silico scoring will be weighted more heavily in cases where a design might
   be hitting a tag, because the structure prediction has no tag in it
 
-Amir Shanehsazzadeh added:
+an Anthropic organiser added:
 
 > The tag or really any component of the system that is there for screening
 > should definitely not be targeted. Good call out given it's Histidine. Any such
@@ -184,7 +188,7 @@ to avoid.
 
 ## 8. What our binder gets attached to
 
-Asked what tags and linkers go on the designs, Tudor answered on 30 September:
+Asked what tags and linkers go on the designs, the competition lead answered on 30 September:
 
 > We use C-terminal tags by default and add the following to the constructs:
 > linker - GFP11 - linker - TwinStrep tag. Immobilization is on the C-terminus.
@@ -204,7 +208,7 @@ it.
 
 ## 9. Novelty: the gate and how it is checked
 
-**The gate is level 3 of 4.** Simon Dürr said so twice, on 29 September
+**The gate is level 3 of 4.** the novelty lead said so twice, on 29 September
 ("Level 3 will pass the submission gate") and on 1 October, where he described it
 as the sequence needing to be under 30% similar to anything existing. The scale
 is defined at `adaptyvbio.com/blog/novelty`.
@@ -215,7 +219,7 @@ in `docs/rules-reference.md`. In short: under 30% sequence similarity on its own
 gives level 4 only if structural similarity is also low. A design under 30% on
 sequence that still matches a known fold lands on level 3, which passes.*
 
-**How they check it** (Tudor, 1 October): in previous competitions they ran
+**How they check it** (the competition lead, 1 October): in previous competitions they ran
 MMseqs2, a fast sequence-similarity search tool, against SwissProt, the Protein
 Data Bank, the USPTO patent database, the EBI patent database, THPdb, PLAbDab and
 Proteinbase itself, and called a design de novo if it hit nothing with any
@@ -224,14 +228,14 @@ homology in any of them.
 Novelty is scored **automatically on upload**, so a design can be tested against
 the real checker before the deadline rather than guessed at.
 
-Simon noted that the pipeline currently gives antibodies and nanobodies special
+The novelty lead noted that the pipeline currently gives antibodies and nanobodies special
 treatment that other rigid scaffolds such as affibodies and DARPins do not get,
 and that they will try to fix this for the next challenge.
 
 ## 10. How designs get selected, which is the whole game for Track 3
 
 Asked whether a strategy relying on pH-dependent conformational change would be
-penalised by the selection modelling, Tudor answered on 2 October:
+penalised by the selection modelling, the competition lead answered on 2 October:
 
 > Selection will be mainly based on method novelty, design diversity, and a
 > couple of in silico/confidence metrics. [...] Compared to previous competitions
@@ -261,12 +265,12 @@ From the submission page, quoted in `#general` on 1 October by a participant:
 The 24-hour cadence means an early safe batch can be replaced by a better one
 later, rather than the whole entry resting on one upload.
 
-**Track 3 needs no confirmation email.** Tudor, 30 September: Track 3
+**Track 3 needs no confirmation email.** the competition lead, 30 September: Track 3
 pre-registration existed only to anticipate how much compute the organisers would
 need for selection, and designs can be submitted directly.
 
-**Deadline.** Amir confirmed on 29 September that it was Sunday 4 October,
-anywhere on Earth. Tudor's 30 September message announced an extension for the Modal
+**Deadline.** the Anthropic organiser confirmed on 29 September that it was Sunday 4 October,
+anywhere on Earth. The competition lead's 30 September message announced an extension for the Modal
 credit delays, read at the time as one day (5 October). **Superseded: the official
 announcement gives 6 October 2026, 23:59 anywhere on Earth** (section 13a). The second
 challenge still starts on time, so challenges 1 and 2 overlap by about two days.
@@ -281,22 +285,22 @@ working material:
   and often more useful than the successes
 - the Nipah binder competition results, 171 additional proteins in the last batch
 
-Anthony Gitter reported on 18 April that his test of the *unselected* EGFR
+A participant reported on 18 April that their test of the *unselected* EGFR
 round-1 designs came back negative across the board except for the EGF positive
 control.
 
-In `#design-methods`, Nick Boyd published a write-up on why his team won the
+In `#design-methods`, a participant published a write-up on why their team won the
 de novo category of the Nipah competition, concluding that it came down mainly to
 which epitope they targeted: `blog.escalante.bio`.
 
 ## 13. Practical notes
 
-**Model access.** Amir announced on 28 September that Claude Sonnet 5.5 performs
+**Model access.** the Anthropic organiser announced on 28 September that Claude Sonnet 5.5 performs
 roughly on par with Opus 5.5 at de novo binder design, and carries lighter bio
 classifiers, making it more usable for this work. Several participants in
 `#feedback` report Opus 5.5 refusing ordinary protein-design prompts.
 
-**Accelerated models.** Amir, 29 September: Anthropic has published accelerated
+**Accelerated models.** the Anthropic organiser, 29 September: Anthropic has published accelerated
 versions of popular open-source design and folding models, averaging 4–5x
 speed-ups. `github.com/anthropics/uplifting-biomolecular-modeling`.
 
@@ -306,7 +310,7 @@ Official announcement in the Proteinbase Slack, relayed to this project on 3 Oct
 challenge 1 is extended to **6 October 2026, 23:59 Anywhere on Earth**, because some
 teams received their Modal credits late. The competition page is to be updated to match.
 Challenge 2 starts on time, so the challenges overlap by about two days. This supersedes
-the earlier reading of Tudor's 30 September message as a one-day extension to 5 October.
+the earlier reading of the competition lead's 30 September message as a one-day extension to 5 October.
 Message author and exact wording were not captured at the time of recording.
 
 ## 15. The 4 October intake (recorded 5 October 2026)
@@ -314,14 +318,14 @@ Message author and exact wording were not captured at the time of recording.
 Read from the Proteinbase Slack by a person and installed here as reported speech.
 Nothing in this section was computed by us.
 
-### Tudor-Stefan Cotet, Adaptyv, 4 October 2026, `#anthropic_adaptyv_competition`
+### the competition lead, Adaptyv, 4 October 2026, `#anthropic_adaptyv_competition`
 
 **15.1 Deadline.** Confirmed as **6 October 2026, 23:59 Anywhere on Earth**. No change
 to what section 13a already records.
 
 **15.2 Which species is tested at which pH.** Human EGFR is tested at **both** pH 6.5
-and pH 7.4. Mouse EGFR is tested at **pH 6.5 only**. Tudor corrected an earlier
-statement of his own, in his words: *"We'll measure both human and mouse at pH 6.5,
+and pH 7.4. Mouse EGFR is tested at **pH 6.5 only**. The competition lead corrected an earlier
+statement of their own, in their words: *"We'll measure both human and mouse at pH 6.5,
 since that's where we assume both would be bound. And only human at 7.4 to ensure we
 see no/minimal binding."*
 
@@ -331,7 +335,7 @@ Ser 647, both from Sino Biological, catalogue numbers **10001-H08H** and **51091
 This answers the question section 14 records as asked twice and unanswered.
 
 **15.4 The signal peptide is present.** The constructs start at Met 1, so residues 1–24
-are in the test article rather than cleaved off. Tudor said designs aimed near residue 25
+are in the test article rather than cleaved off. The competition lead said designs aimed near residue 25
 should model 1–24, and noted that this differs from the previous competition's construct.
 
 **15.5 Do not prepend an initiator methionine.** In his words: *"We'll add it when we
@@ -342,12 +346,12 @@ Your most recent submission will be the 'designated' one or you can choose one t
 designate too."* This resolves the conflict section 11 records between the submission
 page and Slack, in favour of the 24-hour cadence.
 
-**15.7 A standalone novelty-check pipeline was promised for 5 October**, by Simon Dürr
-and Tudor. Whether it was released is recorded in `docs/decisions-log.md`.
+**15.7 A standalone novelty-check pipeline was promised for 5 October**, by the novelty lead
+and the competition lead. Whether it was released is recorded in `docs/decisions-log.md`.
 
-### Amir Shanehsazzadeh, Anthropic, 4 October 2026
+### an Anthropic organiser, Anthropic, 4 October 2026
 
-**15.8 Proton-PottsMPNN.** Amir pointed all entrants at Proton-PottsMPNN (Jacobsen et
+**15.8 Proton-PottsMPNN.** the Anthropic organiser pointed all entrants at Proton-PottsMPNN (Jacobsen et
 al., bioRxiv 2026.09.30.755438; code at `github.com/christian-creator/ProtonPottsMPNN`).
 It represents protonated and deprotonated histidine, aspartate and glutamate as distinct
 sequence tokens, so protonation preference is specified inside the design model rather
@@ -359,13 +363,13 @@ pH-dependent designs across two sorts. Our decision on it is recorded under Rule
 ## 14. Asked and still unanswered as of 2 October
 
 - ~~The exact mouse EGFR construct, residue range and vendor.~~ **Answered on
-  4 October; see 15.3.** Olga Lavinda asked twice, on 1 October, and got no reply at the
+  4 October; see 15.3.** a participant asked twice, on 1 October, and got no reply at the
   time. Our own construct check on 30 September was against the sequence on the
   competition page.
 - Whether extra metric columns are tolerated in the submission CSV beyond the
-  three in the template. Asked by Jose Farias on 1 October, unanswered.
+  three in the template. Asked by a participant on 1 October, unanswered.
 - **Whether cynomolgus monkey cross-reactivity is in scope for challenge 1.**
-  Amir's pre-launch message on 28 September said the challenge wanted
+  the Anthropic organiser's pre-launch message on 28 September said the challenge wanted
   cross-reactive binding "to mouse and cyno". The official objectives as recorded
   in `docs/rules-reference.md` name human and mouse only. One of the two is out
   of date and it should be checked on the competition page.

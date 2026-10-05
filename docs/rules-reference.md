@@ -38,7 +38,7 @@ until it has passed in every time zone, which is UTC−12, so about midday UTC o
 7 October.
 
 **Settled 3 October 2026.** The original date was 4 October. An earlier Slack message
-(Tudor, 30 September) was read as a one-day extension to 5 October. The official
+(the competition lead, 30 September) was read as a one-day extension to 5 October. The official
 announcement in the Proteinbase Slack supersedes that: challenge 1 is extended to
 **6 October 23:59 AoE** because some teams received Modal credits late. The competition
 page was still to be updated to match when this was recorded; if the page and this file
@@ -176,7 +176,7 @@ could disqualify a design.
 |---|---|
 | the competition page, read 3 October | "One submission per participant per challenge" |
 | a participant quoting the submission page in Slack, 1 October | "one submission every 24 hours" |
-| **Tudor-Stefan Cotet, Adaptyv, 4 October** | **"You can submit once every 24 hours. Your most recent submission will be the 'designated' one or you can choose one to designate too."** |
+| **the competition lead, Adaptyv, 4 October** | **"You can submit once every 24 hours. Your most recent submission will be the 'designated' one or you can choose one to designate too."** |
 
 Resolved by an organiser statement rather than by re-reading the page, which is why
 the page's stricter wording is not what governs here: an organiser addressing the
@@ -290,11 +290,11 @@ them. What we decided to do about each is in `decisions-log.md`.
 - Whether extra metric columns are tolerated in the submission CSV beyond the three
   in the template. Asked on 1 October and not answered.
 - **Whether cynomolgus monkey cross-reactivity is in scope for this challenge.** A
-  pre-launch message from Amir at Anthropic on 28 September described the challenge
+  pre-launch message from the Anthropic organiser on 28 September described the challenge
   as wanting binding "to mouse and cyno". The competition page, read on 2 October,
   names human and mouse only. One of the two is out of date.
 - Whether the competition page will be updated to carry the Slack statements above.
-  Tudor said it would be updated to name the tethered form; on 2 October it was not.
+  The competition lead said it would be updated to name the tethered form; on 2 October it was not.
 
 Answered since capture and moved up into the assay section: which assay is used,
 what counts as "no detectable binding", and which conformation is tested.

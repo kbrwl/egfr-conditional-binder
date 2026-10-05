@@ -338,7 +338,7 @@ wording are in `docs/competition-qa-log.md` section 15, the facts in
 `docs/rules-reference.md`.
 
 **Human EGFR is tested at pH 6.5 and pH 7.4. Mouse EGFR is tested at pH 6.5 only.**
-Tudor-Stefan Cotet corrected an earlier statement of his own to say this. The
+The competition lead corrected an earlier statement of their own to say this. The
 consequence is the one worth carrying: **pH selectivity and mouse cross-reactivity no
 longer pull against each other.** Cross-reactivity is read in the bound state, at the
 pH where both species are expected to bind, so nothing about the mouse measurement
@@ -355,12 +355,12 @@ asked twice in Slack without an answer; it also confirms the tethered form, whic
 
 **The signal peptide is present.** The constructs begin at Met 1, so residues 1–24 are
 in the test article rather than cleaved off, which differs from the previous
-competition's construct. Tudor said designs aimed near residue 25 should model 1–24.
+competition's construct. The competition lead said designs aimed near residue 25 should model 1–24.
 Our face is domain III, 310–480 in full UniProt numbering, so residue 25 is far away;
 step 6 of the execution plan measures that distance on our own target rather than
 leaving the organiser's general statement to stand in for it.
 
-**Do not prepend an initiator methionine to a submitted sequence.** In Tudor's words:
+**Do not prepend an initiator methionine to a submitted sequence.** In the competition lead's words:
 "We'll add it when we create the constructs in our software automatically." Our
 sequences begin with S or D and must stay that way.
 
@@ -372,8 +372,8 @@ and it was resolved by an organiser statement rather than by re-reading the page
 standing rule to plan on exactly one submission is deleted.** Uploading a safe batch
 early and replacing it later is sound, which that rule previously forbade.
 
-**A standalone novelty-check pipeline was promised for 5 October** by Simon Dürr and
-Tudor. Whether it was released is recorded under Next actions.
+**A standalone novelty-check pipeline was promised for 5 October** by the novelty lead and
+The competition lead. Whether it was released is recorded under Next actions.
 
 **Strategy: treat the methods write-up as part of the submission.**
 In Track 3 we hold no reserved testing slot, so the submission competes in a
@@ -770,7 +770,7 @@ against the sequence on the competition page. It is mouse Met 1 – Ser 647, Sin
 Biological 51091-M08H.
 
 **Is cynomolgus monkey cross-reactivity in scope? — decided 2 October 2026: design for
-human and mouse only.** Amir's pre-launch message on 28 September said "mouse and cyno". The
+human and mouse only.** the Anthropic organiser's pre-launch message on 28 September said "mouse and cyno". The
 competition page, read on 2 October, names human and mouse only, and so does
 `docs/rules-reference.md`. The page is authoritative, and it names two species, so no GPU time
 or campaign slot is spent on cyno.
@@ -790,7 +790,7 @@ with the limits the finding records: the cyno UniProt entry is unreviewed, this 
 analysis with no cyno structure examined, and nothing about binding was measured.
 
 **What novelty level 3 means — answered 5 October 2026 by reading
-`adaptyvbio.com/blog/novelty`, which had never been read.** Simon Dürr's two statements
+`adaptyvbio.com/blog/novelty`, which had never been read.** the novelty lead's two statements
 were indeed different thresholds, and the looser one is the gate. The published scale
 for non-antibodies:
 
@@ -814,7 +814,7 @@ also scored automatically on upload, so it can be tested against the real checke
 the deadline.
 
 **The standalone novelty-check pipeline promised for 5 October has not been released —
-checked 5 October 2026.** Simon Dürr and Tudor said on 4 October that one was coming.
+checked 5 October 2026.** the novelty lead and the competition lead said on 4 October that one was coming.
 Checked three ways: a web search, the organisers' own novelty page (which describes
 `ProteinTyper` as internal infrastructure and offers nothing downloadable), and the
 `adaptyvbio` GitHub organisation, whose most recently updated repository predates the
@@ -1154,7 +1154,7 @@ it could be used to pick downward.
 
 Withdrawn because the organisers answered the question directly. Asked on 30
 September whether no binding at pH 7.4 is a hard requirement or whether a large K_D
-shift also qualifies, Tudor answered that a large shift also qualifies and that
+shift also qualifies, the competition lead answered that a large shift also qualifies and that
 designs with no binding at pH 7.4 together with high affinity at pH 6.5 rank higher
 (`docs/competition-qa-log.md`). The quantity being rewarded is the gap between the
 two conditions, with the pH 6.5 end as high as it can be.
@@ -1213,7 +1213,7 @@ people judging this do. A withdrawn strategy is a result and is recorded like an
 other.
 
 **Proton-PottsMPNN for challenge 1 — ruled out 5 October 2026, and it is the first
-thing to evaluate for challenge 2.** Amir Shanehsazzadeh pointed all entrants at it on
+thing to evaluate for challenge 2.** an Anthropic organiser pointed all entrants at it on
 4 October (Jacobsen et al., bioRxiv 2026.09.30.755438; code at
 `github.com/christian-creator/ProtonPottsMPNN`). It represents protonated and
 deprotonated histidine, aspartate and glutamate as distinct sequence tokens, so
@@ -1328,7 +1328,7 @@ histidines, no antibody overlap and no groove or sugar problems.
 run is running.** No candidate sequence exists yet. Under the hard rule below, this is what
 everything else yields to.
 
-*What happened on 2 October.* Modal was linked by the owner (workspace `kunaal11791`, $30
+*What happened on 2 October.* Modal was linked by the owner (the owner's own Modal workspace, $30
 credit). **The first `check` exited successfully having tested nothing.** The file
 `design/modal/bindcraft2_smoke.py` defined the image and never passed it to the app, so both
 functions ran in Modal's default container, where `/opt/BindCraft2` does not exist. It also
@@ -2141,6 +2141,48 @@ quoted to the cent from a field that drifts invites exactly that.
 *No payment was made.* Billed Cost reads $0.00 throughout; the whole entry sat inside
 the Starter plan's monthly free compute.
 
+**De-identification of tracked content — 6 October 2026, before the repository was made
+public.** The repository is cited by the submission and read by whoever evaluates it, so
+personal names were removed from file content and replaced with neutral roles. Dates,
+quoted wording, and whether a statement corrected an earlier one are all preserved,
+because those are what make `docs/competition-qa-log.md` evidence rather than hearsay.
+
+*What was replaced.* Four named organisers became "the competition lead", "the novelty
+lead", "an Anthropic organiser" and "an Anthropic community organiser", and their four
+email addresses were deleted. Four other named individuals, all from Slack, became "a
+participant". The project owner's name became "the project owner" or "the author", and a
+sentence describing their occupation was removed while the statement that they have no
+biology background was kept, because the whole writing standard depends on it. The Modal
+workspace handle was replaced with a description. Another entrant's repository
+identifier was removed while the commitment not to read it was kept, and that entry now
+says the identifier is deliberately absent so the file cannot be used to find it.
+
+*What was deliberately kept.* Published academic authors cited by author and year — Liu
+et al. 2022, Jacobsen et al., Ahn et al. and the rest — are sources rather than private
+individuals, and removing them would gut the literature section. The repository URL is
+kept because the owner asked for it; it contains their GitHub handle, which is an
+accepted consequence of citing the repository at all.
+
+**Four commit messages still contain personal identifiers, and this is a decision rather
+than an oversight:**
+
+| commit | what it contains |
+|---|---|
+| `153a347` | an organiser's surname, introduced by this project on 6 October |
+| `8f91024` | an organiser's first name |
+| `b474260` | the owner's first name |
+| `f55f63c` | the Modal workspace handle, inside two console URLs |
+
+**And the author and committer fields of all 86 commits carry the owner's name and email
+address.** Changing any of this means rewriting all 86 commits and force-pushing, which
+replaces every hash in the repository and invalidates any reference to one, including the
+hashes in the table above.
+
+*The owner decided against rewriting history on 6 October 2026.* Recorded here so nobody
+reopens it. A git author field is the ordinary, expected way a repository records who
+wrote it, the names in those four messages are already public in the competition's own
+Slack, and a force push on the day of submission risks the artefact being cited.
+
 ---
 
 ## Commitments made in advance
@@ -2170,9 +2212,11 @@ abandoned, and we proceed with 415–466. Recorded so a later session does not r
 it.
 
 **DECISION — do not read other entrants' work.** Specifically, do not fetch, read or
-search the public repository `sepas1609/EGFR-pH-Conditional-Binder-Design`, which a
-literature search surfaced and which describes de novo pH-conditional cross-species
-EGFR miniprotein binders for this competition. It has not been fetched or inspected.
+search another entrant's public repository on the same problem, which a literature
+search surfaced and which describes de novo pH-conditional cross-species EGFR
+miniprotein binders for this competition. It has not been fetched or inspected. The
+identifier is deliberately not recorded here, so that this file cannot be used to find
+it.
 
 The reasoning, recorded so this is a decision rather than an oversight: if we read
 another entrant's approach and our designs then resemble it, we cannot honestly claim

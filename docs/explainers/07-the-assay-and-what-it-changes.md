@@ -105,7 +105,7 @@ for binding weakly, and carries BindCraft2's own confidence ordering through
 untouched so it can be used to pick *downward*.
 
 Asked on 30 September whether no binding at 7.4 is a hard requirement or whether
-a large KD shift also counts, Tudor-Stefan Cotet of Adaptyv answered that a large
+a large KD shift also counts, the competition lead at Adaptyv answered that a large
 KD shift also qualifies, and that designs showing no binding at pH 7.4 **together
 with high affinity at 6.5** rank higher.
 
@@ -169,10 +169,10 @@ the end.
 
 Both the human and the mouse target carry a C-terminal **His tag**, a short run
 of histidine residues, usually six, added so the protein can be caught and
-purified on a metal column. Tudor said on 30 September that cleaving the tags is
+purified on a metal column. The competition lead said on 30 September that cleaving the tags is
 awkward and the screen will probably use the His-tagged protein as it is.
 
-Amir Shanehsazzadeh of Anthropic put the problem plainly: a binder that targets
+an Anthropic organiser of Anthropic put the problem plainly: a binder that targets
 the tag would look pH-selective and would in fact bind anything carrying a His
 tag.
 
@@ -210,7 +210,7 @@ checked, which matters when the selection step is reading our documentation.
 
 ## 6. The tethered form, and what our structure of record is
 
-Asked which of EGFR's two shapes to design against, Tudor answered on 29
+Asked which of EGFR's two shapes to design against, the competition lead answered on 29
 September: the tethered form, the closed inactive one. He restated it on 30
 September, saying the wet-lab screen is against glycosylated, tethered EGFR, and
 that this is why domain III was suggested.
@@ -294,7 +294,7 @@ spend the whole campaign budget aiming at.
 
 ## 8. How the designs get selected, and what that means for the write-up
 
-Tudor, 2 October: selection is mainly method novelty, design diversity, and a
+The competition lead, 2 October: selection is mainly method novelty, design diversity, and a
 couple of in silico confidence metrics. He added that this is deliberately less
 biased toward any single metric than previous competitions, which selected on
 interface confidence scores alone, and that the selection prompts will be
@@ -326,7 +326,7 @@ a better one. There is no reason to hold everything for a single upload.
 
 ## 9. The novelty gate
 
-Level 3 of 4 clears the submission gate, stated twice by Simon Dürr of Adaptyv.
+Level 3 of 4 clears the submission gate, stated twice by the novelty lead at Adaptyv.
 On 1 October he also described the requirement as the sequence being under 30%
 similar to anything existing. Those two statements may not describe the same
 threshold and the blog at `adaptyvbio.com/blog/novelty` should be read before

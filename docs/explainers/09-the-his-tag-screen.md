@@ -72,8 +72,8 @@ protein as it is (`docs/competition-qa-log.md`).
 A pocket on our binder shaped to grip a protonated histidine will grip the histidines
 of a tag as readily. A binder that does so would also change its grip with pH, since
 the tag's histidines gain a charge in the same way. It would look like exactly the
-switch we want, and it would stick to anything carrying a His tag. Amir at Anthropic
-said such a binder should not be selected, and Tudor at Adaptyv said the organisers
+switch we want, and it would stick to anything carrying a His tag. The Anthropic organiser
+said such a binder should not be selected, and the competition lead at Adaptyv said the organisers
 will give more weight to the computational scoring where a design might be hitting a
 tag.
 

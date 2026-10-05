@@ -18,8 +18,8 @@ WHY THIS STEP EXISTS
 Both the human and the mouse target carry a C-terminal His tag, and the organisers
 expect to screen with it left on (docs/competition-qa-log.md). Histidine is the one
 amino acid that gains a charge between pH 7.4 and pH 6.5, so a binder that grips
-the tag looks pH-selective and binds anything carrying a His tag. Amir at Anthropic
-said such a binder should not be selected, and Tudor at Adaptyv said the organisers
+the tag looks pH-selective and binds anything carrying a His tag. The Anthropic organiser
+said such a binder should not be selected, and the competition lead at Adaptyv said the organisers
 will weight in silico scoring more heavily where a design might be hitting a tag.
 
 This project is more exposed to that than most, for a structural reason. The

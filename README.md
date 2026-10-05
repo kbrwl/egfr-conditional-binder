@@ -120,7 +120,7 @@ produced the findings files, and drafted the documents.
 **What was decided by the human owner, and where each decision is recorded:**
 
 - The target epitope and the anchor set. Changing either is listed in `CLAUDE.md` under
-  "These come back to Kunal, in chat" as a decision the tooling may not make on its own.
+  "These come back to the project owner, in chat" as a decision the tooling may not make on its own.
 - The pairing rule, the affinity direction, and every rejection criterion, including the
   decision to demote one of them during final selection. See `submission/methods.md` section 9.2.
 - Every dollar of GPU spend. No campaign against the real target was started without an
