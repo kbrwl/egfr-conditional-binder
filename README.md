@@ -138,8 +138,8 @@ produced the findings files, and drafted the documents.
   may not be built on, a disproved assumption is recorded as disproved rather than
   quietly dropped, and anything computed twice must be computed once.
 
-The three claims this project withdrew after its own computation disproved them are
-listed in `submission/methods.md` section 10. They are kept deliberately. A design record
+The claims this project withdrew after its own computation disproved them are listed in
+`submission/methods.md` section 10. They are kept deliberately. A design record
 containing only its successes cannot be checked.
 
 ---

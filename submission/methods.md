@@ -462,6 +462,27 @@ and nothing was added here. Where the first campaign produced one surviving traj
 in ten, the second produced none in twenty-three; pooled, that is one in thirty-three.
 The submitted set is what the first campaign produced.
 
+### 9.5 Where the pairs actually landed
+
+The epitope was chosen around histidine 370, and no submitted design pairs against it.
+Of the seven, two pair at D368 and D379, two pair at H433, and three carry no correct
+pair at all. Only D368 is in the four-residue hotspot set the generator was given.
+
+Two things follow and both are worth stating. H433 lies in the earlier 415–466 epitope,
+inside cetuximab's measured contact set, and is the position the H370 face was chosen
+partly to avoid; two designs pair there anyway. That is not a failure of the
+arrangement — acidic facing H433 is the arrangement Liu et al. measured and found to
+improve pH dependence substantially, so it is the better-evidenced of the two correct
+arrangements — but it does mean the designs did not use the feature the epitope was
+selected for. And the generator optimises interface confidence with no pH term at all,
+so where its interfaces land is not steered by the hotspot list in the way the epitope
+analysis assumed.
+
+The honest reading: the epitope choice determined where the generator aimed, and the
+pairing rule then selected among what came back, but the two did not meet at H370.
+Whether a hotspot set weighted harder toward H370 would change that was not tested, and
+is the first thing to try in challenge 2.
+
 ---
 
 ## 10. Claims this project tested and withdrew
