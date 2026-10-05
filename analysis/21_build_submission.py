@@ -43,11 +43,17 @@ untraceable.
 
 MOLECULE CLASS
 --------------
-`protein` for all current rows. The organisers' permitted values are protein,
-nanobody, scfv, fab_kappa and fab_lambda, and ours are single-chain designed
-miniproteins of 48 aa, which is the minibinder category (40-100 aa) and the
-`protein` class. This is asserted rather than assumed: any row outside 40-100 aa
-stops the run so the class is reconsidered deliberately.
+`single_chain` for all current rows. The platform's permitted values are
+single_chain, nanobody, scfv, fab_kappa and fab_lambda, and ours are
+single-chain designed miniproteins of 48 aa, which is the minibinder category
+(40-100 aa). Any row outside 40-100 aa stops the run so the class is
+reconsidered deliberately rather than inherited.
+
+**This value was wrong until 6 October 2026.** It read `protein`, which the
+execution plan named and which nothing had checked against the platform. The
+platform rejected the upload: its first value is `single_chain`. The constant
+now lives in one place, `MOLECULE_CLASS`, so the value this script writes and
+the value the checker accepts cannot drift apart again.
 
 WHAT THIS DOES NOT DO
 ---------------------
@@ -69,8 +75,13 @@ PROVENANCE = ROOT / "submission" / "submission-provenance.csv"
 # The organisers take up to 20 designs in Track 3.
 MAX_DESIGNS = 20
 
-# The minibinder band, 40-100 aa, which is what the `protein` class covers here.
+# The minibinder band, 40-100 aa.
 MINIBINDER_RANGE = (40, 100)
+
+# The class every current row is written with. The platform's allowed set is
+# single_chain / nanobody / scfv / fab_kappa / fab_lambda, read from the upload
+# form after it rejected `protein` on 6 October 2026.
+MOLECULE_CLASS = "single_chain"
 
 
 def backbone_of(design):
@@ -187,9 +198,11 @@ def main():
             if not low <= length <= high:
                 sys.exit(f"{row['design']} is {length} aa, outside the "
                          f"{low}-{high} aa minibinder band this script assigns "
-                         f"molecule_class 'protein' for. Choose the class "
-                         f"deliberately rather than letting this default stand.")
-            writer.writerow([f"egfr-ph-h370-{index:02d}", sequence, "protein"])
+                         f"molecule_class '{MOLECULE_CLASS}' for. Choose the "
+                         f"class deliberately rather than letting this default "
+                         f"stand.")
+            writer.writerow([f"egfr-ph-h370-{index:02d}", sequence,
+                             MOLECULE_CLASS])
 
     with PROVENANCE.open("w", newline="") as handle:
         writer = csv.writer(handle, lineterminator="\n")

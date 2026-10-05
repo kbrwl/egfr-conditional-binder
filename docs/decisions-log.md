@@ -48,7 +48,7 @@ affinity third. Organisers state explicitly that a weak but clearly pH-sensitive
 binder may outrank a high-affinity binder that is not pH-sensitive.
 
 **Submission format.** CSV ranked best-first, columns `name`, `sequence`,
-`molecule_class` (one of protein / nanobody / scfv / fab_kappa / fab_lambda).
+`molecule_class` (one of single_chain / nanobody / scfv / fab_kappa / fab_lambda; this read `protein` until the platform rejected it on 6 October 2026).
 Fabs submitted as `{VH}:{VL}`. Length 10–250 amino acids.
 Track 1: 20–40 designs. Tracks 2 and 3: up to 20.
 
@@ -2182,6 +2182,46 @@ hashes in the table above.
 reopens it. A git author field is the ordinary, expected way a repository records who
 wrote it, the names in those four messages are already public in the competition's own
 Slack, and a force push on the day of submission risks the artefact being cited.
+
+**The submission was rejected on upload for a value our own checker had approved —
+6 October 2026.** `molecule_class` was written as `protein` in all seven rows. The
+platform's allowed set begins with **`single_chain`**, not `protein`. Corrected in the
+builder, the checker, the submission CSV, `submission/methods.md` section 9.4,
+`docs/rules-reference.md` and the task description at the top of this log.
+
+*Where the wrong value came from.* The execution plan handed over on 5 October listed
+the allowed set as "protein / nanobody / scfv / fab_kappa / fab_lambda", and
+`docs/rules-reference.md` carried the same list from the competition page as read on
+3 October. Neither was checked against the upload form. The value was copied from a
+document into a script and then into the file that was uploaded.
+
+**The checker passed the bad file, and that is the more serious half.**
+`analysis/20_submission_check.py` was written on 5 October specifically to refuse a
+malformed submission, and its first substantive check is that `molecule_class` is drawn
+from the allowed set. It passed, because its allowed set was copied from the same plan
+the builder was. **A check that encodes an unverified assumption validates the
+assumption rather than the file.** It gave a clean bill of health to the one defect it
+most obviously existed to catch, and reported "format and order both correct" on a file
+the platform refused.
+
+This project already had a rule for this shape of problem — a check that has never been
+seen to fail is not known to work — and applied it diligently to the eight branches of
+the charge-pair filter, each broken on purpose to confirm a test caught it. The same
+discipline was not applied here: breaking the branch would have shown only that the
+checker rejects values outside its own list, never that the list was right. The rule
+needs a second half. **Where a check encodes an external fact, the fact has to be read
+from the external source, not from our own documentation.**
+
+*Also fixed while re-testing it.* The checker's `--submission` flag crashed on any path
+outside the repository, because it called `relative_to(ROOT)` unguarded. That turned the
+deliberate break-test into a traceback exiting 1, which looked like a rejection and
+would have been recorded as a passing test. The break-test now genuinely fails: given a
+file with `protein`, the checker reports `molecule_class values not permitted:
+['protein']` and refuses it.
+
+*Carry into challenge 2:* read the submission format from the platform's own upload form
+before building anything that checks against it, and treat any format fact that arrived
+through a document as unverified until the platform confirms it.
 
 ---
 

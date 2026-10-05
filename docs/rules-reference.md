@@ -197,7 +197,7 @@ A CSV file, ranked best-first, with these columns:
 |---|---|
 | `name` | your identifier for the design |
 | `sequence` | the amino acid sequence |
-| `molecule_class` | one of `protein`, `nanobody`, `scfv`, `fab_kappa`, `fab_lambda` |
+| `molecule_class` | one of `single_chain`, `nanobody`, `scfv`, `fab_kappa`, `fab_lambda`. **Corrected 6 October 2026**: this row read `protein` as the first value, which the platform rejected on upload. Read from the upload form itself, not from a document |
 
 - Fabs are submitted in one field as `{VH}:{VL}` — heavy chain, colon, light chain.
   A Fab is the gripping arm of an antibody; VH and VL are its two chains, heavy and

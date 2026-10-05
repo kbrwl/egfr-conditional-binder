@@ -435,7 +435,7 @@ table below so the trade-off is visible rather than buried.
 
 ### 9.4 The designs
 
-All are 48 residues, molecule class `protein`, in the **minibinder** category (40–100
+All are 48 residues, molecule class `single_chain`, in the **minibinder** category (40–100
 residues).
 
 | rank | name | correct pairs | contacts made (4.5 Å) | note |

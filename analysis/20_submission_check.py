@@ -19,8 +19,13 @@ platform, or worse, accepted and read as something we did not mean:
 
   1. exactly three columns, named and ordered `name`, `sequence`,
      `molecule_class`
-  2. `molecule_class` drawn from protein / nanobody / scfv / fab_kappa /
-     fab_lambda
+  2. `molecule_class` drawn from single_chain / nanobody / scfv / fab_kappa /
+     fab_lambda. **This set was wrong until 6 October 2026**: it read `protein`
+     as the first value, taken from the execution plan rather than from the
+     platform, and the platform rejected the upload. The check therefore passed
+     a file the platform refused, because it encoded the same unverified
+     assumption the file did. A check built from an assumption validates the
+     assumption, not the file
   3. every sequence 10 to 250 aa, written only in the twenty standard amino
      acids. A lowercase letter, a gap character left in from an alignment, or
      an X standing for "unknown" all read as a sequence we did not design
@@ -70,7 +75,10 @@ SHORTLIST = ROOT / "results" / "candidates" / "shortlist.csv"
 CLASHES = ROOT / "data" / "derived" / "13-candidate-clashes.csv"
 
 COLUMNS = ["name", "sequence", "molecule_class"]
-MOLECULE_CLASSES = {"protein", "nanobody", "scfv", "fab_kappa", "fab_lambda"}
+# Read from the platform's own upload form on 6 October 2026, after it rejected
+# `protein`. Not taken from any document of ours.
+MOLECULE_CLASSES = {"single_chain", "nanobody", "scfv", "fab_kappa",
+                    "fab_lambda"}
 STANDARD_AA = set("ACDEFGHIKLMNPQRSTVWY")
 MIN_LENGTH, MAX_LENGTH = 10, 250
 
@@ -147,7 +155,14 @@ def main():
     header, body = rows[0], [r for r in rows[1:] if r]
 
     print("=" * 72)
-    print(f"SUBMISSION CHECK  {args.submission.relative_to(ROOT)}")
+    # relative_to raises for any path outside the repository, which made
+    # --submission unusable for a file in /tmp and turned a deliberate
+    # break-test into a crash that looked like a rejection.
+    try:
+        shown = args.submission.relative_to(ROOT)
+    except ValueError:
+        shown = args.submission
+    print(f"SUBMISSION CHECK  {shown}")
     print("=" * 72)
     print()
     print(f"1. Columns. Expect exactly {COLUMNS}.")
