@@ -79,15 +79,39 @@ candidate.
      [PASS] verdict: rejected
      reasons given: binder histidine faces target histidine H418
 
-   contacts-442
-     Four correct pairs, and one contact at position 442. That is the single human/mouse difference inside the original epitope and sits in cetuximab's contact set, so the candidate is rejected despite having everything else right. This is the case that proves a good pair count cannot buy its way past a hard rule.
-     contacts: E344 faced by binder H, D368 faced by binder H, E391 faced by binder H, E400 faced by binder H, S442 faced by binder A
+   contacts-442-among-four
+     Four correct pairs, and one contact at position 442, the single human/mouse difference inside the original epitope. Until 5 October 2026 that was a rejection; it is now a demotion, so the candidate is kept and meets the pair target and ranks below the four-correct-pairs case that reaches the same count without touching 442. The pair set is identical to that case, so this isolates the 442 demotion from the E424 and N361 ones. Named to sort alphabetically before four-correct-pairs, so the ranking assertion is a real test of the demotion rather than a pass the name-based final tie-break would have given anyway.
+     contacts: E344 faced by binder H, D368 faced by binder H, H370 faced by binder E, H358 faced by binder D, S442 faced by binder A
+     [PASS] anchor_group_supported_pairs: 4
      [PASS] correct_pairs: 4
-     [PASS] forbidden_contacts: 1
+     [PASS] edge_reliant_pairs: 0
+     [PASS] forbidden_contacts: 0
      [PASS] his_his_pairs: 0
+     [PASS] n361_reliant_pairs: 0
+     [PASS] species_difference_contacts: 1
+     [PASS] supported_pairs: 4
      [PASS] unresolved_pairs: 0
-     [PASS] verdict: rejected
-     reasons given: contacts 442
+     [PASS] verdict: meets the pair target
+
+   one-correct-pair-bare-interface
+     One correct pair and nothing else: a design that touches the target at a single position. It breaks no rule, so it is kept and reported. It exists to be ranked against one-correct-pair-real-interface below, which has the same pair count and a real interface around it. Without the interface-size term the two sort only by name, and this one would win it -- which is how a near-non-binder reached the earlier submission file.
+     contacts: D368 faced by binder H
+     [PASS] correct_pairs: 1
+     [PASS] forbidden_contacts: 0
+     [PASS] his_his_pairs: 0
+     [PASS] total_pairs: 1
+     [PASS] unresolved_pairs: 0
+     [PASS] verdict: below the pair target
+
+   one-correct-pair-real-interface
+     The same single correct pair, with four further contacts around it that carry no charge pair. The pair count is identical, so every term above the interface-size one ties, and this design should rank above the bare one because it actually engages the face. Named to sort alphabetically after the bare case, so the assertion fails if the term is removed.
+     contacts: D368 faced by binder H, I365 faced by binder A, L369 faced by binder L, I371 faced by binder V, L372 faced by binder A
+     [PASS] correct_pairs: 1
+     [PASS] forbidden_contacts: 0
+     [PASS] his_his_pairs: 0
+     [PASS] total_pairs: 5
+     [PASS] unresolved_pairs: 0
+     [PASS] verdict: below the pair target
 
    no-correct-pairs
      A well-formed interface with no charge pair anywhere in it. Not rejected, because nothing forbidden happens: it is kept, reported, and ranked last. A candidate is discarded for breaking a rule, never for being weak.
@@ -147,13 +171,22 @@ candidate.
    Ranking: four correct pairs on the N352 side against four with one on the N361 side
      [PASS] order: four-correct-pairs then e421-pair-among-four
 
+   Ranking: four correct pairs clear of 442 against four that touch it
+     [PASS] order: four-correct-pairs then contacts-442-among-four
+
+   Ranking: one correct pair with a real interface against one pair alone
+     [PASS] order: one-correct-pair-real-interface then one-correct-pair-bare-interface
+
+   Ranking: four correct pairs touching 442 against one clean pair
+     [PASS] order: contacts-442-among-four then one-correct-pair-real-interface
+
    Ranking: three candidates level on every pair term, ordered by i_pDAE
      [PASS] order: tie-z-confident then tie-a-doubtful then tie-m-no-metric
 
    Ranking: more pairs but a worse i_pDAE against fewer pairs and a better one
      [PASS] order: pairs-more-doubtful then pairs-fewer-confident
 
-   9 cases, all passed.
+   11 cases, all passed.
 
 2. Reading a campaign folder, end to end
 
@@ -233,21 +266,21 @@ candidate.
 
    | rank | design | correct | N361-side | of those, in reach | unresolved | neutral | verdict |
    |---|---|---|---|---|---|---|---|
-   | 1 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3 | 2 | 0 | 2 | 0 | 29 | rejected (contacts 442) |
-   | 2 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3 | 2 | 0 | 1 | 0 | 37 | rejected (contacts 442) |
+   | 1 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3 | 2 | 0 | 2 | 0 | 29 | below the pair target |
+   | 2 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3 | 2 | 0 | 1 | 0 | 37 | below the pair target |
    | 3 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3 | 1 | 0 | 1 | 0 | 18 | below the pair target |
    | 4 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3 | 1 | 0 | 1 | 0 | 2 | below the pair target |
-   | 5 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_EGFR_domain3 | 0 | 0 | 0 | 0 | 1 | rejected (binder histidine faces target histidine H433) |
-   | 6 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_EGFR_domain3 | 0 | 0 | 0 | 0 | 1 | below the pair target |
-   | 7 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_EGFR_domain3 | 0 | 0 | 0 | 0 | 1 | below the pair target |
-   | 8 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_EGFR_domain3 | 0 | 0 | 0 | 0 | 3 | below the pair target |
-   | 9 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_EGFR_domain3 | 0 | 0 | 0 | 0 | 3 | below the pair target |
-   | 10 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_EGFR_domain3 | 0 | 0 | 0 | 0 | 2 | rejected (binder histidine faces target histidine H433) |
+   | 5 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate5_EGFR_domain3 | 0 | 0 | 0 | 0 | 3 | below the pair target |
+   | 6 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_EGFR_domain3 | 0 | 0 | 0 | 0 | 3 | below the pair target |
+   | 7 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate9_EGFR_domain3 | 0 | 0 | 0 | 0 | 2 | rejected (binder histidine faces target histidine H433) |
+   | 8 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_EGFR_domain3 | 0 | 0 | 0 | 0 | 1 | rejected (binder histidine faces target histidine H433) |
+   | 9 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_EGFR_domain3 | 0 | 0 | 0 | 0 | 1 | below the pair target |
+   | 10 | egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_EGFR_domain3 | 0 | 0 | 0 | 0 | 1 | below the pair target |
 
    0 candidates reach 3 correct pairs, of which 0 reach 4.
-   4 rejected for breaking a hard rule.
+   2 rejected for breaking a hard rule.
    0 not scored, because the target numbering could not be reconciled with the input.
-   6 below the pair target, kept and ranked last rather
+   8 below the pair target, kept and ranked last rather
    than discarded.
 
    What this changes about the design. The shortlist is the candidates
@@ -260,9 +293,9 @@ candidate.
 
    data/derived/10-candidate-pairs.csv      105 contact pairs
    data/derived/10-candidate-summary.csv    10 candidates
-   results/candidates/shortlist.csv         6 not rejected
+   results/candidates/shortlist.csv         8 not rejected
 
 ========================================================================
-RESULT: PASSED. 10 candidates: 0 meet the pair target, 4 rejected, 0 not scored (numbering), 6 below the target and kept.
+RESULT: PASSED. 10 candidates: 0 meet the pair target, 2 rejected, 0 not scored (numbering), 8 below the target and kept.
 ========================================================================
 ```

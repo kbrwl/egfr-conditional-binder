@@ -1855,6 +1855,58 @@ and is stopped if it exceeds 20,000 MiB or runs out of memory.
 `submission/methods.md` section 10, and it is recorded there in the same form as the
 other three.
 
+**Round two's binder band is 33-60, not 30-60 — owner-authorised 5 October 2026, and
+the reason is a worker partition nothing had seen before.** This is a deliberate change
+to the design configuration and is recorded here so it does not read as drift.
+
+Running two workers for the first time exposed how BindCraft2 divides a campaign between
+them. Binder lengths are grouped into padding buckets of 32 by
+`padded_prediction_length`: 30, 31 and 32 pad to 32, and 33 to 60 pad to 64. The 30-60
+band is therefore two buckets. `assign_worker_length_buckets`
+(`bindcraft/design_workers.py`, lines 111-118) pins each worker to a single bucket when
+there are at least as many workers as buckets, which the first launch showed directly:
+worker 0 drew 28 lengths from 33 to 60 at 256 padded residues, worker 1 drew 3 lengths
+from 30 to 32 at 224.
+
+*The workers share one trajectory counter rather than a per-bucket share.* Read from the
+live run before it was stopped: worker 0 was on trajectory 2 while worker 1 was on
+trajectory 1. So the split is roughly half each by count, and **about half of a
+40-trajectory budget would have gone to binder lengths 30, 31 and 32 alone.** That is a
+three-length window at the bottom of the band. No trajectory below length 33 has ever
+completed in any campaign here, and round one's single completion was at length 48.
+
+*Dropping the band to 33-60 leaves one bucket*, and line 112 returns the plan unchanged
+when there is only one, so neither worker is given a length restriction and both draw
+from the whole band. Confirmed on relaunch: the per-worker length lines disappear
+entirely and the two workers' memory fractions become equal at 0.395 each, against
+0.415 and 0.374 when they held different bucket sizes.
+
+*What was given up.* Three lengths, 30 to 32, at an end of the band that has never
+produced a completed trajectory. Nothing else changed: same tight four hotspots, same
+310-480 fragment, same lowered floors, same His-tag off-target, same estimator override.
+The band is set with `--set binder_lengths`, so the committed campaign file
+`design/configs/diagnostic/r1-short-notag.json` still reads as round one ran it and the
+change lives in `design/modal/egfr_campaign.py::batch_r2_short`.
+
+*Cost of finding out:* $0.23, the 1,048 seconds the first launch ran before it was
+stopped. The relaunch ceiling is $7.75, which is the $8.00 the owner authorised less
+that. **This is a prediction about how the budget is spent, not a measured improvement:**
+whether the whole band produces more completions than a split band would have is not
+something this run can answer, because the split run was stopped.
+
+**The commitment not to read another entrant's work has now been tested rather than only
+stated — 5 October 2026.** A web search run for a different purpose, looking for the
+organisers' promised novelty-check pipeline, returned a public repository belonging to
+another entrant in this competition among its results. It was not opened, fetched or
+read, and no part of this project has been informed by it. The standing decision under
+Commitments names one such repository by URL; this was a different one, surfaced
+incidentally, and the decision was applied to it without the owner being asked, because
+the commitment is not conditional on which repository it is.
+
+Recorded because `submission/methods.md` leans on that commitment when it claims
+independent derivation, and a commitment that has survived an occasion to break it is
+evidence where a commitment merely written down is not.
+
 ---
 
 ## Commitments made in advance

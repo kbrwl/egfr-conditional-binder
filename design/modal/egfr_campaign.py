@@ -1230,10 +1230,10 @@ def batch_r1_long(trajectories: int = 10, config: str = "r1-long"):
                      run_name=f"egfr-r1-long-{config}", extra_settings=ROUND1_SETTINGS)
 
 
-@app.function(gpu=DEFAULT_GPU, timeout=timeout_for_spend(8.0),
+@app.function(gpu=DEFAULT_GPU, timeout=timeout_for_spend(7.75),
               volumes={"/results": results, "/weights": weights})
 def batch_r2_short(trajectories: int = 40, config: str = "r1-short",
-                   workers: int = 2):
+                   workers: int = 2, length_band: str = "33,60"):
     """Round two, short band: round one's configuration unchanged, on two workers.
 
     Everything about the design is held exactly as `batch_r1_short` ran it -- the
@@ -1263,6 +1263,31 @@ def batch_r2_short(trajectories: int = 40, config: str = "r1-short",
     alter what is designed, only how many attempts fit in an hour of card time, so
     nothing it produces is comparable to round one on any axis except cost and rate.
 
+    WHY THE BAND IS 33-60 AND NOT 30-60
+    -----------------------------------
+    The first attempt at this run used round one's 30-60 band and exposed a
+    partition this project had never seen, because it had never run two workers.
+    BindCraft2 groups binder lengths into padding buckets of 32
+    (`padded_prediction_length`): 30, 31 and 32 pad to 32, and 33 to 60 pad to 64.
+    That is two buckets. `assign_worker_length_buckets`
+    (`bindcraft/design_workers.py`, lines 111-118) then pins each worker to one
+    bucket when there are at least as many workers as buckets, so worker 1 was
+    locked to lengths 30-32 and worker 0 to 33-60.
+
+    The two workers draw from one shared trajectory counter rather than from a
+    per-bucket share -- observed directly, worker 0 on trajectory 2 while worker 1
+    was on trajectory 1 -- so the split is about half each by count. Half the
+    budget would therefore have gone to a three-length window at the bottom of the
+    band. No trajectory at any length below 33 has ever completed in this project,
+    and round one's single completion was at length 48.
+
+    Dropping to 33-60 leaves one bucket, and line 112 returns the plan unchanged
+    when there is only one, so no worker gets a length restriction and both draw
+    from the whole band. Authorised by the owner on 5 October 2026 as a
+    three-length trim, recorded in `docs/decisions-log.md` so it does not read as
+    configuration drift. It is set with `--set binder_lengths`, leaving the
+    committed campaign file as round one ran it.
+
     SIZING
     ------
     Forty trajectories, against a $8.00 card-time ceiling expressed as this
@@ -1282,9 +1307,11 @@ def batch_r2_short(trajectories: int = 40, config: str = "r1-short",
     against round one's 1,040 s mean design time; two workers that are thrashing
     rather than sharing show up there before most of the money is spent.
     """
+    low, high = (int(part) for part in length_band.split(","))
+    settings = dict(ROUND1_SETTINGS, binder_lengths=f"[{low},{high}]")
     return _campaign(config, trajectories=trajectories,
                      run_name=f"egfr-r2-short-{config}",
-                     extra_settings=ROUND1_SETTINGS, workers=workers)
+                     extra_settings=settings, workers=workers)
 
 
 @app.function(timeout=60 * 10, volumes={"/results": results})

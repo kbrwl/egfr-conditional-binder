@@ -140,11 +140,41 @@ DERIVED = common.DERIVED
 FINDINGS = common.FINDINGS
 CANDIDATES = ROOT / "results" / "candidates"
 
-# Positions no candidate may contact. 442 is the single human/mouse difference
-# inside the original epitope and is in cetuximab's measured contact set, so a
-# binder touching it risks behaving differently in the two species at the one
-# position where they differ. Standing rule in docs/decisions-log.md.
-FORBIDDEN_POSITIONS = {442}
+# Positions no candidate may contact. Deliberately empty since 5 October 2026.
+# The mechanism is kept rather than deleted because it is the shape a hard
+# positional rejection would take if one is ever needed again, and because the
+# His-facing-target-His rule below is still a hard rejection and the two are read
+# together. 442 used to be the only entry; it is now a ranking term instead, in
+# SPECIES_DIFFERENCE_POSITIONS below.
+FORBIDDEN_POSITIONS = set()
+
+# Positions whose contact demotes a candidate without rejecting it. 442 is the
+# single human/mouse difference inside the original epitope (S442G) and sits in
+# cetuximab's measured contact set, so a binder touching it could behave
+# differently in the two species at the one position where they differ. That risk
+# is real and is why the position is tracked at all. It was a rejection until
+# 5 October 2026 and is now a demotion, on three grounds:
+#
+#   1. The organisers rank pH selectivity above mouse cross-reactivity, and said
+#      so directly. A rule protecting the second objective should not remove the
+#      only designs that serve the first: both candidates carrying two correct
+#      pairs -- every design that has ever reached two against this target --
+#      were rejected by this rule and nothing else.
+#   2. S442G is a conservative substitution, serine to glycine, and it is one
+#      position among the 31 and 39 contact pairs those two designs each make
+#      with the target face. Treating one contact out of 31 as disqualifying
+#      weighs it far above its share of the interface.
+#   3. This project already treats comparable risks as ranking terms rather than
+#      exclusions: E424's proximity to the trimmed target's cut edge, the three
+#      anchors nearest the human-only N361 sequon, and the full-receptor clash
+#      screen's verdicts. A rejection here was the odd one out.
+#
+# The demotion sits after every correct-pair term in `rank`, so it can never pull
+# a design with more correct pairs below one with fewer. It only separates
+# candidates that are otherwise equal. As with the other two demotions, the
+# underlying uncertainty is not resolved by ranking on it: nothing measures
+# whether contacting 442 actually changes mouse binding, and the write-up says so.
+SPECIES_DIFFERENCE_POSITIONS = {442}
 
 # Positions whose pairs are ranked as less supported, without rejecting the
 # candidate. E424 is 6.6 angstroms from the C-terminal cut of the trimmed target
@@ -229,11 +259,16 @@ BREAKABLE_RULES = {
         "a binder histidine facing a target histidine would be scored as "
         "harmless, and candidates whose switch cancels itself would reach the "
         "shortlist"),
-    "forbidden-position": (
-        "contacts-442",
-        "a candidate touching position 442 would be kept, risking "
-        "species-specific behaviour at the one position where human and mouse "
-        "differ inside the epitope"),
+    "species-difference": (
+        "contacts-442-among-four",
+        "a design contacting position 442, the one position where human and "
+        "mouse differ inside the epitope, would rank level with an equivalent "
+        "design that does not touch it"),
+    "interface-size": (
+        "one-correct-pair-bare-interface",
+        "a design that barely touches the target would rank level with one "
+        "making a real interface at the same pair count, so a near-non-binder "
+        "could take a submission slot from a design that engages the face"),
     "unresolved-counts": (
         "unresolved-side-chain",
         "a charge pair with no evidence its charged groups exist would be "
@@ -437,6 +472,14 @@ def analyse_candidate(name, path, numbering, human, target_chain=None,
     n361_reliant = ([] if BROKEN_RULE == "sequon-reliance"
                     else [r for r in correct
                           if r["target_pos"] in N361_SEQUON_RELIANT_POSITIONS])
+    # Counted over every contact rather than over correct pairs only, which is
+    # the difference between this demotion and the two above. 442 is not an
+    # anchor, so a pair there is never "correct"; what matters is touching it at
+    # all. With --break-rule species-difference the list is emptied, which is
+    # what the contacts-442-among-four ranking assertion exists to catch.
+    species_difference = ([] if BROKEN_RULE == "species-difference"
+                          else [r for r in rows
+                                if r["target_pos"] in SPECIES_DIFFERENCE_POSITIONS])
 
     reasons = []
     if his_his:
@@ -465,6 +508,7 @@ def analyse_candidate(name, path, numbering, human, target_chain=None,
         supported_pairs=len(correct) - len(edge_reliant),
         n361_reliant_pairs=len(n361_reliant),
         anchor_group_supported_pairs=len(correct) - len(n361_reliant),
+        species_difference_contacts=len(species_difference),
         unresolved_pairs=len(unresolved), his_his_pairs=len(his_his),
         forbidden_contacts=len(forbidden),
         neutral_pairs=sum(1 for r in rows if r["classification"] == "neutral"),
@@ -627,18 +671,55 @@ def test_cases(human):
                         unresolved_pairs=0),
         ),
         dict(
-            name="contacts-442",
-            why="Four correct pairs, and one contact at position 442. That is "
-                "the single human/mouse difference inside the original epitope "
-                "and sits in cetuximab's contact set, so the candidate is "
-                "rejected despite having everything else right. This is the case "
-                "that proves a good pair count cannot buy its way past a hard "
-                "rule.",
-            contacts=[(344, "H", True), (368, "H", True), (391, "H", True),
-                      (400, "H", True), (442, "A", True)],
-            expect=dict(verdict=VERDICT_REJECTED, correct_pairs=4,
-                        his_his_pairs=0, forbidden_contacts=1,
+            name="contacts-442-among-four",
+            why="Four correct pairs, and one contact at position 442, the "
+                "single human/mouse difference inside the original epitope. "
+                "Until 5 October 2026 that was a rejection; it is now a "
+                "demotion, so the candidate is kept and meets the pair target "
+                "and ranks below the four-correct-pairs case that reaches the "
+                "same count without touching 442. The pair set is identical to "
+                "that case, so this isolates the 442 demotion from the E424 and "
+                "N361 ones. Named to sort alphabetically before "
+                "four-correct-pairs, so the ranking assertion is a real test of "
+                "the demotion rather than a pass the name-based final tie-break "
+                "would have given anyway.",
+            contacts=[(344, "H", True), (368, "H", True),
+                      (370, "E", True), (358, "D", True), (442, "A", True)],
+            expect=dict(verdict=VERDICT_MEETS, correct_pairs=4,
+                        edge_reliant_pairs=0, supported_pairs=4,
+                        n361_reliant_pairs=0, anchor_group_supported_pairs=4,
+                        species_difference_contacts=1,
+                        his_his_pairs=0, forbidden_contacts=0,
                         unresolved_pairs=0),
+        ),
+        dict(
+            name="one-correct-pair-bare-interface",
+            why="One correct pair and nothing else: a design that touches the "
+                "target at a single position. It breaks no rule, so it is kept "
+                "and reported. It exists to be ranked against "
+                "one-correct-pair-real-interface below, which has the same pair "
+                "count and a real interface around it. Without the "
+                "interface-size term the two sort only by name, and this one "
+                "would win it -- which is how a near-non-binder reached the "
+                "earlier submission file.",
+            contacts=[(368, "H", True)],
+            expect=dict(verdict=VERDICT_BELOW, correct_pairs=1,
+                        total_pairs=1, his_his_pairs=0,
+                        forbidden_contacts=0, unresolved_pairs=0),
+        ),
+        dict(
+            name="one-correct-pair-real-interface",
+            why="The same single correct pair, with four further contacts "
+                "around it that carry no charge pair. The pair count is "
+                "identical, so every term above the interface-size one ties, "
+                "and this design should rank above the bare one because it "
+                "actually engages the face. Named to sort alphabetically after "
+                "the bare case, so the assertion fails if the term is removed.",
+            contacts=[(368, "H", True), (365, "A", True), (369, "L", True),
+                      (371, "V", True), (372, "A", True)],
+            expect=dict(verdict=VERDICT_BELOW, correct_pairs=1,
+                        total_pairs=5, his_his_pairs=0,
+                        forbidden_contacts=0, unresolved_pairs=0),
         ),
         dict(
             name="no-correct-pairs",
@@ -793,6 +874,45 @@ def run_tests(numbering, human, emit):
         failures.append("n361 ranking: the design leaning on E400/E421/E424 "
                         "ranked level with or above the equivalent one "
                         "leaning on the N352-side anchors instead")
+    emit()
+
+    ordered = [s["design"] for s in rank(
+        [by_name["contacts-442-among-four"], by_name["four-correct-pairs"]])]
+    ok = ordered[0] == "four-correct-pairs"
+    emit("   Ranking: four correct pairs clear of 442 against four that touch it")
+    emit(f"     [{'PASS' if ok else 'FAIL'}] order: {' then '.join(ordered)}")
+    if not ok:
+        failures.append("442 ranking: the design contacting position 442 ranked "
+                        "level with or above the equivalent one that does not")
+    emit()
+
+    ordered = [s["design"] for s in rank(
+        [by_name["one-correct-pair-bare-interface"],
+         by_name["one-correct-pair-real-interface"]])]
+    ok = ordered[0] == "one-correct-pair-real-interface"
+    emit("   Ranking: one correct pair with a real interface against one pair alone")
+    emit(f"     [{'PASS' if ok else 'FAIL'}] order: {' then '.join(ordered)}")
+    if not ok:
+        failures.append("interface-size ranking: one-correct-pair-bare-interface "
+                        "ranked level with or above "
+                        "one-correct-pair-real-interface, so a design making a "
+                        "single contact is not separated from one making the "
+                        "same pair count across a real interface")
+    emit()
+
+    # A 442 contact must never outweigh a correct pair, which is the whole point
+    # of placing the demotion after every pair term. The design touching 442 has
+    # four correct pairs; the clean one has one.
+    ordered = [s["design"] for s in rank(
+        [by_name["contacts-442-among-four"],
+         by_name["one-correct-pair-real-interface"]])]
+    ok = ordered[0] == "contacts-442-among-four"
+    emit("   Ranking: four correct pairs touching 442 against one clean pair")
+    emit(f"     [{'PASS' if ok else 'FAIL'}] order: {' then '.join(ordered)}")
+    if not ok:
+        failures.append("442 demotion is placed too early: it pulled a design "
+                        "with four correct pairs below one with a single pair, "
+                        "which inverts the organisers' stated priorities")
     emit()
 
     # The tie-break on the pipeline's own i_pDAE. The names are chosen so that
@@ -1502,6 +1622,32 @@ def rank(summaries):
     E424 sits in both flagged sets, so a design leaning on it is demoted on
     both grounds rather than having one demotion double-counted.
 
+    Two further terms sit after all of those and before `i_pDAE`, added
+    5 October 2026.
+
+    First, contact with position 442, fewer being better. This is the third
+    never-reject demotion and the only one counted over every contact rather than
+    over correct pairs, because 442 is not an anchor so a pair there is never
+    "correct" and what matters is touching it at all. It was a hard rejection
+    until 5 October; `SPECIES_DIFFERENCE_POSITIONS` carries the three grounds for
+    the change. It is placed after every pair term deliberately: both designs that
+    have ever reached two correct pairs against this target contact 442, and
+    ranking on it any earlier would put them below designs with one pair or none,
+    which is the opposite of what the organisers' stated priorities ask for.
+
+    Second, the total number of contact pairs the design makes with the target
+    face, more being better. A design can pass every hard rule by barely touching
+    the target: of the ten candidates round one produced, four make between one
+    and three contacts in total against the leading pair's 31 and 39. Without this
+    term those near-non-binders sort level with designs that engage the face and
+    are then separated only by name, which is how the previous submission file
+    came to carry them. It is the loosest term here and so sits last before
+    `i_pDAE`, where it separates only candidates already equal on every pair term.
+
+    Despite the name used for it in the submission write-up, this count is every
+    contact pair at the 4.5 angstrom cutoff and not only the charged ones; it is a
+    measure of how much interface the design makes.
+
     The pair terms come first because the charge pairs are what produce the switch.
     `i_pDAE` is deliberately the last term before the name: it breaks ties among
     equals and never overrides a pair term.
@@ -1512,6 +1658,9 @@ def rank(summaries):
                                  -s["correct_pairs"],
                                  -s["correct_pairs_tight"],
                                  -len(s["anchors_paired"]),
+                                 s.get("species_difference_contacts", 0),
+                                 (0 if BROKEN_RULE == "interface-size"
+                                  else -s.get("total_pairs", 0)),
                                  pipeline_confidence(s),
                                  s["design"]))
 

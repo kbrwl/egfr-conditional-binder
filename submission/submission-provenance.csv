@@ -1,0 +1,8 @@
+name,design,correct_pairs,total_contact_pairs,species_difference_contact,i_pDAE,length
+egfr-ph-h370-01,egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3,2,31,yes,0.01,48
+egfr-ph-h370-02,egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3,2,39,yes,0.0,48
+egfr-ph-h370-03,egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3,1,19,no,0.01,48
+egfr-ph-h370-04,egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3,1,3,no,0.0,48
+egfr-ph-h370-05,egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_EGFR_domain3,0,3,no,0.0,48
+egfr-ph-h370-06,egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate3_EGFR_domain3,0,1,no,0.0,48
+egfr-ph-h370-07,egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate4_EGFR_domain3,0,1,no,0.0,48

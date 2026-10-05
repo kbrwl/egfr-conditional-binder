@@ -39,7 +39,7 @@ egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3,433,409,H,B,29,S,3.661,3,neutral,,False,False,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3,433,409,H,B,32,S,4.423,1,neutral,,False,False,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3,433,409,H,B,33,R,3.077,12,neutral,,False,False,False
-egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3,442,418,S,B,39,Q,4.316,1,neutral,,False,False,True
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3,442,418,S,B,39,Q,4.316,1,neutral,,False,False,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3,433,409,H,B,28,A,4.118,4,neutral,,False,False,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3,433,409,H,B,29,E,4.341,1,correct,5.848,True,True,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3,433,409,H,B,32,S,4.499,1,neutral,,False,False,False
@@ -81,7 +81,7 @@ egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3,433,409,H,B,29,S,3.187,8,neutral,,False,False,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3,433,409,H,B,32,S,4.207,2,neutral,,False,False,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3,433,409,H,B,33,R,3.712,7,neutral,,False,False,False
-egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3,442,418,S,B,39,Q,4.438,1,neutral,,False,False,True
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3,442,418,S,B,39,Q,4.438,1,neutral,,False,False,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3,341,317,G,B,24,P,2.546,6,neutral,,False,False,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3,347,323,D,B,27,R,2.923,5,neutral,,False,False,False
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3,349,325,L,B,16,L,3.843,1,neutral,,False,False,False
