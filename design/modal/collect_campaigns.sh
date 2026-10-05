@@ -116,15 +116,29 @@ print(f\"    {'extra_settings':26s} {r.get('extra_settings')}\")
 import csv
 rows = list(csv.DictReader(open('$table')))
 total = 0.0
+seen_workers = set()
 for r in rows:
     t = dict(p.split('=', 1) for p in r.get('Timing', '').split(';') if '=' in p)
     d = float(t.get('design', 0) or 0); total += d
+    if t.get('worker') is not None:
+        seen_workers.add(t['worker'])
     stopped = r.get('terminated') or 'PASSED'
     print(f\"    {r.get('trajectory', '?'):>3}  len={r.get('length', '?'):>3}  \"
           f\"{stopped:<8}  {d:7.1f}s\")
 if rows:
-    print(f'    {len(rows)} attempts, {total:.0f} s of design, '
-          f'mean {total/len(rows):.0f} s, about \${total*0.80/3600:.2f}')
+    # Design time is per worker. Summing it and pricing the sum assumes the
+    # trajectories ran one after another, which is true at one worker and wrong
+    # at more: round two ran two workers concurrently, so the sum was 49,050 s
+    # of design time across about 24,500 s of card time, and pricing the sum
+    # printed twice the real figure. The worker count is in each
+    # trajectory's own Timing field, so divide by how many distinct workers
+    # actually appear rather than assuming either answer.
+    workers = len(seen_workers) or 1
+    card_seconds = total / workers
+    print(f'    {len(rows)} attempts, {total:.0f} s of design across '
+          f'{workers} worker(s), mean {total/len(rows):.0f} s each')
+    print(f'    card time about {card_seconds:.0f} s, \${card_seconds*0.80/3600:.2f} '
+          f'-- billed will be higher, see the billing report')
 " 2>/dev/null || echo "    could not read the trajectory table"
     fi
 done

@@ -2080,6 +2080,42 @@ balance and $19.37 was spent before round two, so the card-time reading would en
 $27.7 of $30. That is not tight enough to be dangerous at the measured ratio, which
 weakens this second reason without removing the first.
 
+**ROUND TWO COMPLETE — 6 October 2026, 00:21 IST. 23 trajectories, no survivor, no
+second backbone.** The campaign was stopped by the billed-cost guard at $27.15 of
+workspace billing, which is $7.78 for round two against its $7.75 ceiling; the overshoot
+is the two and a half minutes between polls. Round two's own apps cost $6.62 billed
+($6.35 for the run, $0.27 for the launch that was stopped over the length bucket).
+
+| | round one short | round two |
+|---|---|---|
+| binder band | 30-60 | 33-60 |
+| workers | 1 | 2 |
+| trajectories recorded | 10 | **23** |
+| survived every gate | 1 | **0** |
+| candidates written | 10 | **0** |
+| card time | $2.81 | $5.45 |
+| billed | $3.16 | $6.62 |
+
+*Where the 23 stopped:* screen 9, harden 8, refine 2, final 2, anneal 1, mutate 1. The
+lengths drawn run 33 to 60 across the whole band, which confirms the single-bucket fix:
+both workers sampled the full range rather than each being pinned to its own.
+
+**The submission is unchanged at seven designs from one backbone.** That was the
+pre-agreed outcome for zero new backbones and it is a result rather than a failure: the
+question round two existed to answer was whether a second backbone could be bought for
+about $7, and the answer is no.
+
+*The rate, with its denominator.* Pooling only the two short-band campaigns, which asked
+the same question, one trajectory in 33 yields a usable backbone. The 10 long-band
+trajectories are excluded because they ran a different length band. At that rate the
+budget bought its expected single backbone, and the shortfall is the budget rather than
+anything that went wrong in the run.
+
+*What round two did buy, given it produced no sequences.* A measured contention figure
+for two workers on one card, the discovery that the padding-bucket partition pins
+workers to length ranges, and a survival denominator three times larger than round one's.
+None of that is a candidate, and all of it is what challenge 2 should be sized from.
+
 ---
 
 ## Commitments made in advance

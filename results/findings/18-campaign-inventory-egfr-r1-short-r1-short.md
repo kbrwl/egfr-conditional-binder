@@ -25,7 +25,7 @@ Retained means the file exists and was copied back. It is a separate question fr
 |---|---|---|
 | 1_Trajectories | 21 | 7,078,612 |
 | 2_Refolded | 31 | 2,527,754 |
-| other | 1 | 14,956 |
+| other | 37 | 42,360,529 |
 
 ## 3. Tables the run wrote
 
@@ -41,10 +41,11 @@ Retained means the file exists and was copied back. It is a separate question fr
 - `1_Trajectories/egfr-domain3-h370-r1-short_detarget_l57_0b53e72e622621d8/egfr-domain3-h370-r1-short_detarget_l57_0b53e72e622621d8_losses.csv` — 240 rows, 30 columns
 - `1_Trajectories/egfr-domain3-h370-r1-short_detarget_l60_076e72ac0632960e/egfr-domain3-h370-r1-short_detarget_l60_076e72ac0632960e_losses.csv` — 250 rows, 30 columns
 - `2_Refolded/!_Refolded.csv` — 10 rows, 50 columns
+- `summary.csv` — 202 rows, 8 columns
 
 ## 4. What could not be determined, and why
 
-- Nothing. Every table joined to an attempt and every attempt carried a decision.
+- summary.csv: no recognisable design-name column among ['campaign', 'scope', 'metric', 'samples', 'mean', 'std', 'min', 'max'], so its 202 rows could not be joined to an attempt
 
 ## 5. What this does not establish
 

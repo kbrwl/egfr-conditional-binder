@@ -3,7 +3,7 @@
 **Anthropic × Adaptyv Protein Design Competition — Challenge 1 — Track 3 (open track)**
 
 Single entrant, self-supported: no competition compute credits, no laboratory access.
-Total compute spend on this entry is under USD 25 of rented GPU time, which makes the
+Total compute spend on this entry is USD 27.18 of rented GPU time, which makes the
 method reproducible by anyone with a commodity card.
 
 The approach was derived against the published literature rather than adapted from an
@@ -348,6 +348,7 @@ that were testing different things produces a misleading single number.
 | four hotspots (the set above) | 6 | 2 | 0 |
 | round one, binder length 30–60 | 10 | 1 | **10** |
 | round one, binder length 60–100 | 10 | 0 | 0 |
+| round two, binder length 33–60 | 23 | 0 | 0 |
 
 Round one's two denominators were recorded as 9 per band on 3 October 2026, from a
 version of our ledger script that was fixed at 22:48 and 22:50 that night. They were
@@ -444,9 +445,17 @@ residues).
 
 **On submitting seven rather than twenty.** All seven descend from one backbone, and
 their pairwise sequence identity runs 73% to 94% with a mean of 81%. Additional slots
-filled from the same source would add sequence variation without adding a second idea.
-We would rather submit a set we can describe honestly than fill the allowance. Where further backbones were obtained before the deadline they are added and
-this table is regenerated; the ranking rule above is unchanged by their arrival.
+filled from the same source would add sequence variation without adding a second idea:
+the generator will write as many sequences onto one backbone as it is asked for, so the
+count is nearly free to inflate and would say nothing. We would rather submit a set we
+can describe honestly than fill the allowance.
+
+A second campaign was run on 5 October specifically to find another backbone, with the
+binder length band narrowed to 33–60 and two design workers sharing the card. It ran 23
+trajectories for USD 6.62 and **none survived every gate**, so no second backbone exists
+and nothing was added here. Where the first campaign produced one surviving trajectory
+in ten, the second produced none in twenty-three; pooled, that is one in thirty-three.
+The submitted set is what the first campaign produced.
 
 ---
 
@@ -494,10 +503,19 @@ Stated so a reader is not left to find them.
   have produced different designs.
 - **Interface confidence.** The submitted designs were generated under lowered confidence
   floors. The predictor does not confidently believe they bind.
-- **One backbone.** All submitted designs descend from a single successful trajectory.
-  Pairwise sequence identity within the submitted set runs 73% to 94%, mean 81%.
-  Structural diversity within this submission is low, and we give the number rather than
-  letting sequence variation imply otherwise.
+- **One backbone, and a second campaign failed to find another.** All submitted designs
+  descend from a single successful trajectory. Pairwise sequence identity within the
+  submitted set runs 73% to 94%, mean 81%. Structural diversity within this submission is
+  low, and we give the number rather than letting sequence variation imply otherwise.
+  This was the risk we most wanted to retire: a further 23 trajectories were run on
+  5 October against the same face with the length band narrowed to 33–60, and none
+  survived every gate. Across the two short-band campaigns — 10 trajectories and 23 —
+  the rate at which a trajectory yields a usable backbone is **1 in 33**. That
+  denominator deliberately excludes the 10 long-band trajectories, which were testing a
+  different binder length and produced nothing; pooling configurations that were asking
+  different questions is how a project talks itself into a number. At 1 in 33, a single
+  backbone is the expected outcome of this budget rather than bad luck within it, and a
+  second would have cost several times what this entry spent in total.
 - **The switch is weak.** Two correct pairs against a target of three. Whether two pairs
   produce a measurable difference between pH 6.5 and pH 7.4 is exactly what the experiment
   would answer and what no computation here can.

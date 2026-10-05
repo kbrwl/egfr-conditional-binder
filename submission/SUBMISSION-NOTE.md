@@ -1,11 +1,11 @@
 # Submission note — Challenge 1, EGFR
 
-**Date:** 2026-10-05  
+**Date:** 2026-10-06  
 **Replaces:** none — this is the first upload  
 **Designs:** 7  
 **Distinct backbones:** 1  
 **Lengths:** all 48 aa  
-**Total billed compute for the whole project:** USD 20.10
+**Total billed compute for the whole project:** USD 27.18
 
 ## Files uploaded
 
