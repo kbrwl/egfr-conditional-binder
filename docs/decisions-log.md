@@ -2,7 +2,9 @@
 
 Read this first in any new chat. Update it when something moves between sections.
 
-Last updated: 3 October 2026. Deadline extended to 6 October (Settled); round one
+Last updated: 5 October 2026. BindCraft2's memory estimator, not the trajectory
+budget, is what held the L4 to one worker; corrected at the end of Pipeline status.
+Deadline extended to 6 October (Settled); round one
 launched as two length-band campaigns (Pipeline status). The Proteinbase Slack was read and its
 answers recorded (assay, construct, selection, submission); the marginal-affinity rule
 was withdrawn; Modal was linked and its first check found to have tested nothing;
@@ -328,6 +330,50 @@ histidine-biased ProteinMPNN, switching in the opposite direction and not on EGF
 So any claim should be about **modality and combination**, stated as "we found no
 published example of X" rather than "X has never been done", and it should cite Liu
 et al. 2022 prominently rather than leaving a reader to find it.
+
+**What the organisers said on 4 October about the constructs, the pH regime and
+resubmission — recorded 5 October 2026.** Read from the Proteinbase Slack by a person
+and installed as reported speech; nothing here was computed by us. Attributions and
+wording are in `docs/competition-qa-log.md` section 15, the facts in
+`docs/rules-reference.md`.
+
+**Human EGFR is tested at pH 6.5 and pH 7.4. Mouse EGFR is tested at pH 6.5 only.**
+Tudor-Stefan Cotet corrected an earlier statement of his own to say this. The
+consequence is the one worth carrying: **pH selectivity and mouse cross-reactivity no
+longer pull against each other.** Cross-reactivity is read in the bound state, at the
+pH where both species are expected to bind, so nothing about the mouse measurement
+depends on the switch working. The whole of the cross-reactivity objective is therefore
+carried by where we aimed — all eight anchors are identical in both species — rather
+than by anything the switch does. The Open item asking whether the two objectives
+compete for the same surface is closed by this, not by our own measurement.
+
+**The targets are the full ectodomains in the tethered form**, human Met 1 – Ser 645
+and mouse Met 1 – Ser 647, both from Sino Biological, catalogue 10001-H08H and
+51091-M08H. This closes the construct gap that had been open since 30 September and was
+asked twice in Slack without an answer; it also confirms the tethered form, which
+`analysis/16_tethered_fragment.py` already measured our cut against.
+
+**The signal peptide is present.** The constructs begin at Met 1, so residues 1–24 are
+in the test article rather than cleaved off, which differs from the previous
+competition's construct. Tudor said designs aimed near residue 25 should model 1–24.
+Our face is domain III, 310–480 in full UniProt numbering, so residue 25 is far away;
+step 6 of the execution plan measures that distance on our own target rather than
+leaving the organiser's general statement to stand in for it.
+
+**Do not prepend an initiator methionine to a submitted sequence.** In Tudor's words:
+"We'll add it when we create the constructs in our software automatically." Our
+sequences begin with S or D and must stay that way.
+
+**Resubmission is allowed: once every 24 hours, with the most recent submission
+designated unless another is chosen.** This resolves the conflict
+`docs/rules-reference.md` carried between the competition page's "one submission per
+participant per challenge" and the 24-hour reading, in favour of the 24-hour cadence,
+and it was resolved by an organiser statement rather than by re-reading the page. **The
+standing rule to plan on exactly one submission is deleted.** Uploading a safe batch
+early and replacing it later is sound, which that rule previously forbade.
+
+**A standalone novelty-check pipeline was promised for 5 October** by Simon Dürr and
+Tudor. Whether it was released is recorded under Next actions.
 
 **Strategy: treat the methods write-up as part of the submission.**
 In Track 3 we hold no reserved testing slot, so the submission competes in a
@@ -718,8 +764,10 @@ constructed complexes hold isolated residue pairs with no environment around the
 ranking term was built.** Revisit when real complexes from the design run exist; until then
 it would be a term that cannot be tested.
 
-**The exact mouse construct.** Residue range and vendor, asked twice in Slack on 1 October
-and not answered. Our check was against the sequence on the competition page.
+**The exact mouse construct — answered 4 October 2026, see Settled.** Residue range and
+vendor had been asked twice in Slack on 1 October without an answer, and our check was
+against the sequence on the competition page. It is mouse Met 1 – Ser 647, Sino
+Biological 51091-M08H.
 
 **Is cynomolgus monkey cross-reactivity in scope? — decided 2 October 2026: design for
 human and mouse only.** Amir's pre-launch message on 28 September said "mouse and cyno". The
@@ -741,20 +789,50 @@ cross-reactivity is the objective. What it buys is a sentence the methods write-
 with the limits the finding records: the cyno UniProt entry is unreviewed, this is sequence
 analysis with no cyno structure examined, and nothing about binding was measured.
 
-**What does novelty level 3 mean?** Simon Dürr said level 3 clears the gate (29 September and
-1 October) and on 1 October also described the requirement as the sequence being under 30%
-similar to anything existing. The two may not be the same threshold. The definition is at
-`adaptyvbio.com/blog/novelty` and has not been read. Novelty is scored automatically on
-upload, so it can be tested against the real checker before the deadline.
+**What novelty level 3 means — answered 5 October 2026 by reading
+`adaptyvbio.com/blog/novelty`, which had never been read.** Simon Dürr's two statements
+were indeed different thresholds, and the looser one is the gate. The published scale
+for non-antibodies:
+
+| level | criteria |
+|---|---|
+| 1 | sequence similarity above 70% **and** moderate structural similarity |
+| 2 | sequence above 70% alone; **or** high structural; **or** sequence above 30% **and** moderate structural |
+| 3 | exactly one of: sequence above 30%, **or** moderate structural |
+| 4 | sequence 30% or below **and** less than moderate structural |
+
+Moderate structural similarity means at least 70% of the sequence covered by domains
+matching a known structure at a TM-score of 0.5 or better; high means the same coverage
+at 0.8 or better.
+
+So level 4 is what "under 30% similar" describes, and **level 3, which is the gate, is
+more permissive than that**: a design may exceed 30% sequence similarity *or* carry
+moderate structural similarity and still pass, as long as it does not do both. Our
+Swiss-Prot check found no significant sequence similarity at all, so the sequence half
+is clear; the structural half is what step 5b of the execution plan measures. Novelty is
+also scored automatically on upload, so it can be tested against the real checker before
+the deadline.
+
+**The standalone novelty-check pipeline promised for 5 October has not been released —
+checked 5 October 2026.** Simon Dürr and Tudor said on 4 October that one was coming.
+Checked three ways: a web search, the organisers' own novelty page (which describes
+`ProteinTyper` as internal infrastructure and offers nothing downloadable), and the
+`adaptyvbio` GitHub organisation, whose most recently updated repository predates the
+promise. `nipah_ipsae_pipeline` is an interface-confidence scorer from a different
+competition, not a novelty checker. So step 5b runs our own FoldSeek check rather than
+theirs, and the platform's own score on upload stays the authoritative reading.
 
 **Are extra metric columns allowed in the submission CSV?** Asked on 1 October, unanswered.
 
-**Do pH selectivity and mouse cross-reactivity compete for the same surface?** Both
-mouse cross-reactivity constrain the same interface residues. Partly answered: all
-eight anchors are species-identical, so the pairing positions themselves are
-conserved, and the only conflict found is position 442 — the single species
-difference in the block, which is also a cetuximab contact. Constraint recorded in
-Settled: do not contact 442.
+**Do pH selectivity and mouse cross-reactivity compete for the same surface? — closed
+4 October 2026 by the organisers, not by us.** Mouse is tested at pH 6.5 only, so
+cross-reactivity is read in the bound state and does not depend on the switch at all
+(Settled). What our own measurement had already established stands and is what carries
+the objective: all eight anchors are species-identical, so the pairing positions
+themselves are conserved, and the only conflict found is position 442 — the single
+species difference in the block, which is also a cetuximab contact. Position 442 is now
+a demotion rather than an exclusion; see step 3 of the execution plan and
+`analysis/10_charge_pair_filter.py`.
 
 **Compute environment.** Modal, linked on 2 October. The GPU check passes on an NVIDIA
 A100-SXM4-40GB, driver 580.95.05, with JAX 0.11.2 on the GPU backend (Pipeline status).
@@ -1134,6 +1212,28 @@ the grounds that such a carve-out reads badly to anyone who knows the field, and
 people judging this do. A withdrawn strategy is a result and is recorded like any
 other.
 
+**Proton-PottsMPNN for challenge 1 — ruled out 5 October 2026, and it is the first
+thing to evaluate for challenge 2.** Amir Shanehsazzadeh pointed all entrants at it on
+4 October (Jacobsen et al., bioRxiv 2026.09.30.755438; code at
+`github.com/christian-creator/ProtonPottsMPNN`). It represents protonated and
+deprotonated histidine, aspartate and glutamate as distinct sequence tokens, so
+protonation preference is specified inside the design model rather than screened for
+afterwards — which is the thing this project does by hand, in
+`analysis/10_charge_pair_filter.py`, after BindCraft2 has finished. It was used to
+design 8,407 de novo PD-L1 binders engaging under acidic conditions, screened by yeast
+display, recovering 237 and 288 unique pH-dependent designs across two sorts.
+
+*The reason for ruling it out is timing and budget, not merit.* It appeared four days
+before the deadline with about $10 of GPU credit left, which does not cover standing up
+and validating a second design stack alongside the one that is already producing
+candidates. Adopting it would mean a new model, new weights, a new image and no measured
+acceptance rate, against a configuration whose cost per candidate is known.
+
+*Recorded as the first item to evaluate for challenge 2*, where the same mechanism
+recurs and there is a full week. Nothing about it is judged here beyond fit to the time
+remaining; the paper has not been read in full and no claim is made about how it would
+perform on EGFR.
+
 **H418 as a confidently usable anchor, on the 6ARU reading alone.** Ruled out by
 step 03 (relative solvent accessibility 0.032, buried), then reinstated by step 06,
 which found it
@@ -1396,7 +1496,8 @@ One trajectory, so this is an existence result rather than a rate.
 *Measured on the L4, which had never been measured.* Peak card memory 8,915 MiB of
 23,034 MiB, less than half the card, so the earlier arithmetic suggesting roughly
 12.4 GB a worker was pessimistic and two workers should fit. The run used one worker
-only because BindCraft2 holds fan-out to the trajectory budget. 890 s for one
+only because BindCraft2's memory estimator planned one; the reason given here earlier,
+the trajectory budget, was wrong and is corrected at the end of this section. 890 s for one
 trajectory with compilation included, against 184.7 s a trajectory on the A100 smoke
 run with two workers, so **no clean speed ratio between the cards exists yet**: the
 two figures differ in card, worker count, compilation and target size at once.
@@ -1514,8 +1615,9 @@ intended, on the only evidence we have.
 
 *The card is settled and oversized rather than marginal.* Peak memory 9,037 MiB of
 the L4's 23,034, so 39% of the card for one worker. Two workers would fit, which is
-the available throughput lever and was never exercised because BindCraft2 holds
-fan-out to the trajectory budget.
+the available throughput lever and was never exercised because BindCraft2's memory
+estimator planned one. The trajectory budget, named here earlier, was not the cause;
+corrected at the end of this section.
 
 *Cost per trajectory, measured: $0.231.* Mean design time 1,040 s over ten
 trajectories, taken from the trajectory table's own `Timing` column rather than
@@ -1645,7 +1747,8 @@ not finding this four-anchor face while a 30-60 one sometimes does.
 card memory is 8,894 MiB against the long band's 17,227 of the L4's 23,034. Two
 short-band workers fit on one card and two long-band workers cannot. The
 throughput lever that has been theoretical since the first campaign is available
-in the short band only.
+in the short band only, and reaching it needs the estimator override corrected at
+the end of this section rather than a campaign setting.
 
 **Round one, the three numbers it existed to measure — 3 October 2026, nine
 recorded trajectories per band.**
@@ -1690,6 +1793,67 @@ metrics and nothing else, on disk and on the volume alike, because
 
 *What round one measures:* acceptance per band, charge-pair survival with a real
 denominator, and cost per accepted design per band. Round two is sized from those.
+
+**Single-worker operation on the L4 is BindCraft2's memory estimator, not the
+trajectory budget — corrected 5 October 2026 from the package's own source.** Three
+entries in this section said the L4 ran one worker "because BindCraft2 holds fan-out to
+the trajectory budget". That reason is wrong. It matters because round two's throughput
+plan was built on it.
+
+`bindcraft/design_workers.py` resolves the worker count in `design_workers_per_gpu`,
+lines 61-70. Lines 68-69 clamp that count by a memory estimate, and the clamp is
+unconditional: it applies to an explicitly requested worker count exactly as it applies
+to the automatic one.
+
+    if residue_count and free_gb:
+        workers_per_gpu = min(workers_per_gpu, int(max(0.0, free_gb - GPU_MEMORY_HEADROOM_GB) // estimate_design_memory_gb(residue_count)))
+    return max(1, min(worker_ceiling, workers_per_gpu))
+
+The estimate itself is at line 52, `DESIGN_MEMORY_SAFETY_FACTOR * (DESIGN_MODEL_RESIDENT_GB
++ DESIGN_ACTIVATION_BYTES_PER_RESIDUE_PAIR * N ** 2 / 1e9)`, with its constants at lines
+13 to 16: a safety multiplier of 2.0, a resident model cost of 3.4 GB, 38,000 bytes for
+every pair of residues, and 4.0 GB of the card held back as headroom.
+
+*The arithmetic, for the short band.* `design_residue_count`
+(`bindcraft/protein_preparation.py`, lines 156-167) rounds up to 32-residue buckets: the
+target is 171 residues, the binder's longest length of 60 rounds to 64, and their sum of
+235 rounds to **256**. So the estimate is 2.0 × (3.4 + 38,000 × 256² / 1e9) = **11.78 GB
+per worker**. The L4 holds 23,034 MiB, which is 22.49 GB; less the 4 GB headroom that
+leaves 18.49 GB, and 18.49 // 11.78 = **1**. Two workers would need the estimate at
+9.25 GB or below, which means a complex of 179 residues or fewer. The target alone is
+171, so no binder length in any band we would run can reach it.
+
+*Why the trajectory budget was not the cause.* `plan_design_workers`, lines 123-140,
+truncates the plan to the smallest of `design_workers` and the trajectory budget where
+either is set, so the budget can only ever lower the count. Round one ran ten
+trajectories against a planned one worker, so ten was never what bound it.
+
+*The reading reproduces both runs already paid for, which is why it is preferred over
+the earlier explanation.* For the A100 smoke run, PD-L1's 115-residue target with a
+binder padded to 192 gives 320 residues, an estimate of 14.58 GB, and (40.0 − 4) // 14.58
+= 2; that run recorded two workers. The L4 round-one runs compute to one worker, and
+recorded one.
+
+*No campaign setting reaches two workers on an L4.* `max_workers_per_gpu` and
+`design_workers` can only lower the count, the environment variables
+`BINDCRAFT_WORKERS_PER_GPU` and `BINDCRAFT_MAX_WORKERS_PER_GPU` feed the same clamped
+variable, and a smaller `length_bucket_size` still lands at 240 residues.
+
+*The hardware fits two workers and the estimate does not.* Round one measured peak card
+memory at 8,894 MiB, which is 8.69 GB, so two real workers need about 17.4 GB of the
+22.49 GB card and leave roughly 5 GB spare. The 2.0 safety multiplier is what forbids
+them, not the card. Decided by the owner on 5 October 2026: override the estimate at run
+time from our own entry point, leaving the vendored package and the built image
+untouched. Implemented as `WORKER_MEMORY_PATCH` in `design/modal/egfr_campaign.py`,
+which calibrates the multiplier to 1.5 against that measured peak — high enough to plan
+two workers, low enough not to plan three, and reported in the run's own output with the
+free memory and residue count it was computed from. Two workers is a prediction from one
+band's measured peak and not yet a measured result; the run reports its own peak memory
+and is stopped if it exceeds 20,000 MiB or runs out of memory.
+
+**This is the fourth entry in the withdrawn-claims list** carried in
+`submission/methods.md` section 10, and it is recorded there in the same form as the
+other three.
 
 ---
 

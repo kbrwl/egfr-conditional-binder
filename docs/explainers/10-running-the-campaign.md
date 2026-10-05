@@ -397,12 +397,14 @@ before, because nothing looked at the discarded attempts at all.
 - **Whether the cheaper card is fast enough has not been measured.** The switch from the
   A100 to the L4 was made on memory alone: the smoke run peaked at 18,218 MiB, which
   fits inside the L4's 24,564 MiB. No speed comparison between the two has ever been
-  made. There is also an open question about how many parallel workers fit: BindCraft2's
-  own stated memory formula works out at roughly 12.4 GB per worker for a complex of our
-  size, which on a 24 GB card with headroom allows one worker where the A100 ran two.
-  That is arithmetic from their documentation rather than a measurement, and if it holds
-  it roughly halves throughput on top of any difference in clock speed. The pilot is
-  what settles this.
+  made. How many parallel workers fit is now answered, and the answer is a property of
+  BindCraft2's own arithmetic rather than of the card. Its estimator budgets 11.78 GB for
+  a worker on a complex of our size, which on the L4's 22.49 GB leaves room for one once
+  4 GB of headroom is held back, where the A100 ran two. That estimate carries a safety
+  multiplier of 2.0, and round one then measured a real peak of 8,894 MiB — 8.69 GB — so
+  two real workers would use about 17.4 GB and fit with roughly 5 GB to spare. The card
+  is not what forbids the second worker; the estimate is. The full derivation, with the
+  source line numbers, is at the end of Pipeline status in `docs/decisions-log.md`.
 
 ---
 

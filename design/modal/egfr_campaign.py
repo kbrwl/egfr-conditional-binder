@@ -265,6 +265,157 @@ LOWERED_IPTM_FLOORS = {
 # were already true and are left as they are.
 ROUND1_SETTINGS = dict(LOWERED_IPTM_FLOORS, save_design_sequences=True)
 
+# ---------------------------------------------------------------------------
+# Overriding BindCraft2's worker-memory estimate, from outside the package
+# ---------------------------------------------------------------------------
+#
+# BindCraft2 decides how many design workers share a card in
+# `bindcraft/design_workers.py`, in `design_workers_per_gpu` (lines 61-70). Lines
+# 68-69 clamp the count by an estimate of how much card memory a worker needs, and
+# that clamp is unconditional -- it overrides an explicitly requested worker count
+# just as it overrides the automatic one. For our short band the estimate is
+# 11.78 GB a worker, which on the L4's 22.49 GB leaves room for exactly one once
+# 4 GB of headroom is held back. No campaign setting and no environment variable
+# gets past it: `max_workers_per_gpu` and `design_workers` can only lower the
+# count, and `BINDCRAFT_WORKERS_PER_GPU` feeds the same clamped variable.
+#
+# The estimate carries a safety multiplier of 2.0. Round one then measured a real
+# peak of 8,894 MiB, which is 8.69 GB, so two real workers need about 17.4 GB of
+# the 22.49 GB card and leave roughly 5 GB spare. The card fits two workers and the
+# estimate does not. The full derivation, with source line numbers, is at the end
+# of Pipeline status in `docs/decisions-log.md`.
+#
+# So the multiplier is recalibrated against that measured peak, at run time, from
+# here. Three constraints shaped how:
+#
+#   - The vendored package is not edited and the image is not rebuilt. The patch is
+#     a `sitecustomize.py` written into the container at run time and put on
+#     PYTHONPATH, which Python imports at interpreter start-up. BindCraft2's own
+#     virtual environment has no `sitecustomize` of its own, so nothing is shadowed
+#     (checked 5 October 2026).
+#   - `bindcraft design` runs as a subprocess, so patching this process would do
+#     nothing. PYTHONPATH reaches the subprocess and the design workers it spawns.
+#   - The patch is applied when `bindcraft.design_workers` is first imported, by a
+#     finder on `sys.meta_path`, rather than by importing that module at start-up.
+#     Importing it eagerly would pull JAX into every Python process the container
+#     starts, including ones that never touch a card.
+#
+# 1.5 is chosen so that two workers are planned and three are not: at 256 residues
+# it gives 8.84 GB, and 18.49 // 8.84 = 2, where three would need 6.16 GB or below.
+# It sits just above the 1.475 the measured peak implies, so it stays marginally
+# conservative. This is a prediction from one band's measured peak, not a measured
+# result, which is why the patch reports what it computed and the caller checks the
+# run's own peak memory against a 20,000 MiB ceiling.
+CALIBRATED_MEMORY_SAFETY_FACTOR = 1.5
+
+WORKER_MEMORY_PATCH = '''"""Written into the container at run time by design/modal/egfr_campaign.py.
+
+Recalibrates BindCraft2's design-worker memory estimate against a measured peak, so
+that the worker count it plans reflects what the card holds rather than a 2.0 safety
+multiplier. Explained where it is generated; derived in docs/decisions-log.md.
+
+Nothing here edits BindCraft2. The module is imported by Python at start-up because
+it is named sitecustomize and sits on PYTHONPATH, and it patches the target module
+only when that module is first imported.
+"""
+import os
+import sys
+from importlib.machinery import PathFinder
+
+TARGET = "bindcraft.design_workers"
+FACTOR = float(os.environ.get("BC2_CALIBRATED_SAFETY_FACTOR", "1.5"))
+
+
+def _apply(module):
+    original_estimate = module.estimate_design_memory_gb
+    resident_gb = module.DESIGN_MODEL_RESIDENT_GB
+    bytes_per_pair = module.DESIGN_ACTIVATION_BYTES_PER_RESIDUE_PAIR
+
+    def calibrated(residue_count):
+        return FACTOR * (resident_gb + bytes_per_pair * int(residue_count) ** 2 / 1e9)
+
+    module.estimate_design_memory_gb = calibrated
+
+    original_per_gpu = module.design_workers_per_gpu
+
+    def reported(settings, free_gb, residue_count):
+        workers = original_per_gpu(settings, free_gb, residue_count)
+        count = int(residue_count or 0)
+        print("[worker-memory-patch] free %.2f GB, headroom %.1f GB, residues %d, "
+              "BindCraft2 estimate %.2f GB, calibrated %.2f GB, workers per card %d"
+              % (free_gb, module.GPU_MEMORY_HEADROOM_GB, count,
+                 original_estimate(count), calibrated(count), workers), flush=True)
+        return workers
+
+    module.design_workers_per_gpu = reported
+
+    original_plan = module.plan_design_workers
+
+    def planned(settings, residue_count=None, trajectory_budget=None):
+        plan = original_plan(settings, residue_count, trajectory_budget)
+        print("[worker-memory-patch] planned %d worker(s); memory fractions %s"
+              % (len(plan), [worker.get("memory_fraction") for worker in plan]),
+              flush=True)
+        return plan
+
+    module.plan_design_workers = planned
+
+
+class _PatchingLoader:
+    def __init__(self, inner):
+        self._inner = inner
+
+    def create_module(self, spec):
+        return self._inner.create_module(spec)
+
+    def exec_module(self, module):
+        self._inner.exec_module(module)
+        try:
+            _apply(module)
+            print("[worker-memory-patch] applied, safety multiplier %.3f" % FACTOR,
+                  flush=True)
+        except Exception as exc:
+            print("[worker-memory-patch] FAILED to apply: %r" % (exc,), flush=True)
+
+
+class _PatchFinder(PathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname != TARGET:
+            return None
+        spec = super().find_spec(fullname, path, target)
+        if spec is None or spec.loader is None:
+            return None
+        spec.loader = _PatchingLoader(spec.loader)
+        return spec
+
+
+try:
+    if not any(isinstance(finder, _PatchFinder) for finder in sys.meta_path):
+        sys.meta_path.insert(0, _PatchFinder())
+except Exception as exc:
+    print("[worker-memory-patch] FAILED to install: %r" % (exc,), flush=True)
+'''
+
+PATCH_DIR = "/tmp/bc2-worker-memory-patch"
+
+
+def write_worker_memory_patch(factor=CALIBRATED_MEMORY_SAFETY_FACTOR):
+    """Write the sitecustomize patch into the container and return its directory.
+
+    Returns the shell prefix that puts it on PYTHONPATH for one command, rather than
+    exporting it for the whole container, so that only `bindcraft design` and the
+    workers it spawns are affected and the read-only helpers are not.
+    """
+    import pathlib
+
+    directory = pathlib.Path(PATCH_DIR)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "sitecustomize.py").write_text(WORKER_MEMORY_PATCH)
+    print(f"worker-memory patch written to {directory}/sitecustomize.py, "
+          f"safety multiplier {factor}")
+    return f"PYTHONPATH={directory} BC2_CALIBRATED_SAFETY_FACTOR={factor} "
+
+
 # BindCraft2's own output subdirectories, inside the project folder. The numbering
 # check looks nowhere else; see the module docstring on the bug that caused.
 OUTPUT_DIRS = ("1_Trajectories", "2_Refolded", "3_Ranked")
@@ -607,7 +758,7 @@ def _snapshot(project_dir, destination, every_seconds=300):
 # ---------------------------------------------------------------------------
 
 def _campaign(config_key, trajectories, run_name, final_designs=None,
-              extra_settings=None):
+              extra_settings=None, workers=None):
     """Run one campaign, measure it, and write a report beside its output.
 
     Shared by `validate` and `pilot`, which differ only in how many trajectories
@@ -672,6 +823,16 @@ def _campaign(config_key, trajectories, run_name, final_designs=None,
 
     overrides = [f"--set 'max_trajectories={trajectories}'",
                  f"--set 'project_folder={project}'"]
+    # `workers_per_gpu` alone does not get two workers onto an L4: BindCraft2 clamps
+    # whatever is asked for by its own memory estimate. The patch recalibrates that
+    # estimate against round one's measured peak; without it this setting is ignored.
+    # See WORKER_MEMORY_PATCH above and docs/decisions-log.md, end of Pipeline status.
+    patch_prefix = ""
+    if workers:
+        overrides.append(f"--set 'workers_per_gpu={workers}'")
+        print(f"workers requested  {workers}")
+        if workers > 1:
+            patch_prefix = write_worker_memory_patch()
     if final_designs is not None:
         overrides.append(f"--set 'number_of_final_designs={final_designs}'")
     for key, value in sorted((extra_settings or {}).items()):
@@ -685,7 +846,7 @@ def _campaign(config_key, trajectories, run_name, final_designs=None,
     started = time.monotonic()
     # Streamed, so a stalled run is visible while it is still cheap to stop. See
     # `_run`.
-    rc = _run(f"bindcraft design {config_path} " + " ".join(overrides),
+    rc = _run(patch_prefix + f"bindcraft design {config_path} " + " ".join(overrides),
               stream=True)
     wall_seconds = time.monotonic() - started
     if poller is not None:
@@ -1067,6 +1228,63 @@ def batch_r1_long(trajectories: int = 10, config: str = "r1-long"):
     """
     return _campaign(config, trajectories=trajectories,
                      run_name=f"egfr-r1-long-{config}", extra_settings=ROUND1_SETTINGS)
+
+
+@app.function(gpu=DEFAULT_GPU, timeout=timeout_for_spend(8.0),
+              volumes={"/results": results, "/weights": weights})
+def batch_r2_short(trajectories: int = 40, config: str = "r1-short",
+                   workers: int = 2):
+    """Round two, short band: round one's configuration unchanged, on two workers.
+
+    Everything about the design is held exactly as `batch_r1_short` ran it -- the
+    tight four hotspots (E344, H358, D368, H370; config numbers A320, A334, A344,
+    A346), the committed 310-480 fragment, the 30-60 aa binder length band, the
+    His-tag off-target, `termini_accessible`, and `ROUND1_SETTINGS` with its lowered
+    interface floors and `save_design_sequences` turned on. Nothing about what is
+    being designed changes between round one and round two. Two settings change:
+    how many attempts are paid for, and how many of them run at once.
+
+    WHY TWO WORKERS, AND WHY IT TAKES A PATCH TO GET THEM
+    -----------------------------------------------------
+    Round one ran one worker on the L4 and peaked at 8,894 MiB of the card's 23,034,
+    which is 39% of it. Two workers would therefore use about 17.4 GB and leave
+    roughly 5 GB spare. The decisions log recorded for two campaigns that the second
+    worker was out of reach because BindCraft2 holds fan-out to the trajectory
+    budget. That reason was wrong, and the real one is in `design_workers_per_gpu`
+    (`bindcraft/design_workers.py`, lines 61-70): an unconditional clamp by a memory
+    estimate that budgets 11.78 GB for a worker on a complex of our size and so
+    allows exactly one. Asking for two with `workers_per_gpu` does not get two; the
+    clamp overrides the request. `WORKER_MEMORY_PATCH` recalibrates the estimate at
+    run time against round one's measured peak, from outside the package. The
+    derivation, with source line numbers, is at the end of Pipeline status in
+    `docs/decisions-log.md`.
+
+    The second worker is a throughput lever and not a design change. It does not
+    alter what is designed, only how many attempts fit in an hour of card time, so
+    nothing it produces is comparable to round one on any axis except cost and rate.
+
+    SIZING
+    ------
+    Forty trajectories, against a $8.00 card-time ceiling expressed as this
+    function's timeout -- 10 hours at the L4's $0.80 an hour. Round one's billed
+    cost was $0.316 a trajectory at one worker, so 40 attempts at one worker would
+    be $12.64, beyond both the ceiling and the $10.87 of credit left. At two workers
+    with no contention that halves to about $6.32; with contention at 1.6 times
+    throughput rather than 2, about $7.90. The ceiling is what bounds the bad case,
+    so the run may stop on its timeout with fewer than 40 attempts rather than on
+    its trajectory budget. That is the intended behaviour and not a failure.
+
+    WHAT STOPS IT
+    -------------
+    Two conditions, both decided before launch, both reported by this function:
+    the run dies with an out-of-memory error, or peak card memory exceeds 20,000
+    MiB. The caller also compares the first completed trajectory's wall-clock
+    against round one's 1,040 s mean design time; two workers that are thrashing
+    rather than sharing show up there before most of the money is spent.
+    """
+    return _campaign(config, trajectories=trajectories,
+                     run_name=f"egfr-r2-short-{config}",
+                     extra_settings=ROUND1_SETTINGS, workers=workers)
 
 
 @app.function(timeout=60 * 10, volumes={"/results": results})
