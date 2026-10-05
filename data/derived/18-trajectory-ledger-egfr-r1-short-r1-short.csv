@@ -9,7 +9,7 @@ egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1,False,table 
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10,False,table column outcome,,,False,False,False,not scored,,no complex structure was available to score,,,2_Refolded/!_Refolded.csv,49
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_EGFR_domain3,False,presence of a structure in 3_Ranked/,,,False,True,False,rejected,0,binder histidine faces target histidine H433,,,,0
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate10_HisTag,False,presence of a structure in 3_Ranked/,,,False,True,False,not scored,,no complex structure was available to score,,,,0
-egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3,False,presence of a structure in 3_Ranked/,,,False,True,False,rejected,2,contacts 442,,,,0
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_EGFR_domain3,False,presence of a structure in 3_Ranked/,,,False,True,False,below the pair target,2,,,,,0
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate1_HisTag,False,presence of a structure in 3_Ranked/,,,False,True,False,not scored,,no complex structure was available to score,,,,0
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2,False,table column outcome,,,False,False,False,not scored,,no complex structure was available to score,,,2_Refolded/!_Refolded.csv,49
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate2_EGFR_domain3,False,presence of a structure in 3_Ranked/,,,False,True,False,below the pair target,1,,,,,0
@@ -27,7 +27,7 @@ egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6,False,table 
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_EGFR_domain3,False,presence of a structure in 3_Ranked/,,,False,True,False,below the pair target,0,,,,,0
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate6_HisTag,False,presence of a structure in 3_Ranked/,,,False,True,False,not scored,,no complex structure was available to score,,,,0
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7,False,table column outcome,,,False,False,False,not scored,,no complex structure was available to score,,,2_Refolded/!_Refolded.csv,49
-egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3,False,presence of a structure in 3_Ranked/,,,False,True,False,rejected,2,contacts 442,,,,0
+egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_EGFR_domain3,False,presence of a structure in 3_Ranked/,,,False,True,False,below the pair target,2,,,,,0
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate7_HisTag,False,presence of a structure in 3_Ranked/,,,False,True,False,not scored,,no complex structure was available to score,,,,0
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8,False,table column outcome,,,False,False,False,not scored,,no complex structure was available to score,,,2_Refolded/!_Refolded.csv,49
 egfr-domain3-h370-r1-short_detarget_l48_b495b644c4981ad4_candidate8_EGFR_domain3,False,presence of a structure in 3_Ranked/,,,False,True,False,below the pair target,1,,,,,0
