@@ -2027,6 +2027,32 @@ measure throughput rather than memory. The question is not whether two workers f
 whether two workers finish more trajectories an hour than one, and on an L4 with a
 256-residue complex the answer is no.
 
+**Round two's ceiling is enforced as billed cost, not card time — decided 5 October
+2026.** The ceiling was implemented the way the execution plan specified, as a container
+timeout computed from card time by `timeout_for_spend`: $7.75 at the L4's $0.80 an hour
+is 34,875 seconds, which is 9.69 hours. That was correct when the two quantities were
+assumed equal. They are not, as this log has now recorded twice: Modal also bills
+container start-up and processor time, and round two is running about 1.17 times its
+card time.
+
+Left to run to its card-time timeout, round two would spend **$7.75 of card time and
+about $9.07 billed**, against the $8.00 the owner authorised. The timeout bounds the
+wrong quantity.
+
+*So the run is stopped when its billed cost reaches $7.75*, which is total workspace
+billing of $27.12, rather than when the timeout expires. A guard polls
+`modal billing summary` and stops the app at that figure. At the measured throughput
+that is about six and a quarter hours more and roughly 14 further trajectories, against
+the 17 the full timeout would have bought.
+
+*Why this reading rather than the literal one.* The ceiling exists to bound money and
+the owner's instruction was a dollar figure. Spending $9.07 under a $8.00 ceiling
+because the ceiling was expressed in a unit that turned out not to be money would be
+honouring the wording against the purpose. It also protects the credit: $30 was the
+balance, $19.37 was spent before round two, and the card-time reading would leave about
+$1.50 unspent where an error in the 1.17 estimate could put the account into real
+charges.
+
 ---
 
 ## Commitments made in advance
