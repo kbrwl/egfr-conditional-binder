@@ -2051,26 +2051,34 @@ whether two workers finish more trajectories an hour than one, and on an L4 with
 timeout computed from card time by `timeout_for_spend`: $7.75 at the L4's $0.80 an hour
 is 34,875 seconds, which is 9.69 hours. That was correct when the two quantities were
 assumed equal. They are not, as this log has now recorded twice: Modal also bills
-container start-up and processor time, and round two is running about 1.17 times its
-card time.
+container start-up and processor time.
+
+*The gap for this run is 1.07 times, measured from its own accrual rather than carried
+over.* The 1.17 first used here came from round one's completed campaigns, where a short
+run amortises container start-up over fewer card-hours; a nine-hour run dilutes that
+fixed cost, so the ratio falls. Measured across an hour of round two, billing rose $0.90
+while card time rose $0.84. The billing API is eventually consistent — it read $22.37
+and then $22.17 — so a short-window rate is noisy, which is why the guard compares
+against an absolute threshold rather than a rate.
 
 Left to run to its card-time timeout, round two would spend **$7.75 of card time and
-about $9.07 billed**, against the $8.00 the owner authorised. The timeout bounds the
-wrong quantity.
+about $8.29 billed**, against the $8.00 the owner authorised. That is a smaller overrun
+than the 1.17 figure implied, and it is still an overrun, so the timeout still bounds
+the wrong quantity.
 
 *So the run is stopped when its billed cost reaches $7.75*, which is total workspace
 billing of $27.12, rather than when the timeout expires. A guard polls
-`modal billing summary` and stops the app at that figure. At the measured throughput
-that is about six and a quarter hours more and roughly 14 further trajectories, against
-the 17 the full timeout would have bought.
+`modal billing summary` and stops the app at that figure. At the 1.07 ratio the stop lands near 02:10, about
+forty minutes short of the 02:48 timeout, which costs roughly one or two trajectories
+rather than the three the earlier estimate suggested.
 
 *Why this reading rather than the literal one.* The ceiling exists to bound money and
 the owner's instruction was a dollar figure. Spending $9.07 under a $8.00 ceiling
 because the ceiling was expressed in a unit that turned out not to be money would be
 honouring the wording against the purpose. It also protects the credit: $30 was the
-balance, $19.37 was spent before round two, and the card-time reading would leave about
-$1.50 unspent where an error in the 1.17 estimate could put the account into real
-charges.
+balance and $19.37 was spent before round two, so the card-time reading would end near
+$27.7 of $30. That is not tight enough to be dangerous at the measured ratio, which
+weakens this second reason without removing the first.
 
 ---
 
